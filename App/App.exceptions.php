@@ -1,0 +1,50 @@
+<?php
+
+// ========================================================================
+//
+// components/Pipeline/Pipeline.exceptions.php
+//              The different exceptions thrown by the Pipeline component
+//
+//              Part of the Modular Framework for PHP applications
+//              http://blog.stuartherbert.com/php/mf/
+//
+// Author       Stuart Herbert
+//              (stuart@stuartherbert.com)
+//
+// Copyright    (c) 2007-2009 Stuart Herbert
+//              Released under v3 of the GNU Affero Public License
+//
+// ========================================================================
+
+// ========================================================================
+// When         Who     What
+// ------------------------------------------------------------------------
+// 2007-12-02   SLH     Created
+// ========================================================================
+
+class App_E_AuthenticatorRequired extends Exception_Technical
+{
+	public function __construct(Exception $oCause = null)
+        {
+        	parent::__construct
+                (
+                        l('App', 'LANG_APP_E_AUTHENTICATOR_REQUIRED'),
+                        array(),
+                        $oCause
+                );
+        }
+}
+
+class App_E_UserDatastoreRequired extends Exception_Technical
+{
+	public function __construct(Exception $oCause = null)
+        {
+        	parent::__construct
+                (
+                        l('App', 'LANG_APP_E_USER_DATASTORE_REQUIRED'),
+                        array(),
+                        $oCause
+                );
+        }
+}
+?>
