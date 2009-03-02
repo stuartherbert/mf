@@ -25,6 +25,7 @@
 //                      to avoid global vars in apps that use it
 // 2008-10-26   SLH     Much improved support for parameterised routes
 // 2009-03-01   SLH     Routing_Routes is no longer a singleton
+// 2009-03-02   SLH     Routes now support different main loops
 // ========================================================================
 
 class Routing_Routes
@@ -33,13 +34,15 @@ class Routing_Routes
         protected $conditions = array();
         protected $map        = array();
 
+        protected $defaultMainLoop = 'WebApp';
+
         /**
          * define a new route
          */
 
         public function addRoute($name)
         {
-        	$this->routes[$name] = new Routing_Route($name);
+        	$this->routes[$name] = new Routing_Route($name, $this->defaultMainLoop);
                 return $this->routes[$name];
         }
 
@@ -56,6 +59,23 @@ class Routing_Routes
                 {
                 	throw new Routing_E_NoSuchRoute($name);
                 }
+        }
+
+        /**
+         * Sets the mainLoop that all subsequent new routes will use.
+         *
+         * Created mainly as a time saver.  Can be overrided by calling
+         * the route's withMainLoop() method.  Does not affect any routes
+         * created before setDefaultMainLoop() is called.
+         *
+         * @param string $mainLoop which class's mainLoop() method to
+         *               call if this route is matched
+         */
+        public function setDefaultMainLoop($mainLoop)
+        {
+                constraint_mustBeString($mainLoop);
+
+                $this->defaultMainLoop = $mainLoop;
         }
 
         /**
@@ -200,10 +220,12 @@ class Routing_Route
         protected $urlParameters = array();
         protected $regex         = null;
         protected $conditions    = array();
+        protected $mainLoop      = null;
 
-        public function __construct($name)
+        public function __construct($name, $mainLoop = 'WebApp')
         {
                 $this->routeName = $name;
+                $this->mainLoop  = $mainLoop;
         }
 
         // ================================================================
@@ -303,6 +325,13 @@ class Routing_Route
         	$this->conditions = $conditions;
 
                 return $this;
+        }
+
+        public function withMainLoop($mainLoop)
+        {
+                constraint_mustBeString($mainLoop);
+
+                $this->mainLoop = $mainLoop;
         }
 
         protected function analyseUrl()
@@ -452,6 +481,7 @@ class Routing_Route
                 $aReturn['routeToClass']  = $this->routeToClass;
                 $aReturn['routeToMethod'] = $this->routeToMethod;
                 $aReturn['routeName']     = $this->routeName;
+                $aReturn['mainLoop']      = $this->mainLoop;
 
                 return $aReturn;
         }

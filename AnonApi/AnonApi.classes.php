@@ -22,6 +22,7 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2008-10-17   SLH     Created
+// 2009-03-02   SLH     Added mainLoop()
 // ========================================================================
 
 class AnonApi
@@ -32,25 +33,74 @@ class AnonApi
 
         }
 
-        public static function mainLoop()
+        public static function mainLoop($route)
         {
                 // we do not need to setup a user, because this is an
                 // anonymous API
 
-                // convert the queryString into its individual components
-                $route = App::$routes->matchUrl(App::$request->pathInfo);
-
                 // create the controller
                 $controller = new $route['routeToClass'];
 
-                // work out which theme we need
+                // set the default format, if required
+                if (!isset($route['params'][':format']))
+                {
+                        // set a default format
+                        $route['params'][':format'] = 'xml';
+                }
+
+                // load the right theme
+                switch($route['params'][':format'])
+                {
+                        case 'json':
+                                App::$theme = new AnonApi_Theme_Json();
+                                break;
+
+                        case 'php':
+                                App::$theme = new AnonApi_Theme_PHP();
+                                break;
+                        
+                        case 'xml':
+                        default:
+                                App::$theme = new AnonApi_Theme_Xml();
+                }
 
                 // call the controller
-                $method = $route['routeToMethod'];
-                $controller->$method($route['params']);
+                try
+                {
+                        $method = $route['routeToMethod'];
+                        $controller->$method($route['params']);
+                }
+                catch (Exception_Process $e)
+                {
+                        // we pass the exception on
+                        throw $e;
+                }
+                catch (Exception $e)
+                {
+                        // we have an error that was not expected
+                        // we will throw a generic internal server error
+                        // at this point
+
+                        throw new App_E_InternalServerError($e);
+                }
 
                 // call the theme to finish
         }
+}
+
+class AnonApi_Theme_Json
+{
+
+}
+
+class AnonApi_Theme_PHP
+{
+
+}
+
+class AnonApi_Theme_Xml
+{
+
 }
 
 ?>

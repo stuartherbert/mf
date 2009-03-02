@@ -20,31 +20,22 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2007-12-02   SLH     Created
+// 2009-03-02   SLH     Added App_E_InternalServerError
 // ========================================================================
 
-class App_E_AuthenticatorRequired extends Exception_Technical
+class App_E_InternalServerError extends Exception_Process
 {
-	public function __construct(Exception $oCause = null)
+        public function __construct(Exception $oCause)
         {
-        	parent::__construct
+                parent::__construct
                 (
-                        l('App', 'LANG_APP_E_AUTHENTICATOR_REQUIRED'),
+                        500,
+                        1,
+                        l('App', 'E_INTERNAL_SERVER_ERROR'),
                         array(),
                         $oCause
                 );
         }
 }
 
-class App_E_UserDatastoreRequired extends Exception_Technical
-{
-	public function __construct(Exception $oCause = null)
-        {
-        	parent::__construct
-                (
-                        l('App', 'LANG_APP_E_USER_DATASTORE_REQUIRED'),
-                        array(),
-                        $oCause
-                );
-        }
-}
 ?>

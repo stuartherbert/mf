@@ -343,7 +343,6 @@ class App_Languages
                 $this->languagesByModule[$module][$language]   = $modulePath;
                 $this->languagesByLanguage[$language][$module] = $modulePath;
                 $this->languages[$language] = $language;
-                $this->translations[$module][$language] = true;
         }
 
         /**
