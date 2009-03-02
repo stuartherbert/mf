@@ -20,6 +20,11 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2007-08-11   SLH     Consolidated from separate files
+// 2009-03-02   SLH     Added support for setting HTTP response codes
+//                      in the exceptions
+// 2009-03-02   SLH     Added support for setting a unique ID for
+//                      Process exceptions
+// 2009-03-02   SLH     Improved the message output by the exception
 // ========================================================================
 
 class Exception_Enterprise extends Exception
@@ -40,11 +45,11 @@ class Exception_Enterprise extends Exception
          * constructor
          */
 
-        public function __construct ($formatString, $aParams, Exception $oCause = null)
+        public function __construct ($errorCode, $formatString, $aParams, Exception $oCause = null)
         {
                 $message = $this->formatMessage($formatString, $aParams);
 
-                parent::__construct($message);
+                parent::__construct($message, $errorCode);
 
                 $this->oCause    = $oCause;
                 $this->aParams   = $aParams;
@@ -99,9 +104,9 @@ class Exception_Enterprise extends Exception
         protected function formatMessage ($message, &$aParams)
         {
                 return vsprintf(
-                        get_class($this)
-                        . ' : '
-                        . $message,
+//                        get_class($this)
+//                        . ' : '
+                        $message,
                         $aParams
                 );
         }
@@ -189,6 +194,19 @@ class Exception_Iterator implements Iterator
 
 class Exception_Process extends Exception_Enterprise
 {
+        /**
+         *
+         * @var int the HTTP code to return to the browser or calling HTTP
+         *          client
+         */
+        public $httpCode = 500;
+
+        public function __construct ($httpCode, $errorCode, $formatString, $aParams, Exception $oCause = null)
+        {
+                parent::__construct($errorCode, $formatString, $aParams, $oCause);
+                $this->httpCode = $httpCode;
+        }
+
 }
 
 // ========================================================================
@@ -197,7 +215,10 @@ class Exception_Process extends Exception_Enterprise
 
 class Exception_Technical extends Exception_Enterprise
 {
-
+        public function __construct ($formatString, $aParams, Exception $oCause = null)
+        {
+                parent::__construct(0, $formatString, $aParams, $oCause);
+        }
 }
 
 ?>
