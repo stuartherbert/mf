@@ -81,6 +81,7 @@ class AnonApi
                         // we will throw a generic internal server error
                         // at this point
 
+                        var_dump($e);
                         throw new App_E_InternalServerError($e);
                 }
 
