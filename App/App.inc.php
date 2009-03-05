@@ -21,6 +21,7 @@
 // ------------------------------------------------------------------------
 // 2007-12-02   SLH     Created
 // 2008-09-09   SLH     Pipeline is now called App
+// 2009-03-05   SLH     Now include the exceptions file
 // ========================================================================
 
 // who we are
@@ -28,7 +29,7 @@ $componentDir  = dirname(__FILE__) . DIRECTORY_SEPARATOR;
 $componentName = 'App';
 
 // load our files
-//require_once($componentDir . $componentName . '.exceptions.php');
+require_once($componentDir . $componentName . '.exceptions.php');
 require_once($componentDir . $componentName . '.funcs.php');
 require_once($componentDir . $componentName . '.classes.php');
 
