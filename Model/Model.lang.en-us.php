@@ -25,7 +25,7 @@
 // 2009-03-01   SLH     Foreign language strings now go in Language_Manager
 // ========================================================================
 
-App::$languages->addLanguageForModule('Model', 'en-us', array
+App::$languages->addTranslationsForModule('Model', 'en-us', array
 (
         'LANG_MODEL_E_EXPECTEDFIELDVALUE'       => "Expected a value for field '%s', but didn't get one",
         'LANG_MODEL_E_FOREIGNKEYNOTDEFINED'     => "Foreign key on '%s' for '%s' not defined",
