@@ -5,7 +5,7 @@
 // DatastoreSQLite2/DatastoreSQLite2.inc.php
 //              Include file for the DatastoreSQLite2 component
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

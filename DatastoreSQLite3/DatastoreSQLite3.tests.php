@@ -5,7 +5,7 @@
 // DatastoreSQLite3/DatastoteSQLite3.tests.php
 //              Unit tests for the SQLite3 support
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

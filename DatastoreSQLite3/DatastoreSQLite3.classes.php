@@ -5,7 +5,7 @@
 // DatastoreSQLite3/DatastoreSQLite3.classes.php
 //              Support for working with SQLite v3 databases
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

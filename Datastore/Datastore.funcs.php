@@ -5,7 +5,7 @@
 // Datastore/Datastore.funcs.php
 //              Helper functions defined by the Datastore component
 //
-//              Part of the Modular Framework for PHP Applications
+//              Part of the Methodosity Framework for PHP Applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

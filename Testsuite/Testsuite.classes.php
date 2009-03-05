@@ -5,7 +5,7 @@
 // Testsuite/Testsuite.classes.php
 //              Helper coded for running unit tests
 //
-//              Part of the Modular Framework for PHP appliations
+//              Part of the Methodosity Framework for PHP appliations
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert
@@ -35,7 +35,7 @@ class AllTests
 
         public static function suite()
         {
-        	$suite = new PHPUnit_Framework_TestSuite('ModularFramework');
+        	$suite = new PHPUnit_Framework_TestSuite('MethodosityFramework');
 
                 foreach (self::$testSuites as $testSuite)
                 {

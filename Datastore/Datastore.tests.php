@@ -5,7 +5,7 @@
 // Datastore/Datastore.tests.php
 //              PHPUnit tests for the Datastore component
 //
-//              Part of the Modular Framework for applications
+//              Part of the Methodosity Framework for applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

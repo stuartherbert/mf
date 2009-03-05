@@ -5,7 +5,7 @@
 // Datastore/Datastore.classes.php
 //              Classes for the Datastore component
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

@@ -5,7 +5,7 @@
 // WebApp/WebApp.classes.php
 //              Classes defined by the WebApp module
 //
-//              Part of the Modular Framework for PHP
+//              Part of the Methodosity Framework for PHP
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

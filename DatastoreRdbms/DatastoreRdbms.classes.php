@@ -5,7 +5,7 @@
 // DatastoreRdbms/DatastoreRdbms.classes.php
 //              Base classes for relational database (RDBMS) support
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

@@ -5,7 +5,7 @@
 // Routing/Routing.exceptions.php
 //              Exceptions defined by the Routing component
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

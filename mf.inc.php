@@ -3,9 +3,9 @@
 // ========================================================================
 //
 // mf.inc.php
-//              Main include file for the Modular Framework
+//              Main include file for the Methodosity Framework
 //
-//              Part of the Modular Framework for PHP Applications
+//              Part of the Methodosity Framework for PHP Applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert
@@ -44,7 +44,7 @@ define('APP_LIBDIR', APP_TOPDIR . '/app');
 
 // MF_TOPDIR should be defined by the caller
 //
-// If MF_TOPDIR is not defined, we assume that the Modular Framework is
+// If MF_TOPDIR is not defined, we assume that the Methodosity Framework is
 // installed in a sub directory underneath APP_TOPDIR
 //
 // In general, we strongly recommend against having multiple apps share

@@ -5,7 +5,7 @@
 // DatastoreSQLite3/AllTests.php
 //              Unit test suite for the DatastoreSQLite3 component
 //
-//              Part of the Modular Framework for PHP appliations
+//              Part of the Methodosity Framework for PHP appliations
 //
 // Author       Stuart Herbert
 //              (stuart@stuartherbert.com)

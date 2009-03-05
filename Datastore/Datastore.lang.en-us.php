@@ -5,7 +5,7 @@
 // Datastore/Datastore.lang.en-us.php
 //              US English language strings for the Datastore component
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

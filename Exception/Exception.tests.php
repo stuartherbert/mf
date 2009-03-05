@@ -5,7 +5,7 @@
 // Exception/Exception.tests.php
 //              PHPUnit tests for the Exceptions component
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

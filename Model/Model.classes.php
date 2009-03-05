@@ -5,7 +5,7 @@
 // Model/Model.classes.php
 //              Classes for defining data models
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

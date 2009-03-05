@@ -5,7 +5,7 @@
 // DatastorePDO/DatastorePDO.inc.php
 //              Include file for the DatastorePDO component
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //
 // Author       Stuart Herbert
 //              (stuart@stuartherbert.com)

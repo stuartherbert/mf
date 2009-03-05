@@ -5,7 +5,7 @@
 // PHP/PHP.classes.php
 //              Classes to help with working with the PHP language
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

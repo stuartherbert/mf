@@ -5,7 +5,7 @@
 // DatastoreSQLite2/DatastoreSQLite2.classes.php
 //              Classes for the DatastoreSQLite2 component
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

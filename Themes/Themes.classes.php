@@ -5,7 +5,7 @@
 // Themes/Themes.classes.php
 //              Classes to support theme engines
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //
 // Author       Stuart Herbert
 //              (stuart@stuartherbert.com)

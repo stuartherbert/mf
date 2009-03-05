@@ -7,7 +7,7 @@
 //              instead of browser requests, and that never authenticates
 //              users
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert
@@ -39,17 +39,17 @@ class AnonApi
                 // anonymous API
 
                 // create the controller
-                $controller = new $route['routeToClass'];
+                $controller = new $route->routeToClass;
 
                 // set the default format, if required
-                if (!isset($route['params'][':format']))
+                if (!isset($route->matchedParams[':format']))
                 {
                         // set a default format
-                        $route['params'][':format'] = 'xml';
+                        $route->matchedParams[':format'] = 'xml';
                 }
 
                 // load the right theme
-                switch($route['params'][':format'])
+                switch($route->matchedParams[':format'])
                 {
                         case 'json':
                                 App::$theme = new AnonApi_Theme_Json();
@@ -67,8 +67,8 @@ class AnonApi
                 // call the controller
                 try
                 {
-                        $method = $route['routeToMethod'];
-                        $controller->$method($route['params']);
+                        $method = $route->routeToMethod;
+                        $controller->$method($route->matchedParams);
                 }
                 catch (Exception_Process $e)
                 {

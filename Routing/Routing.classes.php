@@ -5,7 +5,7 @@
 // components/Routing/Routing.classes.php
 //              Classes to support mapping URLs onto modules
 //
-//              Part of the Modular Framework for PHP applications
+//              Part of the Methodosity Framework for PHP applications
 //
 // Author       Stuart Herbert
 //              (stuart@stuartherbert.com)
@@ -138,14 +138,61 @@ class Routing_Routes
 
         public function matchUrl($url)
         {
-                return $this->findRoute($url);
+                $routes = $this->findRoutes($url);
+
+                // we have 1 or more routes returned
+                //
+                // we now need to loop through the routes, and work out
+                // which routes need to know if we have a user or not
+                //
+                // this will be easier with PHP 5.3 and the new support
+                // for calling static methods using variables for classnames
+
+                $mainLoopNeedsUser = false;
+                $mainLoopsNeedUser = array();
+                foreach ($routes as $route)
+                {
+
+                        $mainLoopClass = $route->mainLoop;
+                        if (!isset($mainLoopsNeedUser[$mainLoopClass]))
+                        {
+                                switch ($mainLoopClass)
+                                {
+                                        case 'AnonApi':
+                                                $mainLoopsNeedUser[$mainLoopClass] = false;
+                                                break;
+
+                                        case 'Api':
+                                        case 'WebApp':
+                                        default:
+                                                $mainLoopsNeedsUser[$mainLoopClass] = true;
+                                }
+                        }
+                }
+
+                foreach ($mainLoopsNeedUser as $tmp)
+                {
+                        if ($tmp)
+                                $mainLoopNeedsUser = true;
+                }
+
+                // now we know whether a route needs to know if we have
+                // a user or not
+
+                // TODO: create user
+
+                // now we have set the conditions, see which routes
+                // are left
+                return $this->filterRoutesMatchingConditions($routes);
         }
 
-        private function findRoute($url)
+        private function findRoutes($url)
         {
                 // var_dump($url);
                 // var_dump($this->map);
-                
+
+                $return = array();
+
         	// special case - homepage
                 if ($url == '/')
                 {
@@ -187,13 +234,42 @@ class Routing_Routes
                 // if we get here, we have a map to search through
                 foreach ($map as $oRoute)
                 {
-                	if ($params = $oRoute->matchesUrl($url, $this->conditions))
+                	if ($oRoute->matchesUrl($url))
                         {
-                        	return $params;
+                                // this route matches the URL
+                                //
+                                // it may not match the required conditions,
+                                // but at this stage in the execution plan,
+                                // it is too soon to work out whether all
+                                // of the required conditions are matched
+                                // or not
+                        	$return[] = $oRoute;
                         }
                 }
 
-                // no matching route found
+                // have we found any matching routes?
+                if (count($return) == 0)
+                {
+                        // no matching route found
+                        throw new Routing_E_NoMatchingRoute($url);
+                }
+
+                // yes - we have matching routes
+                return $return;
+        }
+
+        private function filterRoutesMatchingConditions($routes)
+        {
+                // the first match wins
+                foreach ($routes as $route)
+                {
+                        if ($route->matchesConditions($this->conditions))
+                        {
+                                return $route;
+                        }
+                }
+
+                // if we get here, then we have no matches
                 throw new Routing_E_NoMatchingRoute($url);
         }
 
@@ -213,14 +289,17 @@ class Routing_Routes
 
 class Routing_Route
 {
-        protected $routeName     = null;
-        protected $routeToClass  = null;
+        public $routeToClass  = null;
+        public $routeToMethod = null;
+        public $mainLoop      = null;
+        public $matchedParams = array();
+        public $routeName     = null;
+        
         protected $rawUrl        = null;
         protected $paramRegexs   = array();
         protected $urlParameters = array();
         protected $regex         = null;
         protected $conditions    = array();
-        protected $mainLoop      = null;
 
         public function __construct($name, $mainLoop = 'WebApp')
         {
@@ -422,7 +501,7 @@ class Routing_Route
          * conditions
          */
 
-        public function matchesUrl($url, $conditions)
+        public function matchesUrl($url)
         {
                 // we call analyseUrl() here to ensure that this route
                 // object is fully initialised.  we cannot guarantee that
@@ -432,7 +511,7 @@ class Routing_Route
                 {
                         $this->analyseUrl();
                 }
-
+                
                 // var_dump($this->urlRegex);
 
                 // step 1: does the supplied URL match our route's regex?
@@ -446,8 +525,40 @@ class Routing_Route
                 // var_dump($url);
                 // var_dump($aMatches);
 
-                // step 2: does our set of conditions match against the
-                //         general conditions currently in effect?
+                // if we get here, then our route matches both the
+                // supplied URL, and also matches the conditions that must
+                // be met for our route to be valid
+
+                // reset matchedParams() just in case we've been called
+                // at some point in the past
+                //
+                // I do not like the way matchesUrl() changes the state
+                // of these objects, but cannot think of a better solution
+                // right now
+
+                $this->matchedParams = array();
+
+                array_shift($aMatches);
+
+                foreach ($this->urlParameters as $param => $regex)
+                {
+                        $this->matchedParams[$param] = $aMatches[0];
+                        array_shift($aMatches);
+                }
+
+                // add the module to the end
+                return true;
+        }
+
+        /**
+         *
+         * @param array $conditions
+         * @return boolean
+         */
+        public function matchesConditions($conditions)
+        {
+                // does our set of conditions match against the
+                // general conditions currently in effect?
 
                 foreach ($this->conditions as $name => $value)
                 {
@@ -464,26 +575,7 @@ class Routing_Route
                         }
                 }
 
-                // if we get here, then our route matches both the
-                // supplied URL, and also matches the conditions that must
-                // be met for our route to be valid
-
-                array_shift($aMatches);
-
-                $aReturn = array();
-                foreach ($this->urlParameters as $param => $regex)
-                {
-                        $aReturn['params'][$param] = $aMatches[0];
-                        array_shift($aMatches);
-                }
-
-                // add the module to the end
-                $aReturn['routeToClass']  = $this->routeToClass;
-                $aReturn['routeToMethod'] = $this->routeToMethod;
-                $aReturn['routeName']     = $this->routeName;
-                $aReturn['mainLoop']      = $this->mainLoop;
-
-                return $aReturn;
+                return true;
         }
 }
 

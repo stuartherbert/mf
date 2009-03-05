@@ -5,7 +5,7 @@
 // App/App.classes.php
 //              Defines the classes used to support the pipeline approach
 //
-//              Part of the Modular Framework for PHP Applications
+//              Part of the Methodosity Framework for PHP Applications
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert

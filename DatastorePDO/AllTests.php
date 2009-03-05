@@ -5,7 +5,7 @@
 // DatastorePDO/AllTests.php
 //              Unit test suite for the DatastorePDO component
 //
-//              Part of the Modular Framework for PHP appliations
+//              Part of the Methodosity Framework for PHP appliations
 //              http://blog.stuartherbert.com/php/mf/
 //
 // Author       Stuart Herbert
