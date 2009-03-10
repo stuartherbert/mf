@@ -21,6 +21,7 @@
 // 2008-03-16   SLH     Separated out from Datastore component
 // 2008-08-12   SLH     Added improved error checking to catch rejected
 //                      SQL statements
+// 2009-03-10   SLH     Fixes for complex primary keys
 // ========================================================================
 
 // ========================================================================
@@ -75,9 +76,17 @@ class DatastorePDO_Statement extends DatastoreRdbms_Statement
                 }
 
                 $aReturn = array();
+
                 while ($aRec = $this->oStmt->fetch(PDO::FETCH_ASSOC))
                 {
-                        $aReturn[$aRec[$this->primaryKey]] = $aRec;
+                        if (!is_array($this->primaryKey))
+                        {
+                                $aReturn[$aRec[$this->primaryKey]] = $aRec;
+                        }
+                        else
+                        {
+                                $aReturn[] = $aRec;
+                        }
                 }
 
                 if (count($aReturn) == 0)

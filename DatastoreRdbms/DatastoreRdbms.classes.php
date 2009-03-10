@@ -20,6 +20,7 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2009-02-28   SLH     Separated out from Datastore library
+// 2009-03-10   SLH     Fixes for models with complex primary keys
 // ========================================================================
 
 // ========================================================================
@@ -381,7 +382,17 @@ class DatastoreRdbms_Query extends Datastore_Query
                 }
                 else
                 {
-                	$sql .= ' order by ' . $this->currentView->oDef->getPrimaryKey() . ' asc';
+                        // primary key may be an array
+                        if ($this->currentView->oDef->getPrimaryKeyType() == Model_Definition::PRIMARY_KEY_SIMPLE)
+                        {
+                                $sql .= ' order by ' . $this->currentView->oDef->getPrimaryKey() . ' asc';
+                        }
+                        else
+                        {
+                                $primaryKeys = $this->currentView->oDef->getPrimaryKey();
+                                $sql .= ' order by ' . implode(' asc,', $primaryKeys) . ' asc' ;
+
+                        }
                 }
 
                 constraint_mustBeString($sql);

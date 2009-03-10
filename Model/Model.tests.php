@@ -22,9 +22,11 @@
 // 2008-07-28   SLH     Created
 // 2008-08-07   SLH     Models no longer know/care about which 'table'
 //                      they are stored in
+// 2009-03-09   SLH     Added tests for models with complicated primary
+//                      keys
 // ========================================================================
 
-class Test_Model_Requirements extends Model
+class Test_Model_Requirement extends Model
 {
 
 }
@@ -39,6 +41,31 @@ class Test_Model_Proposal extends Model
 
 }
 
+class Test_Model_Note extends Model
+{
+
+}
+
+class Test_Model_Author extends Model
+{
+
+}
+
+class Test_Model_Note_Author extends Model
+{
+
+}
+
+class Test_Model_Tag extends Model
+{
+
+}
+
+class Test_Model_Note_Tag extends Model
+{
+
+}
+
 class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 {
 	public function setup()
@@ -48,11 +75,74 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 
         public function setupDefineModels()
         {
-        	$oDef = Model_Definitions::get('Test_Model_Requirements');
+        	$oDef = Model_Definitions::get('Test_Model_Requirement');
                 $oDef->addField('requirementsUid');
                 $oDef->addField('title');
                 $oDef->addField('summary');
                 $oDef->addField('description');
+                $oDef->setPrimaryKey('requirementsUid');
+
+                $oDef = Model_Definitions::get('Test_Model_Note');
+                $oDef->addField('name');
+                $oDef->addField('version');
+                $oDef->addField('value');
+                $oDef->addField('authorName');
+                $oDef->setPrimaryKey(array('name', 'version'));
+                $oDef->hasOne('author')
+                     ->ourFieldIs('authorName')
+                     ->theirModelIs('Test_Model_Author')
+                     ->theirFieldIs('name');
+                $oDef->hasMany('tags')
+                     ->ourFieldsAre(array('name', 'version'))
+                     ->theirModelIs('Test_Model_Tag')
+                     ->theirFieldsAre(array('noteName', 'noteVersion'))
+                     ->joinUsing('Test_Model_Note_Tag', 'tag');
+
+                $oDef = Model_Definitions::get('Test_Model_Author');
+                $oDef->addField('id');
+                $oDef->addField('name');
+                $oDef->setPrimaryKey('id');
+                $oDef->hasMany('notes')
+                     ->ourFieldIs('name')
+                     ->theirModelIs('Test_Model_Note')
+                     ->theirFieldIs('authorName');
+
+                $oDef = Model_Definitions::get('Test_Model_Note_Author');
+                $oDef->addField('authorName');
+                $oDef->addField('noteName');
+                $oDef->addField('noteVersion');
+                $oDef->setPrimaryKey(array('authorName', 'noteName', 'noteVersion'));
+                $oDef->hasOne('note')
+                     ->ourFieldsAre(array('noteName', 'noteVersion'))
+                     ->theirModelIs('Test_Model_Note')
+                     ->theirFieldsAre(array('name', 'version'));
+                $oDef->hasOne('author')
+                      ->ourFieldIs('authorName')
+                      ->theirModelIs('Test_Model_Note_Author')
+                      ->theirFieldIs('name');
+
+                $oDef = Model_Definitions::get('Test_Model_Tag');
+                $oDef->addField('name');
+                $oDef->setPrimaryKey('name');
+                $oDef->hasMany('notes')
+                     ->ourFieldIs('name')
+                     ->theirModelIs('Test_Model_Note')
+                     ->theirFieldIs('tagName')
+                     ->joinUsing('Test_Model_Note_Tag', 'note');
+
+                $oDef = Model_Definitions::get('Test_Model_Note_Tag');
+                $oDef->addField('noteName');
+                $oDef->addField('noteVersion');
+                $oDef->addField('tagName');
+                $oDef->setPrimaryKey(array('noteName', 'noteVersion', 'tagName'));
+                $oDef->hasOne('note')
+                     ->ourFieldsAre(array('noteName', 'noteVersion'))
+                     ->theirModelIs('Test_Model_Note')
+                     ->theirFieldsAre(array('name', 'version'));
+                $oDef->hasOne('tag')
+                     ->ourFieldIs('tagName')
+                     ->theirModelIs('Test_Model_Tag')
+                     ->theirFieldIs('name');
         }
 
         public function testCanDefineModel()

@@ -36,6 +36,13 @@
 // 2008-08-07   SLH     Model_Definitions no longer include the table
 //                      where a model is stored (storage location is
 //                      now Datastore-specific)
+// 2009-03-09   SLH     Models now support primary keys built from
+//                      multiple fields
+// ========================================================================
+
+// ========================================================================
+// TODO: make relationships support primary keys containing more than one
+//       field
 // ========================================================================
 
 class Model
@@ -411,7 +418,22 @@ implements Iterator
         public function getUniqueId ()
         {
                 $this->requireUniqueIdDefined();
-                return $this->getField($this->primaryKey);
+
+                // is our primary key one field, or several?
+                if (!is_array($this->primaryKey))
+                {
+                        // it is one field
+                        return $this->getField($this->primaryKey);
+                }
+
+                // if we get here, then the primary key is several fields
+                $return = array();
+                foreach ($this->primaryKey as $field)
+                {
+                        $return[$field] = $this->getField($field);
+                }
+
+                return $return;
         }
 
         public function resetUniqueId ()
@@ -419,7 +441,22 @@ implements Iterator
                 $this->requireWritable();
 
                 $this->requireUniqueIdDefined();
-                return $this->resetField($this->primaryKey);
+
+                // do we have a primary key consisting of one field, or
+                // of several fields?
+
+                if (!is_array($this->primaryKey))
+                {
+                        return $this->resetField($this->primaryKey);
+                }
+
+                // we have several fields in our primary key
+                foreach ($this->primaryKey as $field)
+                {
+                        $this->resetField($field);
+                }
+
+                return true;
         }
 
         public function setUniqueId ($value)
@@ -427,13 +464,51 @@ implements Iterator
                 $this->requireWritable();
 
                 $this->requireUniqueIdDefined();
-                return $this->setField($this->primaryKey, $value);
+
+                // do we have one field in our primary key, or several
+                // fields?
+                if (!is_array($this->primaryKey))
+                {
+                        // just one field
+                        constraint_mustNotBeArray($value);
+                        return $this->setField($this->primaryKey, $value);
+                }
+
+                // if we get here, then we have several fields in our
+                // primary key
+
+                constraint_mustBeArray($value);
+                foreach ($this->primaryKey as $field)
+                {
+                        $this->setField($field, $value[$field]);
+                }
+
+                return true;
         }
 
         public function hasUniqueId()
         {
                 $this->requireUniqueIdDefined();
-                return $this->hasField($this->primaryKey);
+                
+                // do we have one field in our primary key, or several
+                // fields?
+                
+                if (!is_array($this->primaryKey))
+                {
+                        // we have one field
+                        return $this->hasField($this->primaryKey);
+                }
+
+                // we have several fields
+                foreach ($this->primaryKey as $field)
+                {
+                        if (!$this->hasField($field))
+                        {
+                                return false;
+                        }
+                }
+
+                return true;
         }
 
         public function hasUniqueIdDefined()
@@ -685,6 +760,7 @@ final class Model_Definitions
 class Model_Definition
 {
         protected $primaryKey           = null;
+        protected $primaryKeyType       = null;
         protected $autoPrimaryKey       = true;
         protected $aForeignKeys         = array();
         protected $aFields              = array();
@@ -717,6 +793,9 @@ class Model_Definition
         const SOURCE_NON_DB     = 3;
         const SOURCE_END        = 4;
 
+        const PRIMARY_KEY_SIMPLE  = 1;
+        const PRIMARY_KEY_COMPLEX = 2;
+
         public function __construct($modelName)
         {
                 // echo "  Creating new definition for $modelName\n";
@@ -742,14 +821,36 @@ class Model_Definition
                 return $this->primaryKey;
         }
 
+        public function getPrimaryKeyType()
+        {
+                return $this->primaryKeyType;
+        }
+
         public function setPrimaryKey ($primaryKey)
         {
-                if (!$this->isValidFieldName($primaryKey))
+                if (!is_array($primaryKey))
                 {
-                        throw new Model_E_NoSuchField($primaryKey, $this->getModelName());
-                }
+                        if (!$this->isValidFieldName($primaryKey))
+                        {
+                                throw new Model_E_NoSuchField($primaryKey, $this->getModelName());
+                        }
 
-                $this->primaryKey = $primaryKey;
+                        $this->primaryKey     = $primaryKey;
+                        $this->primaryKeyType = Model_Definition::PRIMARY_KEY_SIMPLE;
+                }
+                else
+                {
+                        foreach ($primaryKey as $field)
+                        {
+                                if (!$this->isValidFieldName($field))
+                                {
+                                        throw new Model_E_NoSuchField($field, $this->getModelName());
+                                }
+                        }
+
+                        $this->primaryKey     = $primaryKey;
+                        $this->primaryKeyType = Model_Definition::PRIMARY_KEY_COMPLEX;
+                }
         }
 
         public function setPrimaryKeyIsAutoGenerated($isAuto = true)
@@ -840,9 +941,21 @@ class Model_Definition
                 return array_intersect_key($aFieldsFromSource, $aFieldsFromView);
         }
 
-        public function getFields ()
+        public function getFields ($fieldNames = array())
         {
-                return $this->aFields;
+                // if no names asked for, return the lot
+                if (count($fieldNames) == 0)
+                        return $this->aFields;
+
+                // return only the requested fields
+                $return = array();
+                foreach ($fieldNames as $fieldName)
+                {
+                        $this->requireValidFieldName($fieldName);
+                        $return[$fieldName] = $this->aFields[$fieldName];
+                }
+
+                return $return;
         }
 
         public function getMandatoryFields ()
@@ -902,10 +1015,10 @@ class Model_Definition
                         throw new Model_E_ForeignKeyNotDefined($this->getModelName(), $alias);
                 }
 
-                $aMap['ourField']   = $oRelationship->getOurField();
-                $aMap['theirField'] = $oRelationship->getTheirField();
+                $map['ourFields']   = $oRelationship->getOurFields();
+                $map['theirFields'] = $oRelationship->getTheirFields();
 
-                return $aMap;
+                return $map;
         }
 
         // ================================================================
@@ -1183,57 +1296,6 @@ class Model_Definition
         }
 
         // ----------------------------------------------------------------
-        // Create a many:many relationship between this table and another
-        // table
-        //
-        // Use this method when you want findFromThis() to return
-        // a Datastore_Recordset
-        //
-        // returns: Datastore_Relationship
-        //          An object defining the relationship
-
-        public function sharesMany($alias)
-        {
-                constraint_mustBeString($alias);
-
-                $oRelationship = new Model_Relationship($this);
-                $oRelationship->sharesMany($alias);
-
-                $this->addRelationship($oRelationship, $alias);
-
-                return $oRelationship;
-        }
-
-        public function doesShareMany($oRecordB)
-        {
-                if ($oRecordB instanceof Model_Base)
-                {
-                        $theirRecord = $oRecordB->oDef->getModelName();
-                }
-                else if ($oRecordB instanceof Model_Definition)
-                {
-                        $theirRecord = $a_oRecordB->getModelName();
-                }
-                else
-                {
-                        // FIX ME: what are we going to throw here?
-                        throw new Exception();
-                }
-
-                // do we have a relationship between this record and
-                // record B?
-
-                $oRelationship = $this->getRelationship($theirRecord);
-                if ($oRelationship === null)
-                {
-                        // no, we do not
-                        return false;
-                }
-
-                return $oRelationship->isSharedByMany();
-        }
-
-        // ----------------------------------------------------------------
         // this method should only be called by the Model_Relationship
         // class
 
@@ -1457,14 +1519,17 @@ class Model_Relationship
         // ----------------------------------------------------------------
         // Record A's model
 
-        protected $oOurDef = null;
+        protected $ourModelDef    = null;
+        protected $ourFieldType   = null;
+        protected $ourFields      = null;
 
         // ----------------------------------------------------------------
         // Record B's model
 
-        protected $oTheirDef = null;
+        protected $theirModelDef  = null;
+        protected $theirFieldType = null;
+        protected $theirFields    = null;
 
-        // ----------------------------------------------------------------
         // Record B's name
         //
         // When a relationship is defined, we cannot guarantee that record
@@ -1474,25 +1539,13 @@ class Model_Relationship
 
         protected $theirModelName = null;
 
-        // ----------------------------------------------------------------
-        // Record B's alias
-        //
-        // When a many:many relationship is defined, we need to know which
-        // alias on record B we should use to retrieve the list of records
-        // that we are actually interested in
-        //
-        // This field will always be NULL for all other relationship
-        // types
-
-        protected $theirModelAlias = null;
-
         // ================================================================
         // Constructor
         // ================================================================
 
-        public function __construct(Model_Definition $oDefA)
+        public function __construct(Model_Definition $ourModelDef)
         {
-                $this->oOurDef = $oDefA;
+                $this->ourModelDef = $ourModelDef;
         }
 
         // ================================================================
@@ -1541,27 +1594,6 @@ class Model_Relationship
                 }
         }
 
-        // ----------------------------------------------------------------
-        // Set the relationship to be many:many
-        //
-        // We set the relationship to be many:many (SHARED_MANY), and we
-        // set record B in the relationship to be $recordB.
-        //
-        // returns: self
-
-        public function sharesMany()
-        {
-                if ($this->relationship === null)
-                {
-                        $this->relationship = Model_Relationship::SHARES_MANY;
-                        return $this;
-                }
-                else
-                {
-                	return $this->relationship & Model_Relationship::SHARES_MANY;
-                }
-        }
-
         // ================================================================
         // Use these methods to add detail to the relationship
         // ================================================================
@@ -1569,17 +1601,10 @@ class Model_Relationship
         // ----------------------------------------------------------------
         // Set the name of record B
 
-        public function theirModelIs($modelB, $aliasB = null)
+        public function theirModelIs($modelB)
         {
                 constraint_mustBeString($modelB);
                 $this->theirModelName = $modelB;
-
-                if ($this->sharesMany())
-                {
-                        // we also need the alias
-                        constraint_mustBeString($aliasB);
-                        $this->theirModelAlias = $aliasB;
-                }
 
                 return $this;
         }
@@ -1595,7 +1620,16 @@ class Model_Relationship
 
         public function theirFieldIs($fieldName)
         {
-                return $this->setConstraint('recordBKey', $fieldName);
+                constraint_mustBeString($fieldName);
+                $this->theirFields = array($fieldName);
+                return $this;
+        }
+
+        public function theirFieldsAre($fieldNames)
+        {
+                constraint_mustBeArray($fieldNames);
+                $this->theirFields = $fieldNames;
+                return $this;
         }
 
         // ----------------------------------------------------------------
@@ -1618,17 +1652,15 @@ class Model_Relationship
 
         public function ourFieldIs($fieldName)
         {
-                return $this->setConstraint('recordAKey', $fieldName);
+                constraint_mustBeString($fieldName);
+                $this->ourFields = array($fieldName);
+                return $this;
         }
 
-        // ----------------------------------------------------------------
-        // Helper method for getting / setting constraints
-
-        protected function setConstraint($key, $value)
+        public function ourFieldsAre($fieldNames)
         {
-                constraint_mustBeString($key);
-
-                $this->aConstraints[$key] = $value;
+                constraint_mustBeArray($fieldNames);
+                $this->ourFields = $fieldNames;
                 return $this;
         }
 
@@ -1646,24 +1678,14 @@ class Model_Relationship
         //              Returns null if $a_szField is blank, and the field
         //              name has not been set yet
 
-        public function getTheirField()
+        public function getTheirFields()
         {
-                return $this->getConstraint('recordBKey');
+                return $this->theirFields;
         }
 
-        public function getOurField()
+        public function getOurFields()
         {
-                return $this->getConstraint('recordAKey');
-        }
-
-        protected function getConstraint($key)
-        {
-                if (!isset($this->aConstraints[$key]))
-                {
-                        return null;
-                }
-
-                return $this->aConstraints[$key];
+                return $this->ourFields;
         }
 
         public function getTheirModelName()
@@ -1674,7 +1696,7 @@ class Model_Relationship
         public function cloneTheirRecord()
         {
                 $this->requireTheirModelDefinition();
-                $oRecordB = $this->oTheirDef->getNewRecord();
+                $oRecordB = $this->theirModelDef->getNewRecord();
 
                 return $oRecordB;
         }
@@ -1705,12 +1727,12 @@ class Model_Relationship
         {
                 $this->requireTheirModelName();
 
-                if (isset($this->oTheirDef))
+                if (isset($this->theirModelDef))
                 {
                         return;
                 }
 
-                $this->oTheirDef = Model_Definitions::get($this->theirModelName);
+                $this->theirModelDef = Model_Definitions::get($this->theirModelName);
         }
 }
 
@@ -1721,7 +1743,6 @@ class Model_View
 {
         protected $name         = null;
         protected $aFields      = array();
-        protected $primaryKey   = null;
 
         public $oDef = null;
 
@@ -1757,14 +1778,6 @@ class Model_View
 
         public function getFields()
         {
-                // make sure the primary key is set
-                if (!isset($this->primaryKey))
-                {
-                	$this->primaryKey = $this->oDef->getPrimaryKey();
-                        $this->withField($this->primaryKey);
-                }
-
-                // now we can return all the fields
                 return $this->aFields;
         }
 }

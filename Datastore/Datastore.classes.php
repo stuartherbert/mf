@@ -1073,12 +1073,12 @@ class Datastore_Record extends Core implements Iterator
                 if ($oRelationship->hasOne())
                 {
                         $oQuery->findFirst($oRelationship->getTheirModelName(), $view)
-                               ->withForeignKey($oRelationship->getTheirField(), $this->getField($oRelationship->getOurField()));
+                               ->withForeignKey($oRelationship->getTheirFields(), $this->getFields($oRelationship->getOurFields()));
                 }
                 else
                 {
                 	$oQuery->findEvery($oRelationship->getTheirModelName(), $view)
-                               ->withForeignKey($oRelationship->getTheirField(), $this->getField($oRelationship->getOurField()));
+                               ->withForeignKey($oRelationship->getTheirFields(), $this->getFields($oRelationship->getOurFields()));
                 }
 
                 // step 4: retrieve the data
@@ -1668,13 +1668,19 @@ class Datastore_Query
 
                 $oMap = $this->oDB->getStorageForModel($this->currentView->oDef->getModelName());
 
-                $this->searchTerms[] = array
-                (
-                        'type'  => Datastore_Query::TYPE_FIELD,
-                        'table' => $oMap->getTable(),
-                        'field' => $oRelationship->getTheirField(),
-                        'value' => $model->getField($oRelationship->getOurField())
-                );
+                $fields = $oRelationship->getTheirFields();
+                $values = $model->getFields($oRelationship->getOurFields());
+
+                foreach ($fields as $fieldName)
+                {
+                        $this->searchTerms[] = array
+                        (
+                                'type'  => Datastore_Query::TYPE_FIELD,
+                                'table' => $oMap->getTable(),
+                                'field' => $fieldName,
+                                'value' => $values[$fieldName],
+                        );
+                }
 
                 $this->primaryKey    = $this->currentView->oDef->getPrimaryKey();
                 $this->extractInto[] = $this->currentView;
@@ -1735,6 +1741,8 @@ class Datastore_Query
                 return $this;
         }
 
+        // note: $field could be an array ... in which case, $value must
+        //       also be an array
         public function withForeignKey($field, $value)
         {
                 $oMap = $this->oDB->getStorageForModel($this->currentView->oDef->getModelName());
@@ -1767,11 +1775,11 @@ class Datastore_Query
 
                 $this->searchTerms[] = array
                 (
-                        'type'       => Datastore_Query::TYPE_JOIN,
-                        'ourTable'   => $oOurMap->getTable(),
-                        'ourField'   => $oRelationship->getOurField(),
-                        'theirTable' => $oTheirMap->getTable(),
-                        'theirField' => $oRelationship->getTheirField(),
+                        'type'        => Datastore_Query::TYPE_JOIN,
+                        'ourTable'    => $oOurMap->getTable(),
+                        'ourFields'   => $oRelationship->getOurFields(),
+                        'theirTable'  => $oTheirMap->getTable(),
+                        'theirFields' => $oRelationship->getTheirFields(),
                 );
 
                 $this->extractInto[] = $theirModelDef->getView($view);
