@@ -38,6 +38,8 @@
 //                      now Datastore-specific)
 // 2009-03-09   SLH     Models now support primary keys built from
 //                      multiple fields
+// 2009-03-11   SLH     Added basic support for many:many relationships
+//                      using 'foundVia()' method
 // ========================================================================
 
 // ========================================================================
@@ -1498,18 +1500,13 @@ class Model_Relationship
         // ----------------------------------------------------------------
         // Used to indicate a many:many relationship between two tables
 
-        const SHARES_MANY = 4;
-
-        // ----------------------------------------------------------------
-        // Used to indicate that record A belongs to record B
-
-        const BELONGS_TO = 8;
+        const MANY_TO_MANY = 4;
 
         // ----------------------------------------------------------------
         // Used in robustness checks, to make sure that the HAS_* constant
         // used is within boundaries
 
-        const HAS_MAX = 0;
+        const HAS_MAX = 7;
 
         // ----------------------------------------------------------------
         // What type of relationship are we modelling?
@@ -1594,6 +1591,16 @@ class Model_Relationship
                 }
         }
 
+        public function hasManyToMany()
+        {
+                if ($this->relationship === null)
+                {
+                        return false;
+                }
+
+                return $this->relationship & Model_Relationship::MANY_TO_MANY;
+        }
+        
         // ================================================================
         // Use these methods to add detail to the relationship
         // ================================================================
@@ -1664,6 +1671,20 @@ class Model_Relationship
                 return $this;
         }
 
+        // ----------------------------------------------------------------
+        // teach us about a join table
+
+        public function foundVia($alias, $aliasAlias)
+        {
+                constraint_mustBeString($alias);
+                constraint_mustBeString($aliasAlias);
+
+                $this->findViaAlias = $alias;
+                $this->findViaAliasAlias = $aliasAlias;
+
+                $this->relationship = $this->relationship & Model_Relationship::MANY_TO_MANY;
+        }
+        
         // ================================================================
         // Use these methods to learn about the relationship
         // ================================================================
