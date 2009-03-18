@@ -29,6 +29,16 @@
 // Tests against a SQL database
 // ------------------------------------------------------------------------
 
+// bootstrap the framework
+define('UNIT_TEST', true);
+define('APP_TOPDIR', realpath(dirname(__FILE__) . '/../../'));
+require_once(APP_TOPDIR . '/mf/mf.inc.php');
+
+// load additional files we explicitly require
+__mf_require_once('Testsuite');
+require_once(APP_TOPDIR . '/mf/Datastore/Datastore.tests.inc.php');
+
+/*
 class DatastoreSQL_MySQL_Record_Tests extends DatastoreXXX_Record_Tests
 {
         public function setup ()
@@ -58,4 +68,5 @@ class DatastoreSQL_MySQL_Query_Tests extends DatastoreXXX_Query_Tests
         }
 }
 
+*/
 ?>
