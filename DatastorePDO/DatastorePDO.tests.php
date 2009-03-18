@@ -23,13 +23,23 @@
 // 2008-07-28   SLH     We now define the test models during setup()
 // 2008-08-07   SLH     We now define where models are stored during
 //                      setup()
+// 2009-03-18   SLH     Fixed up to run using the new task-based approach
 // ========================================================================
 
 // ========================================================================
 // Tests against a PDO database
 // ------------------------------------------------------------------------
 
-// registerTests('DatastorePDO_Record_Tests');
+// bootstrap the framework
+define('UNIT_TEST', true);
+define('APP_TOPDIR', realpath(dirname(__FILE__) . '/../../'));
+require_once(APP_TOPDIR . '/mf/mf.inc.php');
+
+// load additional files we explicitly require
+__mf_require_once('Testsuite');
+require_once(APP_TOPDIR . '/mf/Datastore/Datastore.tests.inc.php');
+
+Testsuite_registerTests('DatastorePDO_Record_Tests');
 class DatastorePDO_Record_Tests extends DatastoreXXX_Record_Tests
 {
         public function setup ()
@@ -38,7 +48,7 @@ class DatastorePDO_Record_Tests extends DatastoreXXX_Record_Tests
                 createTestSqlDatabase();
                 defineDatastoreTestModels();
 
-                $oConn         = new Datastore_PDO_Connector('mysql:host=localhost;dbname=mfTest', 'root', '');
+                $oConn         = new DatastorePDO_Connector('mysql:host=localhost;dbname=mfTest', 'root', '');
                 $this->db      = new Datastore($oConn);
                 $this->fixture = new Datastore_Record('Test_Customer');
 
@@ -46,6 +56,7 @@ class DatastorePDO_Record_Tests extends DatastoreXXX_Record_Tests
         }
 }
 
+Testsuite_registerTests('DatastorePDO_Query_Tests');
 class DatastorePDO_Query_Tests extends DatastoreXXX_Query_Tests
 {
         public function setup ()
@@ -53,40 +64,13 @@ class DatastorePDO_Query_Tests extends DatastoreXXX_Query_Tests
                 createTestSqlDatabase();
                 defineDatastoreTestModels();
 
-                $oConn         = new Datastore_PDO_Connector('mysql:host=localhost;dbname=mfTest', 'root', '');
+                $oConn         = new DatastorePDO_Connector('mysql:host=localhost;dbname=mfTest', 'root', '');
                 $this->db      = new Datastore($oConn);
                 $this->fixture = new Datastore_Record('Test_Customer');
 
                 defineDatastoreTestStorage_RDBMS($this->db);
         }
 }
-
-/*
-registerTests('DatastorePDO_Table_Tests');
-class DatastorePDO_Table_Tests extends DatastoreXXX_Table_Tests
-{
-        public function setup ()
-        {
-                createTestSqlDatabase();
-
-                $oConn         = new Datastore_PDO_Connector('mysql:host=localhost;dbname=datastoreTest', 'root', '');
-                $this->db      = new Datastore($oConn);
-        }
-}
-
-// registerTests('DatastorePDO_ListQuery_Tests');
-class DatastorePDO_ListQuery_Tests extends DatastoreXXX_ListQuery_Tests
-{
-        public function setup ()
-        {
-                createTestSqlDatabase();
-
-                $oConn         = new Datastore_PDO_Connector('mysql:host=localhost;dbname=datastoreTest', 'root', '');
-                $this->db      = new Datastore($oConn);
-        }
-}
-
-*/
 
 function createTestSqlDatabase()
 {
