@@ -30,6 +30,7 @@ class AllTests
 
 	public static function addTestsuite($suiteName)
         {
+                echo "Registering test suite $suiteName/n";
         	self::$testSuites[] = $suiteName;
         }
 

@@ -21,6 +21,8 @@
 // ------------------------------------------------------------------------
 // 2009-02-12   SLH     Created from previously separate include files
 // 2009-03-01   SLH     Made App the global place holder for everything else
+// 2009-03-18   SLH     Added support for loading mock objects for unit
+//                      testing
 // ========================================================================
 
 // ========================================================================
@@ -99,6 +101,22 @@ function __app_autoload($classname)
         app_include_once($classPrefix);        
 }
 
+function __test_autoload($classname)
+{
+        // step 1: work out the name of the module holding the class
+        $classPrefixPos = strpos($classname, '_');
+        if ($classPrefixPos > 0)
+        {
+                $classPrefix    = substr($classname, 0, $classPrefixPos);
+        }
+        else
+        {
+                $classPrefix = $classname;
+        }
+
+        __test_require_once($classPrefix);
+}
+
 // stack the autoloaders
 //
 // non-framework code gets the priority, so that developers can completely
@@ -106,6 +124,9 @@ function __app_autoload($classname)
 //
 // it is slower, but that's the price of trying to Do The Right Thing
 
+if (defined('UNIT_TEST'))
+        spl_autoload_register('__test_require_once');
+        
 spl_autoload_register('__app_autoload');
 spl_autoload_register('__mf_autoload');
 
@@ -170,6 +191,26 @@ function __mf_require_once($moduleName)
                 require_once($include_file);
                 return;
         }
+}
+
+function __test_require_once($moduleName)
+{
+        if (!defined(TEST_DIRS))
+                return;
+                
+        foreach (TEST_DIRS as $testDir)
+        {
+                $include_file = $testDir . '/' . $moduleName . '.inc.php';
+
+                if (file_exists($include_file))
+                {
+                        require_once($include_file);
+                        return;
+                }
+        }
+
+        // if we get to here, there is no special mock object
+        __mf_require_once($moduleName);
 }
 
 // ========================================================================
