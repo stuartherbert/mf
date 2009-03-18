@@ -20,9 +20,18 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2007-08-11   SLH     Consolidated from individual files
+// 2009-03-18   SLH     Fixed up to use the new task-based approach
 // ========================================================================
 
-registerTests('PHP_Array_Tests');
+// bootstrap the framework
+define('UNIT_TEST', true);
+define('APP_TOPDIR', realpath(dirname(__FILE__) . '/../../'));
+require_once(APP_TOPDIR . '/mf/mf.inc.php');
+
+// load additional files we explicitly require
+__mf_require_once('Testsuite');
+
+Testsuite_registerTests('PHP_Array_Tests');
 class PHP_Array_Tests extends PHPUnit_Framework_TestCase
 {
         public function setup ()
@@ -1008,7 +1017,7 @@ function PHP_Array_filter_callback($value)
         return false;
 }
 
-registerTests('PHP_Network_Tests');
+Testsuite_registerTests('PHP_Network_Tests');
 class PHP_Network_Tests extends PHPUnit_Framework_TestCase
 {
         public $aIpAddresses = array
