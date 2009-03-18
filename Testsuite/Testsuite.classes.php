@@ -22,6 +22,8 @@
 // 2008-07-19   SLH     Created
 // 2008-07-25   SLH     Renamed TestSuite to AllTests to silence
 //                      PHPUnit warnings
+// 2009-03-18   SLH     Fixed typo in message of which test suites have
+//                      been registered
 // ========================================================================
 
 class AllTests
@@ -30,7 +32,7 @@ class AllTests
 
 	public static function addTestsuite($suiteName)
         {
-                echo "Registering test suite $suiteName/n";
+                echo "Registering test suite $suiteName\n";
         	self::$testSuites[] = $suiteName;
         }
 

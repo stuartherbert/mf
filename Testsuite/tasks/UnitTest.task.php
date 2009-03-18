@@ -15,6 +15,13 @@
 //
 // ========================================================================
 
+// ========================================================================
+// When         Who     What
+// ------------------------------------------------------------------------
+// 2009-03-18   SLH     Created
+// 2009-03-18   SLH     No longer load the 'AllTests' file
+// ========================================================================
+
 // $argv[2] contains the module we want to run tests for
 
 if (!isset($argv[2]) || strlen(trim($argv[2])) == 0)
@@ -30,6 +37,6 @@ if (!is_dir(APP_TOPDIR . '/' . $argv[2]))
 }
 
 // if we get here, we are going to run PHPUnit in the specified directory
-system("cd " . escapeshellcmd(APP_TOPDIR . '/' . $argv[2]) . "; phpunit AllTests");
+system("cd " . escapeshellcmd(APP_TOPDIR . '/' . $argv[2]) . "; phpunit AllTests " . basename($argv[2]) . '.tests.php');
 
 ?>

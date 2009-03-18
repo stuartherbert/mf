@@ -22,6 +22,8 @@
 // 2008-03-16   SLH     Separated out from the Datastore component
 // 2008-08-12   SLH     Added support for SQLite2
 // 2009-02-29   SLH     Separated out from the DatastoreSQL module
+// 2009-03-18   SLH     Fixes for supporting complex primary keys
+//                      (more fixes required as we get better tests)
 // ========================================================================
 
 class DatastoreMySql_Connector extends DatastoreRdbms_Connector
@@ -80,7 +82,8 @@ class DatastoreMySql_Connector extends DatastoreRdbms_Connector
 
         public function escapeString($string)
         {
-                return mysql_real_escape_string($string);
+                $this->requireConnected();
+                return mysql_real_escape_string($string, $this->oDB);
         }
 
         public function errorString()

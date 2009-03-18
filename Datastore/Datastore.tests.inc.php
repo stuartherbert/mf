@@ -33,6 +33,8 @@
 //                      model
 // 2008-08-13   SLH     Added testCanRetrieveAllRowsFromATable() to
 //                      DatastoreXXX_Query_Tests
+// 2009-03-18   SLH     Added tests to trap errors introduced by support
+//                      for complex primary keys
 // ========================================================================
 
 // ========================================================================
@@ -82,6 +84,7 @@ function defineDatastoreTestModels()
         $oMeta->setPrimaryKey('customerId');
 
         $oMeta->addView('name')
+              ->withField('customerId')
               ->withField('customerFirstName')
               ->withField('customerSurname');
 
@@ -146,11 +149,12 @@ function defineDatastoreTestModels()
         $oMeta->addField('isActive');
         $oMeta->setPrimaryKey('pid');
 
+/*
         $oMeta->sharesMany('relatedProducts')
               ->ourFieldIs('pid')
               ->theirModelIs('Test_RelatedProducts', 'relatedProducts')
               ->theirFieldIs('productId1');
-
+*/
 
         $oDef = Model_Definitions::get('Test_RelatedProducts');
         $oDef->addField('productId1');
@@ -231,6 +235,30 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                 $this->assertType('string', $this->fixture->customerFirstName);
         }
 
+        public function testCanRetrieveForeignKeys()
+        {
+                $order = new Datastore_Record('Test_Order');
+                $order->retrieve($this->db, 1);
+
+                // make sure we have the record
+                $this->assertEquals(1, $order->orderId);
+                $this->assertEquals(1, $order->masterCustomerId);
+
+                // now, let's get the relationship between order and
+                // customer
+
+                $oRelationship = $order->oModel->getDefinition()->getRelationship('customer');
+                $this->assertTrue ($oRelationship instanceof Model_Relationship);
+
+                // make sure the relationship tells us what we expect
+                $this->assertEquals ($oRelationship->getOurFields(), array('masterCustomerId'));
+
+                // make sure we get the right thing back when testing
+                // the relationship
+                $fields = $order->getFields($oRelationship->getOurFields());
+                $this->assertEquals(1, count($fields));
+        }
+        
         public function testCanRetrieveRelatedRecord()
         {
 //                $this->setup();
@@ -379,7 +407,9 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                 // step 2: now prove that the view only has a subset of
                 //         the information
 
+                $GLOBALS['VAR_DUMP'] = true;
                 $oCustomer = $oOrder->retrieve_customer_name($this->db);
+                $GLOBALS['VAR_DUMP'] = false;
                 $this->assertTrue($oCustomer instanceof Datastore_Record);
                 $this->assertEquals(1, $oCustomer->getUniqueId());
                 $this->assertEquals('Stuart', $oCustomer->customerFirstName);
@@ -524,6 +554,8 @@ class DatastoreXXX_Query_Tests extends PHPUnit_Framework_TestCase
                        ->findFirst('Test_Order')
                        ->withUniqueId(1)
                        ->go();
+
+                $this->assertEquals(1, $oOrder->orderId);
 
                 $orders = $this->db->newQuery()
                         ->findAll('lineItems', $oOrder)

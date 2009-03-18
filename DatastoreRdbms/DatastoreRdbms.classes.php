@@ -23,6 +23,8 @@
 // 2009-03-10   SLH     Fixes for models with complex primary keys
 // 2009-03-17   SLH     Throw Datastore_E_RetrieveFailed() if the query
 //                      finds no matching rows
+// 2009-03-18   SLH     Fixes for supporting complex primary keys
+//                      (more fixes to come as we get better tests)
 // ========================================================================
 
 // ========================================================================
@@ -424,9 +426,15 @@ class DatastoreRdbms_Query extends Datastore_Query
 
         protected function buildRawQuery_join($searchTerm, &$queryBuilder)
         {
-                $queryBuilder['joins'][] = $searchTerm['theirTable']
-                                         . ' ON ' . $searchTerm['ourTable'] . '.' . $searchTerm['ourField']
-                                         . ' = ' . $searchTerm['theirTable'] . '.' . $searchTerm['theirField'];
+                reset($searchTerm['ourFields']);
+                foreach ($searchTerm['ourFields'] as $ourField)
+                {
+                        $queryBuilder['joins'][] = $searchTerm['theirTable']
+                                                 . ' ON ' . $searchTerm['ourTable'] . '.' . $ourField
+                                                 . ' = ' . $searchTerm['theirTable'] . '.' . current($searchTerm['theirFields']);
+                        
+                        next($searchTerm['theirFields']);
+                }
         }
 
         protected function buildRawQuery_expression($searchTerm, &$queryBuilder)

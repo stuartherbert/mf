@@ -60,6 +60,7 @@
 // 2009-03-17   SLH     Models do not have to be defined before we can
 //                      specify where they can be stored (required because
 //                      of move to autoload support)
+// 2009-03-18   SLH     Fixes for supporting complex primary keys
 // ========================================================================
 
 // ========================================================================
@@ -826,9 +827,9 @@ class Datastore_Record extends Core implements Iterator
                 return $this->oModel->getTable();
         }
 
-        public function getFields()
+        public function getFields($fieldNames = array())
         {
-                return $this->oModel->getFields();
+                return $this->oModel->getFields($fieldNames);
         }
 
         public function getMandatoryFields()
@@ -1076,15 +1077,30 @@ class Datastore_Record extends Core implements Iterator
 
                 $oQuery = $oDB->newQuery();
 
+                // we need to build up the list of field/value pairs to request
+                $theirFields = $oRelationship->getTheirFields();
+                $theirValues = $this->getFields($oRelationship->getOurFields());
+
+                reset($theirFields);
+                reset($theirValues);
+
+                $keyPairs = array();
+                foreach ($theirFields as $theirField)
+                {
+                        $keyPairs[$theirField] = current($theirValues);
+                        next($theirValues);
+                }
+
                 if ($oRelationship->hasOne())
                 {
+
                         $oQuery->findFirst($oRelationship->getTheirModelName(), $view)
-                               ->withForeignKey($oRelationship->getTheirFields(), $this->getFields($oRelationship->getOurFields()));
+                               ->withForeignKeys($keyPairs);
                 }
                 else
                 {
                 	$oQuery->findEvery($oRelationship->getTheirModelName(), $view)
-                               ->withForeignKey($oRelationship->getTheirFields(), $this->getFields($oRelationship->getOurFields()));
+                               ->withForeignKeys($keyPairs);
                 }
 
                 // step 4: retrieve the data
@@ -1677,6 +1693,8 @@ class Datastore_Query
                 $fields = $oRelationship->getTheirFields();
                 $values = $model->getFields($oRelationship->getOurFields());
 
+                reset($values);
+                
                 foreach ($fields as $fieldName)
                 {
                         $this->searchTerms[] = array
@@ -1684,8 +1702,10 @@ class Datastore_Query
                                 'type'  => Datastore_Query::TYPE_FIELD,
                                 'table' => $oMap->getTable(),
                                 'field' => $fieldName,
-                                'value' => $values[$fieldName],
+                                'value' => current($values),
                         );
+
+                        next($values);
                 }
 
                 $this->primaryKey    = $this->currentView->oDef->getPrimaryKey();
@@ -1747,19 +1767,29 @@ class Datastore_Query
                 return $this;
         }
 
-        // note: $field could be an array ... in which case, $value must
-        //       also be an array
-        public function withForeignKey($field, $value)
+        // from now on, we must pass in an array of key/value pairs
+
+        public function withForeignKey($key, $value)
         {
+                return $this->withForeignKeys(array($key => $value));
+        }
+        
+        public function withForeignKeys($keys)
+        {
+                constraint_mustBeArray($keys);
+
                 $oMap = $this->oDB->getStorageForModel($this->currentView->oDef->getModelName());
 
-                $this->searchTerms[] = array
-                (
-                        'type'  => Datastore_Query::TYPE_FIELD,
-                        'table' => $oMap->getTable(),
-                        'field' => $field,
-                        'value' => $value
-                );
+                foreach ($keys as $field => $value)
+                {
+                        $this->searchTerms[] = array
+                        (
+                                'type'  => Datastore_Query::TYPE_FIELD,
+                                'table' => $oMap->getTable(),
+                                'field' => $field,
+                                'value' => $value
+                        );
+                }
 
                 return $this;
         }

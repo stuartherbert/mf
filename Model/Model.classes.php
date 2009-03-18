@@ -40,6 +40,7 @@
 //                      multiple fields
 // 2009-03-11   SLH     Added basic support for many:many relationships
 //                      using 'foundVia()' method
+// 2009-03-18   SLH     Fixes for supporting complex primary keys
 // ========================================================================
 
 // ========================================================================
@@ -225,6 +226,23 @@ implements Iterator
                 $this->resetNeedSave();
         }
 
+        public function getFields($fields = array())
+        {
+                constraint_mustBeArray($fields);
+                if (count($fields) == 0)
+                {
+                        $fields = array_keys($this->aData);
+                }
+
+                $return = array();
+                foreach ($fields as $field)
+                {
+                        $return[$field] = $this->getField($field);
+                }
+
+                return $return;
+        }
+
         public function getField ($fieldName)
         {
                 $oDef = $this->getDefinition();
@@ -397,9 +415,9 @@ implements Iterator
                 return $this->getDefinition()->getPrimaryKey();
         }
 
-        public function getFields()
+        public function getFieldDefinitions($fieldNames = array())
         {
-                return $this->getDefinition()->getFields();
+                return $this->getDefinition()->getFields($fieldNames);
         }
 
         public function getMandatoryFields()
@@ -407,7 +425,7 @@ implements Iterator
                 return $this->getDefinition()->getMandatoryFields();
         }
 
-        public function getFieldsBySource($source)
+        public function getFieldDefinitionsBySource($source)
         {
                 return $this->getDefinition()->getFieldsBySource($source);
         }
