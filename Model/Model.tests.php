@@ -24,7 +24,16 @@
 //                      they are stored in
 // 2009-03-09   SLH     Added tests for models with complicated primary
 //                      keys
+// 2009-03-18   SLH     Fixed up to work with the new task-based approach
 // ========================================================================
+
+// bootstrap the framework
+define('UNIT_TEST', true);
+define('APP_TOPDIR', realpath(dirname(__FILE__) . '/../../'));
+require_once(APP_TOPDIR . '/mf/mf.inc.php');
+
+// load additional files we explicitly require
+__mf_require_once('Testsuite');
 
 class Test_Model_Requirement extends Model
 {
@@ -66,6 +75,7 @@ class Test_Model_Note_Tag extends Model
 
 }
 
+Testsuite_registerTests('Model_Definitions_Tests');
 class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 {
 	public function setup()
@@ -92,12 +102,14 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
                      ->ourFieldIs('authorName')
                      ->theirModelIs('Test_Model_Author')
                      ->theirFieldIs('name');
+                /*
                 $oDef->hasMany('tags')
                      ->ourFieldsAre(array('name', 'version'))
                      ->theirModelIs('Test_Model_Tag')
                      ->theirFieldsAre(array('noteName', 'noteVersion'))
                      ->joinUsing('Test_Model_Note_Tag', 'tag');
-
+                 */
+                
                 $oDef = Model_Definitions::get('Test_Model_Author');
                 $oDef->addField('id');
                 $oDef->addField('name');
@@ -124,12 +136,13 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
                 $oDef = Model_Definitions::get('Test_Model_Tag');
                 $oDef->addField('name');
                 $oDef->setPrimaryKey('name');
+                /*
                 $oDef->hasMany('notes')
                      ->ourFieldIs('name')
                      ->theirModelIs('Test_Model_Note')
                      ->theirFieldIs('tagName')
                      ->joinUsing('Test_Model_Note_Tag', 'note');
-
+                 */
                 $oDef = Model_Definitions::get('Test_Model_Note_Tag');
                 $oDef->addField('noteName');
                 $oDef->addField('noteVersion');
@@ -149,17 +162,17 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
         {
         	$this->setupDefineModels();
 
-                $oDef = Model_Definitions::get('Test_Model_Requirements');
+                $oDef = Model_Definitions::get('Test_Model_Requirement');
                 $this->assertTrue($oDef instanceof Model_Definition);
-                $this->assertTrue($oDef->getModelName() == 'Test_Model_Requirements');
+                $this->assertTrue($oDef->getModelName() == 'Test_Model_Requirement');
         }
 
         public function testAlwaysReceiveTheSameModel()
         {
         	$this->setupDefineModels();
 
-                $oDef1 = Model_Definitions::get('Test_Model_Requirements');
-                $oDef2 = Model_Definitions::get('Test_Model_Requirements');
+                $oDef1 = Model_Definitions::get('Test_Model_Requirement');
+                $oDef2 = Model_Definitions::get('Test_Model_Requirement');
 
                 $this->assertSame($oDef1, $oDef2);
         }
@@ -202,18 +215,18 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
         	$this->setupDefineModels();
 
                 // step 1: prove that we have models for this test
-                $oDef1 = Model_Definitions::get('Test_Model_Requirements');
+                $oDef1 = Model_Definitions::get('Test_Model_Requirement');
                 $this->assertTrue($oDef1 instanceof Model_Definition);
 
                 // step 2: get rid of one of the models
-                Model_Definitions::destroy('Test_Model_Requirements');
+                Model_Definitions::destroy('Test_Model_Requirement');
 
                 // step 3: prove that the model definition no longer
                 //         exists
                 $thrown = false;
                 try
                 {
-                	$oDef2 = Model_Definitions::getIfExists('Test_Model_Requirements');
+                	$oDef2 = Model_Definitions::getIfExists('Test_Model_Requirement');
                 }
                 catch (Model_E_NoSuchDefinition $e)
                 {
@@ -223,16 +236,17 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 
                 // step 4: when we re-create the model, prove that we
                 // get a different object to work with
-                $oDef3 = Model_Definitions::get('Test_Model_Requirements');
+                $oDef3 = Model_Definitions::get('Test_Model_Requirement');
                 $this->assertNotSame($oDef1, $oDef3);
 
                 // step 5: prove that we do get the same object if we
                 // ask for the definition a second time
-                $oDef4 = Model_Definitions::get('Test_Model_Requirements');
+                $oDef4 = Model_Definitions::get('Test_Model_Requirement');
                 $this->assertSame($oDef3, $oDef4);
         }
 }
 
+Testsuite_registerTests('Model_Tests');
 class Model_Tests extends PHPUnit_Framework_TestCase
 {
         public function setup()
@@ -242,7 +256,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function setupDefineModels()
         {
-                $oDef = Model_Definitions::get('Test_Model_Requirements');
+                $oDef = Model_Definitions::get('Test_Model_Requirement');
                 $oDef->addField('requirementsUid');
                 $oDef->addField('title');
                 $oDef->addField('summary');
@@ -253,12 +267,12 @@ class Model_Tests extends PHPUnit_Framework_TestCase
         {
         	$this->setupDefineModels();
 
-                $req   = new Test_Model_Requirements();
+                $req   = new Test_Model_Requirement();
                 $oDef1 = $req->getDefinition();
 
                 Model_Definitions::destroy();
 
-                $req2  = new Test_Model_Requirements();
+                $req2  = new Test_Model_Requirement();
                 $oDef2 = $req2->getDefinition();
 
                 $this->assertNotSame($oDef1, $oDef2);
