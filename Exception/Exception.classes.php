@@ -120,7 +120,7 @@ class Exception_Iterator implements Iterator
         private $oCurrent = null;
         private $level    = 0;
 
-        public function __construct(EnterpriseException $oException)
+        public function __construct(Exception_Enterprise $oException)
         {
                 $this->oStart = $oException;
                 $this->rewind();

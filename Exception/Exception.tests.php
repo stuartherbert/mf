@@ -16,21 +16,37 @@
 //
 // ========================================================================
 
-registerTests('EnterpriseException_Tests');
+// ========================================================================
+// When         Who     What
+// ------------------------------------------------------------------------
+// 2009-03-18   SLH     Added this header
+// 2009-03-18   SLH     Fixed up to work with the new task-based approach
+// 2009-03-18   SLH     Updated to incorporate error code support
+// ========================================================================
+//
+// bootstrap the framework
+define('UNIT_TEST', true);
+define('APP_TOPDIR', realpath(dirname(__FILE__) . '/../../'));
+require_once(APP_TOPDIR . '/mf/mf.inc.php');
+
+// load additional files we explicitly require
+__mf_require_once('Testsuite');
+
+Testsuite_registerTests('EnterpriseException_Tests');
 class EnterpriseException_Tests extends PHPUnit_Framework_TestCase
 {
         public function setup ()
         {
                 $e = new Exception('root cause', 1);
-                $this->fixture = new EnterpriseException('param 1: %s, param 2: %s', array ('array 1', 'array 2'), $e);
+                $this->fixture = new Exception_Enterprise(0, 'param 1: %s, param 2: %s', array ('array 1', 'array 2'), $e);
                 $this->type    = 'EnterpriseException';
                 $this->file    = basename(__FILE__);
-                $this->line    = 24;
+                $this->line    = 41;
         }
 
         public function testMessage()
         {
-                $this->assertEquals($this->type . ' : param 1: array 1, param 2: array 2', $this->fixture->getMessage());
+                $this->assertEquals('param 1: array 1, param 2: array 2', $this->fixture->getMessage());
         }
 
         public function testCode()
@@ -55,7 +71,7 @@ class EnterpriseException_Tests extends PHPUnit_Framework_TestCase
         }
 }
 
-registerTests('ExceptionIterator_Tests');
+Testsuite_registerTests('ExceptionIterator_Tests');
 class ExceptionIterator_Tests extends PHPUnit_Framework_TestCase
 {
         public function setup ()
@@ -64,14 +80,14 @@ class ExceptionIterator_Tests extends PHPUnit_Framework_TestCase
                 $e2 = new Exception_Technical('cause #1', array(), $e1);
                 $e3 = new Exception_Technical('cause #2', array(), $e2);
                 $e4 = new Exception_Technical('cause #3', array(), $e3);
-                $this->fixture = new ProcessException('it all went horribly wrong', array(), $e4);
-                $this->line    = 66;
+                $this->fixture = new Exception_Process(500, 1, 'it all went horribly wrong', array(), $e4);
+                $this->line    = 83;
         }
 
         public function testGetIterator()
         {
                 $iter = $this->fixture->getIterator();
-                $this->assertTrue($iter instanceof ExceptionIterator);
+                $this->assertTrue($iter instanceof Exception_Iterator);
         }
 
         public function testIsIterator()
@@ -94,7 +110,7 @@ class ExceptionIterator_Tests extends PHPUnit_Framework_TestCase
                         $iter->rewind();
 
                         $e = $iter->current();
-                        $this->assertEquals('ProcessException : it all went horribly wrong', $e->getMessage());
+                        $this->assertEquals('it all went horribly wrong', $e->getMessage());
                 }
         }
 
@@ -103,7 +119,7 @@ class ExceptionIterator_Tests extends PHPUnit_Framework_TestCase
                 $iter = $this->fixture->getIterator();
 
                 $e = $iter->current();
-                $this->assertTrue($e instanceof ProcessException);
+                $this->assertTrue($e instanceof Exception_Process);
         }
 
         public function testNext1()
@@ -112,7 +128,7 @@ class ExceptionIterator_Tests extends PHPUnit_Framework_TestCase
 
                 $iter->next();
                 $e = $iter->current();
-                $this->assertEquals('Exception_Technical : cause #3', $e->getMessage());
+                $this->assertEquals('cause #3', $e->getMessage());
         }
 
         public function testNext2()
@@ -122,7 +138,7 @@ class ExceptionIterator_Tests extends PHPUnit_Framework_TestCase
                 $iter->next();
                 $iter->next();
                 $e = $iter->current();
-                $this->assertEquals('Exception_Technical : cause #2', $e->getMessage());
+                $this->assertEquals('cause #2', $e->getMessage());
         }
 
         public function testNext3()
@@ -133,7 +149,7 @@ class ExceptionIterator_Tests extends PHPUnit_Framework_TestCase
                 $iter->next();
                 $iter->next();
                 $e = $iter->current();
-                $this->assertEquals('Exception_Technical : cause #1', $e->getMessage());
+                $this->assertEquals('cause #1', $e->getMessage());
         }
 
         public function testNext4()
@@ -161,26 +177,30 @@ class ExceptionIterator_Tests extends PHPUnit_Framework_TestCase
 
 }
 
-registerTests('ProcessException_Tests');
+Testsuite_registerTests('ProcessException_Tests');
 class ProcessException_Tests extends EnterpriseException_Tests
 {
         public function setup ()
         {
                 $e = new Exception_Technical('oh my diety: %s', array ('god'));
-                $this->fixture = new ProcessException('param 1: %s, param 2: %s', array ('array 1', 'array 2'), $e);
+                $this->fixture = new Exception_Process(500, 1, 'param 1: %s, param 2: %s', array ('array 1', 'array 2'), $e);
                 $this->type    = 'ProcessException';
                 $this->file    = basename(__FILE__);
-                $this->line    = 169;
+                $this->line    = 186;
         }
 
         public function testParent()
         {
-                $this->assertTrue($this->fixture instanceof EnterpriseException);
+                $this->assertTrue($this->fixture instanceof Exception_Process);
         }
 
+        public function testCode()
+        {
+                $this->assertEquals(1, $this->fixture->getCode());
+        }
 }
 
-registerTests('Exception_Technical_Tests');
+Testsuite_registerTests('Exception_Technical_Tests');
 class Exception_Technical_Tests extends EnterpriseException_Tests
 {
         public function setup ()
@@ -189,12 +209,12 @@ class Exception_Technical_Tests extends EnterpriseException_Tests
                 $this->fixture = new Exception_Technical('param 1: %s, param 2: %s', array ('array 1', 'array 2'), $e);
                 $this->type    = 'Exception_Technical';
                 $this->file    = basename(__FILE__);
-                $this->line    = 188;
+                $this->line    = 209;
         }
 
         public function testParent()
         {
-                $this->assertTrue($this->fixture instanceof EnterpriseException);
+                $this->assertTrue($this->fixture instanceof Exception_Technical);
         }
 }
 
