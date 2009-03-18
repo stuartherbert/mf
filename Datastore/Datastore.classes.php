@@ -57,6 +57,9 @@
 // 2008-08-13   SLH     Throw Datastore_E_QueryFailed if we have more
 //                      fields to bind than bind slots in the query
 // 2009-02-28   SLH     Moved RDBMS classes out into separate module
+// 2009-03-17   SLH     Models do not have to be defined before we can
+//                      specify where they can be stored (required because
+//                      of move to autoload support)
 // ========================================================================
 
 // ========================================================================
@@ -138,7 +141,10 @@ class Datastore extends Core
 
         public function storeModel($model)
         {
-                constraint_mustBeValidModel($model);
+                // we cannot guarantee that the model exists when
+                // storeModel() is called
+                //
+                // constraint_mustBeValidModel($model);
 
         	$oStorageMap = $this->oConnector->storeModel($model);
                 $this->storageMap[$oStorageMap->name] = $oStorageMap;
