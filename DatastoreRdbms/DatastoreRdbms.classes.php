@@ -21,6 +21,8 @@
 // ------------------------------------------------------------------------
 // 2009-02-28   SLH     Separated out from Datastore library
 // 2009-03-10   SLH     Fixes for models with complex primary keys
+// 2009-03-17   SLH     Throw Datastore_E_RetrieveFailed() if the query
+//                      finds no matching rows
 // ========================================================================
 
 // ========================================================================
@@ -282,7 +284,7 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
 
                 if (count($aReturn) == 0)
                 {
-                        throw new Datastore_E_QueryFailed($this->sqlToExecute, 'No matching rows found');
+                        throw new Datastore_E_RetrieveFailed($this->sqlToExecute);
                 }
 
                 return $aReturn;
