@@ -35,6 +35,7 @@
 //                      DatastoreXXX_Query_Tests
 // 2009-03-18   SLH     Added tests to trap errors introduced by support
 //                      for complex primary keys
+// 2009-03-19   SLH     Added tests specifically for complex primary keys
 // ========================================================================
 
 // ========================================================================
@@ -61,6 +62,11 @@ class Test_Product extends Model
 }
 
 class Test_RelatedProducts extends Model
+{
+
+}
+
+class Test_Product_Tag extends Model
 {
 
 }
@@ -149,6 +155,11 @@ function defineDatastoreTestModels()
         $oMeta->addField('isActive');
         $oMeta->setPrimaryKey('pid');
 
+        $oMeta->hasMany('tags')
+              ->ourFieldIs('pid')
+              ->theirModelIs('Test_Product_Tag')
+              ->theirFieldIs('productId');
+
 /*
         $oMeta->sharesMany('relatedProducts')
               ->ourFieldIs('pid')
@@ -165,6 +176,11 @@ function defineDatastoreTestModels()
              ->ourFieldIs('productId2')
              ->theirModelIs('Test_Product')
              ->theirFieldIs('pid');
+
+        $oDef = Model_Definitions::get('Test_Product_Tag');
+        $oDef->addField('productId');
+        $oDef->addField('tagName');
+        $oDef->setPrimaryKey(array('productId', 'tagName'));
 }
 
 function defineDatastoreTestStorage_RDBMS(Datastore $oDB)
@@ -189,6 +205,9 @@ function defineDatastoreTestStorage_RDBMS(Datastore $oDB)
 
         $oDB->storeModel('Test_RelatedProducts')
             ->inTable('relatedProducts');
+
+        $oDB->storeModel('Test_Product_Tag')
+            ->inTable('productTags');
 }
 
 // ========================================================================
@@ -415,6 +434,55 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                 $this->assertEquals('Stuart', $oCustomer->customerFirstName);
                 $this->assertEquals('Herbert', $oCustomer->customerSurname);
                 $this->assertFalse(isset($oCustomer->customerAddress1));
+        }
+
+        public function testCanRetrieveComplexPrimaryKey()
+        {
+                $tag = new Datastore_Record('Test_Product_Tag');
+                $tag->retrieve($this->db, array('productId' => 1, 'tagName' => 'php'));
+
+                $this->assertTrue($tag instanceof Datastore_Record);
+                $this->assertEquals(1, $tag->productId);
+                $this->assertEquals('php', $tag->tagName);
+
+                $this->assertEquals(array('productId' => 1, 'tagName' => 'php'), $tag->getUniqueId());
+        }
+
+        public function testCanRetrieveRelatedRecordsWithComplexPrimaryKeys()
+        {
+                $product = new Datastore_Record('Test_Product');
+                $product->retrieve($this->db, 1);
+
+                // make sure we have the product before we go any further
+                $this->assertTrue($product instanceof Datastore_Record);
+                $this->assertEquals(1, $product->getUniqueId());
+
+                // now, retrieve the tags for this product
+                $tags = $product->retrieve_tags($this->db);
+                $this->assertEquals
+                (
+                        array (
+                                "productId"     => 1,
+                                "tagName"       => "apache"
+                        ),
+                        $tags[0]->getData()
+                );
+                $this->assertEquals
+                (
+                        array (
+                                "productId"     => 1,
+                                "tagName"       => "linux"
+                        ),
+                        $tags[1]->getData()
+                );
+                $this->assertEquals
+                (
+                        array (
+                                "productId"     => 1,
+                                "tagName"       => "php"
+                        ),
+                        $tags[2]->getData()
+                );
         }
 }
 

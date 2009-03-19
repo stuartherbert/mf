@@ -25,6 +25,8 @@
 //                      finds no matching rows
 // 2009-03-18   SLH     Fixes for supporting complex primary keys
 //                      (more fixes to come as we get better tests)
+// 2009-03-19   SLH     More fixes for supporting complex primary keys,
+//                      now that we have better tests
 // ========================================================================
 
 // ========================================================================
@@ -108,7 +110,7 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
 
                 $sql .= ' from ' . $table . ' where ';
 
-                if (is_string($retrieveField))
+                if (!is_array($retrieveField))
                 {
                         $sql .= $retrieveField . ' = ?';
                         $this->fieldsToBind[] = $retrieveField;
@@ -149,7 +151,7 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
                 foreach ($aFields as $field => $oField)
                 {
                         // skip over the primary key
-                        if ($field == $primaryKey)
+                        if (isset($primaryKey[$field]))
                         {
                                 continue;
                         }
@@ -164,8 +166,18 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
                         $this->fieldsToBind[] = $field;
                 }
 
-                $sql .= " where $primaryKey = ?";
-                $this->fieldsToBind[] = $primaryKey;
+                $sql .= " where " ;
+                $append = false;
+                foreach ($primaryKey as $field)
+                {
+                        if ($append)
+                        {
+                                $sql .= ' and ';
+                        }
+                        $sql .= "$field = ?";
+                        $this->fieldsToBind[] = $field;
+                        $append = true;
+                }
 
                 $this->sql        = $sql;
                 $this->returnRows = false;
@@ -176,9 +188,19 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
                 $table          =  $oMap->getTable();
                 $primaryKey     =  $oDef->getPrimaryKey();
 
-                $this->sql          = "delete from $table where $primaryKey = ?";
+                $this->sql          = "delete from $table where ";
+                $append = false;
+                foreach ($primaryKey as $field)
+                {
+                        if ($append)
+                        {
+                                $this->sql .= ' and ';
+                        }
+                        $this->sql .= $field . ' = ?';
+                        $append = true;
+                }
                 $this->returnRows   = false;
-                $this->fieldsToBind = array($primaryKey);
+                $this->fieldsToBind = $primaryKey;
         }
 
         public function beTruncateStatement(Datastore_Storage $oMap)
@@ -279,9 +301,20 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
                 }
 
                 $aReturn = array();
-                while ($aRec = $this->oConnector->fetchAssoc($result))
+
+                if (count($this->primaryKey) == 1)
                 {
-                        $aReturn[$aRec[$this->primaryKey]] = $aRec;
+                        while ($aRec = $this->oConnector->fetchAssoc($result))
+                        {
+                                $aReturn[$aRec[current($this->primaryKey)]] = $aRec;
+                        }
+                }
+                else
+                {
+                        while ($aRec = $this->oConnector->fetchAssoc($result))
+                        {
+                                $aReturn[] = $aRec;
+                        }
                 }
 
                 if (count($aReturn) == 0)
@@ -386,14 +419,14 @@ class DatastoreRdbms_Query extends Datastore_Query
                 }
                 else
                 {
-                        // primary key may be an array
-                        if ($this->currentView->oDef->getPrimaryKeyType() == Model_Definition::PRIMARY_KEY_SIMPLE)
+                        // primary key may be complex
+                        $primaryKeys = $this->currentView->oDef->getPrimaryKey();
+                        if (count($primaryKeys) == 1)
                         {
-                                $sql .= ' order by ' . $this->currentView->oDef->getPrimaryKey() . ' asc';
+                                $sql .= ' order by ' . current($primaryKeys) . ' asc';
                         }
                         else
                         {
-                                $primaryKeys = $this->currentView->oDef->getPrimaryKey();
                                 $sql .= ' order by ' . implode(' asc,', $primaryKeys) . ' asc' ;
 
                         }

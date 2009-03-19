@@ -163,6 +163,14 @@ CREATE TABLE productsHistory (
   isActive integer
 );
 
+CREATE TABLE productTags (
+  productId integer,
+  tagName text
+);
+
+INSERT INTO productTags (productId, tagName) VALUES (1, 'apache');
+INSERT INTO productTags (productId, tagName) VALUES (1, 'linux');
+INSERT INTO productTags (productId, tagName) VALUES (1, 'php');
 
 CREATE TABLE relatedProducts (
   uid integer PRIMARY KEY AUTOINCREMENT,

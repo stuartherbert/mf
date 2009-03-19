@@ -61,6 +61,7 @@
 //                      specify where they can be stored (required because
 //                      of move to autoload support)
 // 2009-03-18   SLH     Fixes for supporting complex primary keys
+// 2009-03-19   SLH     More fixes for supporting complex primary keys
 // ========================================================================
 
 // ========================================================================
@@ -189,14 +190,14 @@ class Datastore extends Core
                 $oRecord->resetNeedSave();
         }
 
-        public function retrieveRecord (Datastore_Record $oRecord, $field, $value, $view = 'default')
+        public function retrieveRecord (Datastore_Record $oRecord, $fields, $view = 'default')
         {
                 $oDef  = $oRecord->getDefinition();
                 $oMap  = $this->getStorageForModel($oDef->getModelName());
 
                 $oStmt = $this->oConnector->getStatement();
-                $oStmt->beRetrieveStatement($oDef, $oMap, $field, $view);
-                $oStmt->bindValues(array($field => $value));
+                $oStmt->beRetrieveStatement($oDef, $oMap, $fields, $view);
+                $oStmt->bindValues($fields);
 
                 try
                 {
@@ -1033,7 +1034,25 @@ class Datastore_Record extends Core implements Iterator
                 $this->beforeRetrieve($oDB);
                 $this->execPreBehaviours($oDB, 'retrieve');
 
-                $oDB->retrieveRecord($this, $this->getPrimaryKey(),$uid, $view);
+                $primaryKey = $this->getPrimaryKey();
+
+                // do we have a simple or complex primary key?
+                if (count($primaryKey) == 1)
+                {
+                        $fields = array(current($primaryKey) => $uid);
+                }
+                else
+                {
+                        // we have a complex primary key
+                        $fields = array();
+                        foreach ($primaryKey as $key)
+                        {
+                                $fields[$key] = $uid[$key];
+                        }
+                }
+
+                // now, retrieve the record
+                $oDB->retrieveRecord($this, $fields, $view);
 
                 $this->execPostBehaviours($oDB, 'retrieve');
                 $this->afterRetrieve($oDB);
@@ -1721,8 +1740,19 @@ class Datastore_Query
 
         	$this->rawQuery   = $query;
                 $this->tokens     = $tokens;
-                $this->primaryKey = $primaryKey;
 
+                if (!is_array($this->primaryKey))
+                {
+                        $this->primaryKey = array($primaryKey => $primaryKey);
+                }
+                else
+                {
+                        foreach ($primaryKey as $field)
+                        {
+                                $this->primaryKey[$field] = $field;
+                        }
+                }
+                
                 return $this;
         }
 
@@ -1756,13 +1786,25 @@ class Datastore_Query
         {
                 $oMap = $this->oDB->getStorageForModel($this->currentView->oDef->getModelName());
 
-                $this->searchTerms[] = array
-                (
-                        'type'  => Datastore_Query::TYPE_FIELD,
-                        'table' => $oMap->getTable(),
-                        'field' => $this->currentView->oDef->getPrimaryKey(),
-                        'value' => $value
-                );
+                if (!is_array($value))
+                {
+                        $values = array(current($this->primaryKey) => $value);
+                }
+                else
+                {
+                        $values = $value;
+                }
+
+                foreach ($this->primaryKey as $field)
+                {
+                        $this->searchTerms[] = array
+                        (
+                                'type'  => Datastore_Query::TYPE_FIELD,
+                                'table' => $oMap->getTable(),
+                                'field' => $field,
+                                'value' => $values[$field]
+                        );
+                }
 
                 return $this;
         }

@@ -41,6 +41,8 @@
 // 2009-03-11   SLH     Added basic support for many:many relationships
 //                      using 'foundVia()' method
 // 2009-03-18   SLH     Fixes for supporting complex primary keys
+// 2009-03-19   SLH     Primary keys are now always stored internally as
+//                      an array
 // ========================================================================
 
 // ========================================================================
@@ -440,10 +442,10 @@ implements Iterator
                 $this->requireUniqueIdDefined();
 
                 // is our primary key one field, or several?
-                if (!is_array($this->primaryKey))
+                if (count($this->primaryKey) == 1)
                 {
                         // it is one field
-                        return $this->getField($this->primaryKey);
+                        return $this->getField(current($this->primaryKey));
                 }
 
                 // if we get here, then the primary key is several fields
@@ -465,9 +467,9 @@ implements Iterator
                 // do we have a primary key consisting of one field, or
                 // of several fields?
 
-                if (!is_array($this->primaryKey))
+                if (count($this->primaryKey) == 1)
                 {
-                        return $this->resetField($this->primaryKey);
+                        return $this->resetField(current($this->primaryKey));
                 }
 
                 // we have several fields in our primary key
@@ -487,11 +489,11 @@ implements Iterator
 
                 // do we have one field in our primary key, or several
                 // fields?
-                if (!is_array($this->primaryKey))
+                if (count($this->primaryKey) == 1)
                 {
                         // just one field
                         constraint_mustNotBeArray($value);
-                        return $this->setField($this->primaryKey, $value);
+                        return $this->setField(current($this->primaryKey), $value);
                 }
 
                 // if we get here, then we have several fields in our
@@ -513,10 +515,10 @@ implements Iterator
                 // do we have one field in our primary key, or several
                 // fields?
                 
-                if (!is_array($this->primaryKey))
+                if (count($this->primaryKey) == 1)
                 {
                         // we have one field
-                        return $this->hasField($this->primaryKey);
+                        return $this->hasField(current($this->primaryKey));
                 }
 
                 // we have several fields
@@ -779,8 +781,7 @@ final class Model_Definitions
 
 class Model_Definition
 {
-        protected $primaryKey           = null;
-        protected $primaryKeyType       = null;
+        protected $primaryKeys          = null;
         protected $autoPrimaryKey       = true;
         protected $aForeignKeys         = array();
         protected $aFields              = array();
@@ -813,9 +814,6 @@ class Model_Definition
         const SOURCE_NON_DB     = 3;
         const SOURCE_END        = 4;
 
-        const PRIMARY_KEY_SIMPLE  = 1;
-        const PRIMARY_KEY_COMPLEX = 2;
-
         public function __construct($modelName)
         {
                 // echo "  Creating new definition for $modelName\n";
@@ -836,40 +834,38 @@ class Model_Definition
                 $this->modelName = $modelName;
         }
 
+        /**
+         *
+         * @return array
+         */
         public function getPrimaryKey ()
         {
-                return $this->primaryKey;
-        }
-
-        public function getPrimaryKeyType()
-        {
-                return $this->primaryKeyType;
+                return $this->primaryKeys;
         }
 
         public function setPrimaryKey ($primaryKey)
         {
                 if (!is_array($primaryKey))
                 {
-                        if (!$this->isValidFieldName($primaryKey))
-                        {
-                                throw new Model_E_NoSuchField($primaryKey, $this->getModelName());
-                        }
-
-                        $this->primaryKey     = $primaryKey;
-                        $this->primaryKeyType = Model_Definition::PRIMARY_KEY_SIMPLE;
+                        $this->setPrimaryKeys(array($primaryKey));
                 }
                 else
                 {
-                        foreach ($primaryKey as $field)
-                        {
-                                if (!$this->isValidFieldName($field))
-                                {
-                                        throw new Model_E_NoSuchField($field, $this->getModelName());
-                                }
-                        }
+                        $this->setPrimaryKeys($primaryKey);
+                }
+        }
 
-                        $this->primaryKey     = $primaryKey;
-                        $this->primaryKeyType = Model_Definition::PRIMARY_KEY_COMPLEX;
+        public function setPrimaryKeys($primaryKeys)
+        {
+                $this->primaryKeys = array();
+
+                foreach ($primaryKeys as $field)
+                {
+                        if (!$this->isValidFieldName($field))
+                        {
+                                throw new Model_E_NoSuchField($field, $this->getModelName());
+                        }
+                        $this->primaryKeys[$field] = $field;
                 }
         }
 
@@ -955,8 +951,11 @@ class Model_Definition
                 $aFieldsFromView   = $this->getFieldsFromView($view);
 
                 // make sure the primary key is part of this view
-                $primaryKey        = $this->getPrimaryKey();
-                $aFieldsFromView[$primaryKey] = $primaryKey;
+                $primaryKeys       = $this->getPrimaryKey();
+                foreach ($primaryKeys as $primaryKey)
+                {
+                        $aFieldsFromView[$primaryKey] = $primaryKey;
+                }
 
                 return array_intersect_key($aFieldsFromSource, $aFieldsFromView);
         }

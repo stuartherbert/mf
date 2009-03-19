@@ -350,6 +350,27 @@ CREATE TABLE `productsHistory` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `productTags`
+--
+
+DROP TABLE IF EXISTS `productTags`;
+CREATE TABLE `productTags` (
+  `productId` bigint(2) unsigned NOT NULL,
+ `tagName` varchar(255) NOT NULL,
+UNIQUE KEY `unique_key` (`productId`, `tagName`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
+-- Dumping data for table `productTags`
+--
+
+INSERT INTO `productTags` (productId, tagName) VALUES (1, "apache");
+INSERT INTO `productTags` (productId, tagName) VALUES (1, "linux");
+INSERT INTO `productTags` (productId, tagName) VALUES (1, "php");
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `relatedProducts`
 --
 
