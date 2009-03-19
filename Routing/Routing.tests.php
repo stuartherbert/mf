@@ -26,13 +26,21 @@
 // 2008-10-26   SLH     Routes are now defined using a static class
 // 2008-10-26   SLH     Added tests for more complicated parameterised
 //                      routes
+// 2009-03-18   SLH     Fixed up to use the new task-based approach
 // ========================================================================
 
-require_once ('PHPUnit/Framework/TestCase.php');
+// bootstrap the framework
+define('UNIT_TEST', true);
+define('APP_TOPDIR', realpath(dirname(__FILE__) . '/../../'));
+require_once(APP_TOPDIR . '/mf/mf.inc.php');
+
+// load additional files we explicitly require
+__mf_require_once('Testsuite');
 
 if (!defined('URL_TO_TOPDIR'))
         define('URL_TO_TOPDIR', 'http://www.example.com');
 
+Testsuite_registerTests('Routing_Tests');
 class Routing_Tests extends PHPUnit_Framework_TestCase
 {
         public function setup()
@@ -42,57 +50,57 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 // NOTE: the order that routes are defined in matters
                 //       to the Routes manager
 
-                Routes::resetRoutes();
+                App::$routes->resetRoutes();
 
-                Routes::addRoute('userProfile')
+                App::$routes->addRoute('userProfile')
                         ->withUrl('/profile/:username')
                         ->withParams(array(':username'));
 
-                Routes::addRoute('indexLoggedIn')
+                App::$routes->addRoute('indexLoggedIn')
                        ->withUrl('/')
                        ->withConditions(array('loggedIn' => true))
                        ->routeToClassAndMethod('Homepage', 'handleIndexLoggedIn');
 
-                Routes::addRoute('indexLoggedOut')
+                App::$routes->addRoute('indexLoggedOut')
                         ->withUrl('/')
                         ->withConditions(array('loggedIn' => false))
                         ->routeToClassAndMethod('Homepage', 'handleIndexLoggedOut');
 
-                Routes::addRoute('index')
+                App::$routes->addRoute('index')
                         ->withUrl('/')
                         ->routeToClass('Homepage');
 
-                Routes::addRoute('showPhoto')
+                App::$routes->addRoute('showPhoto')
                         ->withUrl('/photos/:username/:photoId/show')
                         ->withParams(array(':username', ':photoId'));
 
-                Routes::addRoute('blogArchive')
+                App::$routes->addRoute('blogArchive')
                         ->withUrl('/archive/:year/:month/:day')
                         ->withParams(array(':year' => '([0-9]{4})', ':month' => '([0-9]{2})', ':day' => '([0-9]{2})'));
 
-                Routes::addRoute('blogArchive2')
+                App::$routes->addRoute('blogArchive2')
                         ->withUrl('/archive2/:year/:month/:day')
                         ->withParams(array(':year' => true, ':month' => true, ':day' => true));
 
-                Routes::addRoute('api1')
+                App::$routes->addRoute('api1')
                         ->withUrl('/api/milestone/:id.:format')
                         ->withParams(array(':id' => '([0-9]+)', ':format' => '(xml|php|json)'));
 
-                Routes::addRoute('api2')
+                App::$routes->addRoute('api2')
                         ->withUrl('/api2/milestone/:id.:format')
                         ->withParams(array(':id', ':format' => '(xml|php|json)'));
         }
 
         public function testCanCreateBasicNamedRoute()
         {
-                $indexUrl = Routes::getRoute('index')->toUrl();
+                $indexUrl = App::$routes->getRoute('index')->toUrl();
 
                 $this->assertEquals($indexUrl, '/');
         }
 
         public function testCanCreateParameterisedRoute()
         {
-                $route = Routes::getRoute('userProfile');
+                $route = App::$routes->getRoute('userProfile');
 
                 $profileUrl = $route->toUrl(array(':username' => 'stuartherbert'));
                 $class      = $route->routeToClass();
@@ -105,7 +113,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
         {
                 try
                 {
-                	$url = Routes::getRoute('showPhoto')
+                	$url = App::$routes->getRoute('showPhoto')
                                        ->toUrl(array(':username' => 'stuartherbert'));
                 }
                 catch (Routing_E_MissingParameters $e)
@@ -116,37 +124,37 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
         public function testMatchesHomepageUrl()
         {
-                $params = Routes::matchUrl('/');
-                $this->assertEquals('Homepage', $params['routeToClass']);
-                $this->assertEquals('index',    $params['routeName']);
-                $this->assertEquals('index',    $params['routeToMethod']);
+                $route = App::$routes->matchUrl('/');
+                $this->assertEquals('Homepage', $route->routeToClass);
+                $this->assertEquals('index',    $route->routeName);
+                $this->assertEquals('index',    $route->routeToMethod);
         }
 
         public function testMatchesHomepageUrlWithConditions()
         {
-        	Routes::setConditions(array('loggedIn' => true));
+        	App::$routes->setConditions(array('loggedIn' => true));
 
-                $params = Routes::matchUrl('/');
-                $this->assertEquals('Homepage',                 $params['routeToClass']);
-                $this->assertEquals('indexLoggedIn',            $params['routeName']);
-                $this->assertEquals('handleIndexLoggedIn',      $params['routeToMethod']);
+                $route = App::$routes->matchUrl('/');
+                $this->assertEquals('Homepage',                 $route->routeToClass);
+                $this->assertEquals('indexLoggedIn',            $route->routeName);
+                $this->assertEquals('handleIndexLoggedIn',      $route->routeToMethod);
 
-                Routes::setConditions(array('loggedIn' => false));
+                App::$routes->setConditions(array('loggedIn' => false));
 
-                $params = Routes::matchUrl('/');
-                $this->assertEquals('Homepage',                 $params['routeToClass']);
-                $this->assertEquals('indexLoggedOut',           $params['routeName']);
-                $this->assertEquals('handleIndexLoggedOut',     $params['routeToMethod']);
+                $route = App::$routes->matchUrl('/');
+                $this->assertEquals('Homepage',                 $route->routeToClass);
+                $this->assertEquals('indexLoggedOut',           $route->routeName);
+                $this->assertEquals('handleIndexLoggedOut',     $route->routeToMethod);
         }
 
         public function testMatchesParameterisedUrl()
         {
-        	$params = Routes::matchUrl('/photos/stuartherbert/098adf/show');
-                $this->assertEquals('stuartherbert',    $params[':username']);
-                $this->assertEquals('098adf',           $params[':photoId']);
-                $this->assertEquals('showPhoto',        $params['routeName']);
-                $this->assertEquals('photos',           $params['routeToClass']);
-                $this->assertEquals('showPhoto',        $params['routeToMethod']);
+        	$route = App::$routes->matchUrl('/photos/stuartherbert/098adf/show');
+                $this->assertEquals('stuartherbert',    $route->matchedParams[':username']);
+                $this->assertEquals('098adf',           $route->matchedParams[':photoId']);
+                $this->assertEquals('showPhoto',        $route->routeName);
+                $this->assertEquals('photos',           $route->routeToClass);
+                $this->assertEquals('showPhoto',        $route->routeToMethod);
         }
 
         public function testUsesRestrictedParameters()
@@ -154,10 +162,10 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 // step 1 - prove we can match numbers against our
                 //          test url
 
-        	$params = Routes::matchUrl('/archive/2007/11/19');
-                $this->assertEquals('2007', $params[':year']);
-                $this->assertEquals('11', $params[':month']);
-                $this->assertEquals('19', $params[':day']);
+        	$route = App::$routes->matchUrl('/archive/2007/11/19');
+                $this->assertEquals('2007', $route->matchedParams[':year']);
+                $this->assertEquals('11', $route->matchedParams[':month']);
+                $this->assertEquals('19', $route->matchedParams[':day']);
 
                 // step 2 - prove we cannot match non-numbers against our
                 //          test url
@@ -165,7 +173,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 $excepted = false;
                 try
                 {
-                	Routes::matchUrl('/archive/fred/11/19');
+                	App::$routes->matchUrl('/archive/fred/11/19');
                 }
                 catch (Routing_E_NoMatchingRoute $e)
                 {
@@ -176,7 +184,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 $excepted = false;
                 try
                 {
-                	Routes::matchUrl('/archive/2007/fred/19');
+                	App::$routes->matchUrl('/archive/2007/fred/19');
                 }
                 catch (Routing_E_NoMatchingRoute $e)
                 {
@@ -187,7 +195,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 $excepted = false;
                 try
                 {
-                	Routes::matchUrl('/archive/2007/11/fred');
+                	App::$routes->matchUrl('/archive/2007/11/fred');
                 }
                 catch (Routing_E_NoMatchingRoute $e)
                 {
@@ -198,24 +206,24 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
         public function testUsesWholeUrlInParameters()
         {
-        	$params = Routes::matchUrl('/archive2/2007/11/19');
-                $this->assertEquals('2007', $params[':year']);
-                $this->assertEquals('11',   $params[':month']);
-                $this->assertEquals('19',   $params[':day']);
+        	$route = App::$routes->matchUrl('/archive2/2007/11/19');
+                $this->assertEquals('2007', $route->matchedParams[':year']);
+                $this->assertEquals('11',   $route->matchedParams[':month']);
+                $this->assertEquals('19',   $route->matchedParams[':day']);
         }
 
         public function testUsesMultipleParametersInPathPart()
         {
-        	$params = Routes::matchUrl('/api/milestone/4.xml');
-                $this->assertEquals(4,     $params[':id']);
-                $this->assertEquals('xml', $params[':format']);
+        	$route = App::$routes->matchUrl('/api/milestone/4.xml');
+                $this->assertEquals(4,     $route->matchedParams[':id']);
+                $this->assertEquals('xml', $route->matchedParams[':format']);
         }
 
         public function testCanMixParameterStyles()
         {
-        	$params = Routes::matchUrl('/api2/milestone/fred.xml');
-                $this->assertEquals('fred', $params[':id']);
-                $this->assertEquals('xml',  $params[':format']);
+        	$route = App::$routes->matchUrl('/api2/milestone/fred.xml');
+                $this->assertEquals('fred', $route->matchedParams[':id']);
+                $this->assertEquals('xml',  $route->matchedParams[':format']);
         }
 }
 
