@@ -35,7 +35,7 @@ function Testsuite_findAllTests($dir)
                 {
                         $return = array_merge($return, Testsuite_findAllTests($filename));
                 }
-                else if (is_file($filename) && strpos($filename, '.tests.') > 0)
+                else if (is_file($filename) && strpos($filename, '.tests.php') > 0)
                 {
                         $return[] = $filename;
                 }
