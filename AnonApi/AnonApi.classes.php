@@ -23,6 +23,7 @@
 // ------------------------------------------------------------------------
 // 2008-10-17   SLH     Created
 // 2009-03-02   SLH     Added mainLoop()
+// 2009-03-24   SLH     Routes now go to page scripts inside modules
 // ========================================================================
 
 class AnonApi
@@ -37,9 +38,6 @@ class AnonApi
         {
                 // we do not need to setup a user, because this is an
                 // anonymous API
-
-                // create the controller
-                $controller = new $route->routeToClass;
 
                 // set the default format, if required
                 if (!isset($route->matchedParams[':format']))
@@ -67,8 +65,10 @@ class AnonApi
                 // call the controller
                 try
                 {
-                        $method = $route->routeToMethod;
-                        $controller->$method($route->matchedParams);
+                        $page = APP_TOPDIR . '/app/' . $route->routeToMethod
+                                . '/pages/' . $route->routeToPage . '.page.php';
+                        
+                        require_once($page);
                 }
                 catch (Exception_Process $e)
                 {

@@ -27,6 +27,7 @@
 // 2008-10-26   SLH     Added tests for more complicated parameterised
 //                      routes
 // 2009-03-18   SLH     Fixed up to use the new task-based approach
+// 2009-03-24   SLH     Routes now go to modules and pages instead
 // ========================================================================
 
 // bootstrap the framework
@@ -59,16 +60,16 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 App::$routes->addRoute('indexLoggedIn')
                        ->withUrl('/')
                        ->withConditions(array('loggedIn' => true))
-                       ->routeToClassAndMethod('Homepage', 'handleIndexLoggedIn');
+                       ->routeToModuleAndPage('Homepage', 'indexLoggedIn');
 
                 App::$routes->addRoute('indexLoggedOut')
                         ->withUrl('/')
                         ->withConditions(array('loggedIn' => false))
-                        ->routeToClassAndMethod('Homepage', 'handleIndexLoggedOut');
+                        ->routeToModuleAndPage('Homepage', 'indexLoggedOut');
 
                 App::$routes->addRoute('index')
                         ->withUrl('/')
-                        ->routeToClass('Homepage');
+                        ->routeToModuleAndPage('Homepage', 'defaultHomepage');
 
                 App::$routes->addRoute('showPhoto')
                         ->withUrl('/photos/:username/:photoId/show')
@@ -103,10 +104,10 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 $route = App::$routes->getRoute('userProfile');
 
                 $profileUrl = $route->toUrl(array(':username' => 'stuartherbert'));
-                $class      = $route->routeToClass();
+                $module     = $route->routeToModule();
 
                 $this->assertEquals('/profile/stuartherbert', $profileUrl);
-                $this->assertEquals('profile', $class);
+                $this->assertEquals('profile', $module);
         }
 
         public function testTrapsMissingParameters()
@@ -125,9 +126,9 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
         public function testMatchesHomepageUrl()
         {
                 $route = App::$routes->matchUrl('/');
-                $this->assertEquals('Homepage', $route->routeToClass);
+                $this->assertEquals('Homepage', $route->routeToModule);
                 $this->assertEquals('index',    $route->routeName);
-                $this->assertEquals('index',    $route->routeToMethod);
+                $this->assertEquals('defaultHomepage', $route->routeToPage);
         }
 
         public function testMatchesHomepageUrlWithConditions()
@@ -135,26 +136,26 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
         	App::$routes->setConditions(array('loggedIn' => true));
 
                 $route = App::$routes->matchUrl('/');
-                $this->assertEquals('Homepage',                 $route->routeToClass);
-                $this->assertEquals('indexLoggedIn',            $route->routeName);
-                $this->assertEquals('handleIndexLoggedIn',      $route->routeToMethod);
+                $this->assertEquals('Homepage',      $route->routeToModule);
+                $this->assertEquals('indexLoggedIn', $route->routeName);
+                $this->assertEquals('indexLoggedIn', $route->routeToPage);
 
                 App::$routes->setConditions(array('loggedIn' => false));
 
                 $route = App::$routes->matchUrl('/');
-                $this->assertEquals('Homepage',                 $route->routeToClass);
-                $this->assertEquals('indexLoggedOut',           $route->routeName);
-                $this->assertEquals('handleIndexLoggedOut',     $route->routeToMethod);
+                $this->assertEquals('Homepage',       $route->routeToModule);
+                $this->assertEquals('indexLoggedOut', $route->routeName);
+                $this->assertEquals('indexLoggedOut', $route->routeToPage);
         }
 
         public function testMatchesParameterisedUrl()
         {
         	$route = App::$routes->matchUrl('/photos/stuartherbert/098adf/show');
-                $this->assertEquals('stuartherbert',    $route->matchedParams[':username']);
-                $this->assertEquals('098adf',           $route->matchedParams[':photoId']);
-                $this->assertEquals('showPhoto',        $route->routeName);
-                $this->assertEquals('photos',           $route->routeToClass);
-                $this->assertEquals('showPhoto',        $route->routeToMethod);
+                $this->assertEquals('stuartherbert', $route->matchedParams[':username']);
+                $this->assertEquals('098adf',        $route->matchedParams[':photoId']);
+                $this->assertEquals('showPhoto',     $route->routeName);
+                $this->assertEquals('photos',        $route->routeToModule);
+                $this->assertEquals('showPhoto',     $route->routeToPage);
         }
 
         public function testUsesRestrictedParameters()

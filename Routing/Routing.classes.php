@@ -26,6 +26,7 @@
 // 2008-10-26   SLH     Much improved support for parameterised routes
 // 2009-03-01   SLH     Routing_Routes is no longer a singleton
 // 2009-03-02   SLH     Routes now support different main loops
+// 2009-03-24   SLH     Routing now supports modules and pages
 // ========================================================================
 
 class Routing_Routes
@@ -289,8 +290,8 @@ class Routing_Routes
 
 class Routing_Route
 {
-        public $routeToClass  = null;
-        public $routeToMethod = null;
+        public $routeToModule = null;
+        public $routeToPage   = null;
         public $mainLoop      = null;
         public $matchedParams = array();
         public $routeName     = null;
@@ -303,8 +304,9 @@ class Routing_Route
 
         public function __construct($name, $mainLoop = 'WebApp')
         {
-                $this->routeName = $name;
-                $this->mainLoop  = $mainLoop;
+                $this->routeName   = $name;
+                $this->mainLoop    = $mainLoop;
+                $this->routeToPage = $name;
         }
 
         // ================================================================
@@ -327,32 +329,28 @@ class Routing_Route
                 return $this;
         }
 
-        public function routeToClass($class = null, $method = null)
+        public function routeToModule($module = null, $page = null)
         {
                 // are we getting this value, or are we setting it?
-                if ($class == null)
+                if ($module == null)
                 {
-                	return $this->routeToClass;
+                	return $this->routeToModule;
                 }
 
                 // if we get here, then we are setting instead of getting
-        	$this->routeToClass = $class;
+        	$this->routeToModule = $module;
 
-                if ($method == null)
+                if ($page != null)
                 {
-                	$this->routeToMethod = $this->routeName;
-                }
-                else
-                {
-                        $this->routeToMethod = $method;
+                	$this->routeToPage = $page;
                 }
 
                 return $this;
         }
 
-        public function routeToClassAndMethod($class, $method)
+        public function routeToModuleAndPage($class, $method)
         {
-        	return $this->routeToClass($class, $method);
+        	return $this->routeToModule($class, $method);
         }
 
         public function withParams($aRegexes = array())
@@ -435,8 +433,8 @@ class Routing_Route
                 //
                 // this can be overridden using the routeToModule() method
 
-                if ($this->routeToClass() == null)
-                        $this->routeToClass($parts[0]);
+                if ($this->routeToModule == null)
+                        $this->routeToModule = $parts[0];
 
                 // step 3: does this URL have any parameters, and if so,
                 //         what are they?
