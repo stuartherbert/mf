@@ -24,6 +24,7 @@
 // 2008-08-07   SLH     We now define where models are stored during
 //                      setup()
 // 2009-03-18   SLH     Fixed up to run using the new task-based approach
+// 2009-03-24   SLH     The fixture no longer defined in setup()
 // ========================================================================
 
 // ========================================================================
@@ -50,7 +51,6 @@ class DatastorePDO_Record_Tests extends DatastoreXXX_Record_Tests
 
                 $oConn         = new DatastorePDO_Connector('mysql:host=localhost;dbname=mfTest', 'root', '');
                 $this->db      = new Datastore($oConn);
-                $this->fixture = new Datastore_Record('Test_Customer');
 
                 defineDatastoreTestStorage_RDBMS($this->db);
         }
@@ -66,7 +66,6 @@ class DatastorePDO_Query_Tests extends DatastoreXXX_Query_Tests
 
                 $oConn         = new DatastorePDO_Connector('mysql:host=localhost;dbname=mfTest', 'root', '');
                 $this->db      = new Datastore($oConn);
-                $this->fixture = new Datastore_Record('Test_Customer');
 
                 defineDatastoreTestStorage_RDBMS($this->db);
         }

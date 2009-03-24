@@ -62,6 +62,8 @@
 //                      of move to autoload support)
 // 2009-03-18   SLH     Fixes for supporting complex primary keys
 // 2009-03-19   SLH     More fixes for supporting complex primary keys
+// 2009-03-23   SLH     Switched to creating datastore records via the
+//                      datastore (to allow for future flexibility)
 // ========================================================================
 
 // ========================================================================
@@ -165,6 +167,15 @@ class Datastore extends Core
         }
 
         // ----------------------------------------------------------------
+        // Support for associating a model with a datastore
+        // ----------------------------------------------------------------
+
+        public function getNewDatastoreProxy(Model $oModel)
+        {
+                return $this->oConnector->getNewDatastoreProxy($oModel);
+        }
+
+        // ----------------------------------------------------------------
         // Support for individual records
         // ----------------------------------------------------------------
 
@@ -173,7 +184,9 @@ class Datastore extends Core
         	$oMap  = $this->getStorageForModel($modelName);
                 $recordClassName = $oMap->recordClassName;
 
-                return new $recordClassName($modelName);
+                $return = new $modelName();
+
+                return $return;
         }
 
         public function createRecord (Datastore_Record $oRecord)
@@ -632,12 +645,14 @@ class Datastore_BaseConnector
         protected $oStore         = null;
         protected $statementClass = null;
         protected $queryClass     = null;
+        protected $proxyClass     = null;
         protected $aDetails       = null;
 
-        public function __construct($statementClass, $queryClass)
+        public function __construct($statementClass, $queryClass, $proxyClass = 'Datastore_Record')
         {
         	$this->statementClass = $statementClass;
                 $this->queryClass     = $queryClass;
+                $this->proxyClass     = $proxyClass;
         }
 
         public function requireConnected()
@@ -669,6 +684,12 @@ class Datastore_BaseConnector
         {
                 return $this->aDetails;
         }
+
+        public function getNewDatastoreProxy(Model $oModel)
+        {
+                $proxyClass = $this->proxyClass;
+                return new $proxyClass($oModel);
+        }
 }
 
 class Datastore_Storage
@@ -694,7 +715,7 @@ class Datastore_Storage
 //
 // ------------------------------------------------------------------------
 
-class Datastore_Record extends Core implements Iterator
+class Datastore_Record extends Core
 {
         public    $oModel        = null;
 
@@ -705,264 +726,9 @@ class Datastore_Record extends Core implements Iterator
         // All the functionality aggregated from the Model that we are
         // encapsulating
 
-        public function __construct($oModel)
+        public function __construct(Model $oModel)
         {
-                if (is_string($oModel))
-                {
-                        $oDef         = Model_Definitions::getIfExists($oModel);
-                        $this->oModel = $oDef->getNewModel();
-                }
-                else if ($oModel instanceof Model)
-                {
-                        $this->oModel = $oModel;
-                }
-                else if ($oModel instanceof Model_Definition)
-                {
-                        $this->oModel = $oModel->getNewModel();
-                }
-                else
-                {
-                	throw new Exception();
-                }
-
-                // var_dump($this->model);
-        }
-
-        public function getDefinition()
-        {
-        	return $this->oModel->getDefinition();
-        }
-
-        public function &getData ()
-        {
-                return $this->oModel->getData();
-        }
-
-        public function resetData ()
-        {
-                return $this->oModel->resetData();
-        }
-
-        public function setData ($aData, $dataAction = Model::REPLACE_DATA)
-        {
-                return $this->oModel->setData($aData, $dataAction);
-        }
-
-        public function hasData ()
-        {
-                return $this->oModel->hasData();
-        }
-
-        public function isEmpty()
-        {
-                return $this->oModel->isEmpty();
-        }
-
-        public function emptyWithoutSave ()
-        {
-                return $this->oModel->emptyWithoutSave();
-        }
-
-        public function getField ($fieldName)
-        {
-                return $this->oModel->getField($fieldName);
-        }
-
-        public function resetField ($fieldName)
-        {
-                return $this->oModel->resetField($fieldName);
-        }
-
-        public function setField ($fieldName, $data)
-        {
-                return $this->oModel->setField($fieldName, $data);
-        }
-
-        public function hasField ($fieldName)
-        {
-                return $this->oModel->hasField($fieldName);
-        }
-
-        public function __get ($fieldName)
-        {
-                return $this->oModel->getField($fieldName);
-        }
-
-        public function __set ($fieldName, $value)
-        {
-                return $this->oModel->setField($fieldName, $value);
-        }
-
-        public function __isset ($fieldName)
-        {
-                return $this->oModel->hasField($fieldName);
-        }
-
-        protected function validateData (&$aData)
-        {
-                return $this->oModel->validateData($aData);
-        }
-
-        protected function validateField($fieldName, &$value)
-        {
-                return $this->oModel->validateField($fieldName, $value);
-        }
-
-        public function setFieldsToDefaults()
-        {
-                return $this->oModel->setFieldsToDefault();
-        }
-
-        public function setFieldToDefault($fieldName)
-        {
-                return $this->oModel->setFieldToDefault($fieldName);
-        }
-
-        public function getPrimaryKey()
-        {
-                return $this->oModel->getPrimaryKey();
-        }
-
-        public function getTable()
-        {
-                return $this->oModel->getTable();
-        }
-
-        public function getFields($fieldNames = array())
-        {
-                return $this->oModel->getFields($fieldNames);
-        }
-
-        public function getMandatoryFields()
-        {
-                return $this->oModel->getMandatoryFields();
-        }
-
-        public function getFieldsBySource($source)
-        {
-                return $this->oModel->getFieldsBySource($source);
-        }
-
-        public function getUniqueId ()
-        {
-                return $this->oModel->getUniqueId();
-        }
-
-        public function resetUniqueId ()
-        {
-                return $this->oModel->resetUniqueId();
-        }
-
-        public function setUniqueId($value)
-        {
-                return $this->oModel->setUniqueId($value);
-        }
-
-        public function hasUniqueId()
-        {
-                return $this->oModel->hasUniqueId();
-        }
-
-        public function hasUniqueIdDefined()
-        {
-                return $this->oModel->hasUniqueIdDefined();
-        }
-
-        public function requireUniqueIdDefined()
-        {
-                return $this->oModel->requireUniqueIdDefined();
-        }
-
-        public function getNeedSave()
-        {
-                return $this->oModel->getNeedSave();
-        }
-
-        public function resetNeedSave()
-        {
-                return $this->oModel->resetNeedSave();
-        }
-
-        public function setNeedSave()
-        {
-                return $this->oModel->setNeedSave();
-        }
-
-        public function isReadOnly ()
-        {
-                return $this->oModel->isReadOnly();
-        }
-
-        public function resetReadOnly ()
-        {
-                return $this->oModel->resetReadOnly();
-        }
-
-        public function setReadOnly ()
-        {
-                return $this->oModel->setReadOnly();
-        }
-
-        public function requireWritable()
-        {
-                return $this->oModel->requireWritable();
-        }
-
-        // ================================================================
-        // Interface: Iterator
-        // ----------------------------------------------------------------
-
-        public function rewind ()
-        {
-                return $this->oModel->rewind();
-        }
-
-        public function valid()
-        {
-                return $this->oModel->valid();
-        }
-
-        public function key()
-        {
-                return $this->oModel->key();
-        }
-
-        public function current()
-        {
-                return $this->oModel->current();
-        }
-
-        public function next()
-        {
-                return $this->oModel->next();
-        }
-
-        // ================================================================
-        // Support for inter-record relationships
-        // ----------------------------------------------------------------
-
-        public function getForeignKeyFor($alias)
-        {
-                return $this->oModel->getForeignKeyFor($alias);
-        }
-
-        // ----------------------------------------------------------------
-
-        public function getFindConditionsFor($alias)
-        {
-                return $this->oModel->getFindConditionsFor($alias);
-        }
-
-        // ----------------------------------------------------------------
-
-        public function getFindConditionsFrom($alias, $oRecord)
-        {
-                return $this->oModel->getFindConditionsFrom($alias, $oRecord);
-        }
-
-        public function toString()
-        {
-                return $this->oModel->toString();
+                $this->oModel = $oModel;
         }
 
         // ================================================================
@@ -1258,7 +1024,7 @@ class Datastore_Record extends Core implements Iterator
 
                 foreach ($aBehaviours as $oBehaviour)
                 {
-                        if (!$oBehaviour->$operation($oDB, $this))
+                        if (!$oBehaviour->$operation($oDB, $this->oModel))
                         {
                                 $continue = false;
                         }
@@ -1280,7 +1046,7 @@ class Datastore_Record extends Core implements Iterator
 
                 foreach ($aBehaviours as $oBehaviour)
                 {
-                        $oBehaviour->$operation($oDB, $this);
+                        $oBehaviour->$operation($oDB, $this->oModel);
                 }
         }
 
@@ -1969,7 +1735,8 @@ class Datastore_Query
                 if (count($this->extractInto) == 1)
                 {
                         $oView = $this->extractInto[0];
-                	$record = new Datastore_Record($oView->oDef);
+                        $recordName = $oView->oDef->getModelName();
+                        $record = new $recordName();
 
                         // debug_vardump(__FILE__, __LINE__, __FUNCTION__, '$aFields', $aFields);
                         $record->setData($aFields);
@@ -1987,7 +1754,8 @@ class Datastore_Query
 
         	foreach($this->extractInto as $oView)
                 {
-                	$record = new Datastore_Record($oView->oDef);
+                        $recordName = $oView->oDef->getModelName();
+                	$record = new $recordName();
                         $record->setData($aFields);
                         $return[$oView->oDef->getModelName()] = $record;
                 }

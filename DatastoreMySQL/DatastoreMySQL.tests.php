@@ -24,6 +24,7 @@
 // 2008-08-07   SLH     We now define where models are stored during
 //                      setup()
 // 2009-03-18   SLH     Fixed up to run using the new task-based approach
+// 2009-03-24   SLH     Tests no longer rely on a fixture object
 // ========================================================================
 
 // ========================================================================
@@ -52,7 +53,6 @@ class DatastoreMySQL_Record_Tests extends DatastoreXXX_Record_Tests
 
                 $oConn         = new DatastoreMySQL_Connector(array('host' => 'localhost', 'db' => 'mfTest', 'user' => 'root', 'pass' => ''));
                 $this->db      = new Datastore($oConn);
-                $this->fixture = new Datastore_Record('Test_Customer');
 
                 defineDatastoreTestStorage_RDBMS($this->db);
         }

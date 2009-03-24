@@ -36,6 +36,8 @@
 // 2009-03-18   SLH     Added tests to trap errors introduced by support
 //                      for complex primary keys
 // 2009-03-19   SLH     Added tests specifically for complex primary keys
+// 2009-03-23   SLH     Added tests for table inheritance
+// 2009-03-24   SLH     Tests no longer rely on a fixture class
 // ========================================================================
 
 // ========================================================================
@@ -67,6 +69,11 @@ class Test_RelatedProducts extends Model
 }
 
 class Test_Product_Tag extends Model
+{
+
+}
+
+class Test_Product_Annotated_Tag extends Model
 {
 
 }
@@ -160,12 +167,11 @@ function defineDatastoreTestModels()
               ->theirModelIs('Test_Product_Tag')
               ->theirFieldIs('productId');
 
-/*
-        $oMeta->sharesMany('relatedProducts')
+        $oMeta->hasMany('relatedProducts')
               ->ourFieldIs('pid')
-              ->theirModelIs('Test_RelatedProducts', 'relatedProducts')
+              ->theirModelIs('Test_Product')
+              ->foundVia('Test_RelatedProducts', 'relatedProducts')
               ->theirFieldIs('productId1');
-*/
 
         $oDef = Model_Definitions::get('Test_RelatedProducts');
         $oDef->addField('productId1');
@@ -181,6 +187,10 @@ function defineDatastoreTestModels()
         $oDef->addField('productId');
         $oDef->addField('tagName');
         $oDef->setPrimaryKey(array('productId', 'tagName'));
+
+        $oDef = Model_Definitions::get('Test_Product_Annotated_Tag');
+        $oDef->inherits('Test_Product_Tag');
+        $oDef->addField('tagAnnotation');
 }
 
 function defineDatastoreTestStorage_RDBMS(Datastore $oDB)
@@ -225,15 +235,16 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
                 try
                 {
-                        $this->fixture->retrieve($this->db, 1);
+                        $customer = new Test_Customer();
+                        $customer->retrieve($this->db, 1);
                 }
                 catch (Exception $e)
                 {
                         $this->fail($e->getMessage());
                 }
 
-                $this->assertEquals(1, (int) $this->fixture->customerId);
-                $this->assertEquals('Stuart', $this->fixture->customerFirstName);
+                $this->assertEquals(1, (int) $customer->customerId);
+                $this->assertEquals('Stuart', $customer->customerFirstName);
         }
 
         public function testCanReadContentsAsAttributes()
@@ -244,19 +255,20 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
                 try
                 {
-                        $this->fixture->retrieve($this->db, 1);
+                        $customer = new Test_Customer();
+                        $customer->retrieve($this->db, 1);
                 }
                 catch (Exception $e)
                 {
                         $this->fail($e->getMessage());
                 }
 
-                $this->assertType('string', $this->fixture->customerFirstName);
+                $this->assertType('string', $customer->customerFirstName);
         }
 
         public function testCanRetrieveForeignKeys()
         {
-                $order = new Datastore_Record('Test_Order');
+                $order = new Test_Order();
                 $order->retrieve($this->db, 1);
 
                 // make sure we have the record
@@ -266,7 +278,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                 // now, let's get the relationship between order and
                 // customer
 
-                $oRelationship = $order->oModel->getDefinition()->getRelationship('customer');
+                $oRelationship = $order->getDefinition()->getRelationship('customer');
                 $this->assertTrue ($oRelationship instanceof Model_Relationship);
 
                 // make sure the relationship tells us what we expect
@@ -284,7 +296,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
                 // echo __FUNCTION__ . "\n";
 
-                $order = new Datastore_Record('Test_Order');
+                $order = new Test_Order();
                 $order->retrieve($this->db, 1);
 
                 // make sure that the record has been retrieved
@@ -293,12 +305,12 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
                 $customer = $order->retrieve_customer($this->db);
 
-                $this->assertTrue($customer instanceof Datastore_Record);
+                $this->assertTrue($customer instanceof Test_Customer);
                 $this->assertEquals(1, (int) $customer->customerId);
 
                 $customer = $order->retrieve_giftRecipient($this->db);
 
-                $this->assertTrue($customer instanceof Datastore_Record);
+                $this->assertTrue($customer instanceof Test_Customer);
                 $this->assertEquals(2, (int) $customer->customerId);
         }
 
@@ -308,7 +320,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
                 // echo __FUNCTION__ . "\n";
 
-                $customer = new Datastore_Record('Test_Customer');
+                $customer = new Test_Customer();
                 $customer->customerId = 1000;
                 $customer->customerFirstName    = 'Fred';
                 $customer->customerSurname      = 'Bloggs';
@@ -320,7 +332,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
                 $customer->store($this->db);
 
-                $customer2 = new Datastore_Record('Test_Customer');
+                $customer2 = new Test_Customer();
                 $customer2->retrieve($this->db, 1000);
 
                 $this->assertEquals(1000,     (int) $customer2->customerId);
@@ -334,15 +346,16 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
                 // echo __FUNCTION__ . "\n";
 
-                $this->fixture->retrieve($this->db, 1);
-                $this->assertTrue($this->fixture->hasData());
-                $this->assertEquals('Stuart', $this->fixture->customerFirstName);
+                $customer = new Test_Customer();
+                $customer->retrieve($this->db, 1);
+                $this->assertTrue($customer->hasData());
+                $this->assertEquals('Stuart', $customer->customerFirstName);
 
-                $this->fixture->customerFirstName = 'Kristi';
-                $this->assertTrue($this->fixture->getNeedSave());
-                $this->fixture->store();
+                $customer->customerFirstName = 'Kristi';
+                $this->assertTrue($customer->getNeedSave());
+                $customer->store();
 
-                $oCustomer = new Datastore_Record('Test_Customer');
+                $oCustomer = new Test_Customer();
                 $this->assertFalse($oCustomer->hasData());
 
                 $oCustomer->retrieve($this->db, 1);
@@ -351,7 +364,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                 $oCustomer->customerFirstName = 'Spike';
                 $oCustomer->store();
 
-                $oCustomer2 = new Datastore_Record('Test_Customer');
+                $oCustomer2 = new Test_Customer();
                 $oCustomer2->retrieve($this->db, 1);
                 $this->assertEquals('Spike', $oCustomer2->customerFirstName);
         }
@@ -362,13 +375,14 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
                 // echo __FUNCTION__ . "\n";
 
-                $this->fixture->retrieve($this->db, 1);
-                $this->assertTrue($this->fixture->hasData());
-                $this->assertEquals('Stuart', $this->fixture->customerFirstName);
+                $customer = new Test_Customer();
+                $customer->retrieve($this->db, 1);
+                $this->assertTrue($customer->hasData());
+                $this->assertEquals('Stuart', $customer->customerFirstName);
 
-                $this->fixture->delete();
+                $customer->delete();
 
-                $oCustomer = new Datastore_Record('Test_Customer');
+                $oCustomer = new Test_Customer();
                 $this->assertFalse($oCustomer->hasData());
 
                 $excepted = false;
@@ -389,7 +403,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
         {
                 // echo __FUNCTION__ . "\n";
 
-                $oOrder = new Datastore_Record('Test_Order');
+                $oOrder = new Test_Order();
                 $oOrder->retrieve($this->db, 1);
 
                 $this->assertTrue($oOrder->hasData());
@@ -408,7 +422,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
         {
                 // echo __FUNCTION__ . "\n";
 
-                $oOrder = new Datastore_Record('Test_Order');
+                $oOrder = new Test_Order();
                 $oOrder->retrieve($this->db, 1);
 
                 $this->assertTrue($oOrder->hasData());
@@ -417,7 +431,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                 //         that isn't in the view
 
                 $oCustomer = $oOrder->retrieve_customer($this->db);
-                $this->assertTrue($oCustomer instanceof Datastore_Record);
+                $this->assertTrue($oCustomer instanceof Test_Customer);
                 $this->assertEquals(1, $oCustomer->getUniqueId());
                 $this->assertEquals('Stuart', $oCustomer->customerFirstName);
                 $this->assertEquals('Herbert', $oCustomer->customerSurname);
@@ -429,7 +443,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                 $GLOBALS['VAR_DUMP'] = true;
                 $oCustomer = $oOrder->retrieve_customer_name($this->db);
                 $GLOBALS['VAR_DUMP'] = false;
-                $this->assertTrue($oCustomer instanceof Datastore_Record);
+                $this->assertTrue($oCustomer instanceof Test_Customer);
                 $this->assertEquals(1, $oCustomer->getUniqueId());
                 $this->assertEquals('Stuart', $oCustomer->customerFirstName);
                 $this->assertEquals('Herbert', $oCustomer->customerSurname);
@@ -438,10 +452,10 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanRetrieveComplexPrimaryKey()
         {
-                $tag = new Datastore_Record('Test_Product_Tag');
+                $tag = new Test_Product_Tag();
                 $tag->retrieve($this->db, array('productId' => 1, 'tagName' => 'php'));
 
-                $this->assertTrue($tag instanceof Datastore_Record);
+                $this->assertTrue($tag instanceof Test_Product_Tag);
                 $this->assertEquals(1, $tag->productId);
                 $this->assertEquals('php', $tag->tagName);
 
@@ -450,11 +464,11 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanRetrieveRelatedRecordsWithComplexPrimaryKeys()
         {
-                $product = new Datastore_Record('Test_Product');
+                $product = new Test_Product();
                 $product->retrieve($this->db, 1);
 
                 // make sure we have the product before we go any further
-                $this->assertTrue($product instanceof Datastore_Record);
+                $this->assertTrue($product instanceof Test_Product);
                 $this->assertEquals(1, $product->getUniqueId());
 
                 // now, retrieve the tags for this product
@@ -484,6 +498,30 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                         $tags[2]->getData()
                 );
         }
+
+        public function testCanRetrieveRecordsViaJoinTable()
+        {
+                $product = new Test_Product();
+                $product->retrieve($this->db, 1);
+
+                // make sure we have the product first
+                $this->assertEquals(1, $product->pid);
+
+                // now, retrieve the list of related products
+                $products = $product->retrieve_relatedProducts($this->db);
+
+                // did we get the list we expect?
+                $this->assertEquals(3, count($products));
+                $this->assertEquals(2, $products[2]->pid);
+                $this->assertEquals(3, $products[3]->pid);
+                $this->assertEquals(4, $products[4]->pid);
+        }
+
+        public function testCanRetrieveInheritedRecords()
+        {
+                $product = new Test_Product_Annotated_Tag();
+                $product->retrieve($this->db, 1);
+        }
 }
 
 
@@ -497,8 +535,7 @@ class DatastoreXXX_Query_Tests extends PHPUnit_Framework_TestCase
 
                 foreach ($customers as $customer)
                 {
-                	$this->assertTrue($customer instanceof Datastore_Record);
-                        $this->assertTrue($customer->oModel instanceof Test_Customer);
+                	$this->assertTrue($customer instanceof Test_Customer);
                 }
 
                 $this->assertEquals
@@ -546,8 +583,7 @@ class DatastoreXXX_Query_Tests extends PHPUnit_Framework_TestCase
                        ->withUniqueID(1);
 
                 $customer = $this->db->search($custQ);
-                $this->assertTrue($customer instanceof Datastore_Record);
-                $this->assertTrue($customer->oModel instanceof Test_Customer);
+                $this->assertTrue($customer instanceof Test_Customer);
                 $this->assertEquals(1, (int) $customer->customerId);
         }
 
@@ -567,8 +603,7 @@ class DatastoreXXX_Query_Tests extends PHPUnit_Framework_TestCase
                 // check the orders are correct types
                 foreach ($orders as $order)
                 {
-                        $this->assertTrue($order instanceof Datastore_Record);
-                        $this->assertTrue($order->oModel instanceof Test_Order);
+                        $this->assertTrue($order instanceof Test_Order);
                 }
         }
 
@@ -588,7 +623,7 @@ class DatastoreXXX_Query_Tests extends PHPUnit_Framework_TestCase
 
                 foreach ($products as $product)
                 {
-                        $this->assertTrue($product->oModel instanceof Test_Product);
+                        $this->assertTrue($product instanceof Test_Product);
                 }
         }
 
@@ -608,7 +643,7 @@ class DatastoreXXX_Query_Tests extends PHPUnit_Framework_TestCase
 
                 foreach ($customers as $customer)
                 {
-                        $this->assertTrue($customer->oModel instanceof Test_Customer);
+                        $this->assertTrue($customer instanceof Test_Customer);
                 }
         }
 
@@ -889,191 +924,5 @@ class DatastoreXXX_Query_Tests extends PHPUnit_Framework_TestCase
         }
 
 }
-
-/*
-// ========================================================================
-// Tests done against a non-PDO database
-// ------------------------------------------------------------------------
-
-// ========================================================================
-// Tests against the current session
-// ------------------------------------------------------------------------
-
-registerTests('DatastoreSession_Record_Tests');
-class DatastoreSession_Record_Tests extends DatastoreXXX_Record_Tests
-{
-        public function setup ()
-        {
-                createTestArrayDatabase($_SESSION['DatastoreSession']);
-
-                $oConn         = new Datastore_Array_Connector($_SESSION['DatastoreSession']);
-                $this->db      = new Datastore($oConn);
-                $this->fixture = new Test_Customer_Record();
-        }
-}
-
-registerTests('DatastoreSession_Table_Tests');
-class DatastoreSession_Table_Tests extends DatastoreXXX_Table_Tests
-{
-        public function setup ()
-        {
-                createTestArrayDatabase($_SESSION['DatastoreSession']);
-
-                $oConn         = new Datastore_Array_Connector($_SESSION['DatastoreSession']);
-                $this->db      = new Datastore($oConn);
-        }
-}
-
-registerTests('DatastoreSession_ListQuery_Tests');
-class DatastoreSession_ListQuery_Tests extends DatastoreXXX_ListQuery_Tests
-{
-        public function setup ()
-        {
-                createTestArrayDatabase($_SESSION['DatastoreSession']);
-
-                $oConn         = new Datastore_Array_Connector($_SESSION['DatastoreSession']);
-                $this->db      = new Datastore($oConn);
-        }
-}
-
-function createTestArrayDatabase(&$data)
-{
-        $data = array();
-
-        $data['customers'][1] = array
-        (
-                'customerId'            => 1,
-                'customerFirstName'     => 'Stuart',
-                'customerSurname'       => 'Herbert',
-                'customerAddress1'      => '123 Example Road',
-                'customerAddress2'      => NULL,
-                'customerCity'          => 'Example City',
-                'customerCounty'        => 'Example County',
-                'customerCountry'       => 'UK',
-                'customerPostcode'      => 'CF10 2GE',
-                'customerEmailAddress'  => 'stuart@example.com',
-        );
-
-        $data['customers'][2] = array
-        (
-                'customerId'            => 2,
-                'customerFirstName'     => 'ExampleFirstName2',
-                'customerSurname'       => 'ExampleSurname2',
-                'customerAddress1'      => '234 Example Road',
-                'customerAddress2'      => 'Example Address 2',
-                'customerCity'          => 'Example City 2',
-                'customerCounty'        => 'Example County 2',
-                'customerCountry'       => 'UK',
-                'customerPostcode'      => 'Example Postcode 2',
-                'customerEmailAddress'  => 'example2@example.com',
-        );
-
-        $data['ordercontents'][1] = array
-        (
-                'uid'           => 1,
-                'masterOrderId' => 1,
-                'pid'           => 1,
-                'quantity'      => 5,
-                'cost'          => 8.99
-        );
-
-        $data['ordercontents'][2] = array
-        (
-                'uid'           => 2,
-                'masterOrderId' => 1,
-                'pid'           => 4,
-                'quantity'      => 20,
-                'cost'          => 50.99
-        );
-
-        $data['orders'][1] = array
-        (
-                'masterCustomerId'      => 1,
-                'giftCustomerId'        => 2,
-                'orderId'               => 1,
-                'orderStatus'           => 1,
-                'orderTotal'            => 8.59,
-                'orderPostage'          => 0,
-                'orderStatusChange'     => 2006,
-        );
-
-        $data['orders'][2] = array
-        (
-                'masterCustomerId'      => 1,
-                'giftCustomerId'        => 2,
-                'orderId'               => 2,
-                'orderStatus'           => 2,
-                'orderTotal'            => 99.99,
-                'orderPostage'          => 5.99,
-                'orderStatusChange'     => 1970,
-        );
-
-        $data['products'][1] = array
-        (
-                'pid'                   => 1,
-                'productName'           => 'Gentoo LAMP Server',
-                'productSummary'        => 'A Linux/Apache/MySQL/PHP Stack for server environments',
-                'productUrl'            => 'http://lamp.gentoo.org/server/',
-                'productCode'           => 'AA001',
-                'productCost'           => 15.99,
-                'isActive'              => 1,
-        );
-
-        $data['products'][2] = array
-        (
-                'pid'                   => 2,
-                'productName'           => 'Gentoo LAMP Developer Desktop',
-                'productSummary'        => 'A developer\'s workstation w/ the LAMP stack',
-                'productUrl'            => 'http://lamp.gentoo.org/client/',
-                'productCode'           => 'AA002',
-                'productCost'           => 9.99,
-                'isActive'              => 1,
-        );
-
-        $data['products'][3] = array
-        (
-                'pid'                   => 3,
-                'productName'           => 'Gentoo Overlays',
-                'productSummary'        => 'Per-team package trees for Gentoo',
-                'productUrl'            => 'http://overlays.gentoo.org/',
-                'productCode'           => 'AA003',
-                'productCost'           => 5.99,
-                'isActive'              => 1,
-        );
-
-        $data['products'][4] = array
-        (
-                'pid'                   => 4,
-                'productName'           => 'Gentoo/ALT',
-                'productSummary'        => 'Gentoo package management on non-Linux kernels',
-                'productUrl'            => 'http://alt.gentoo.org/',
-                'productCode'           => 'AA004',
-                'productCost'           => 3.99,
-                'isActive'              => 1,
-        );
-
-        $data['relatedProducts'][1] = array
-        (
-                'uid'                   => 1,
-                'productId1'            => 1,
-                'productId2'            => 2,
-        );
-
-        $data['relatedProducts'][2] = array
-        (
-                'uid'                   => 2,
-                'productId1'            => 1,
-                'productId2'            => 3,
-        );
-
-        $data['relatedProducts'][3] = array
-        (
-                'uid'                   => 1,
-                'productId1'            => 1,
-                'productId2'            => 4,
-        );
-}
-
-*/
 
 ?>

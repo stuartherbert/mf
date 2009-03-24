@@ -21,6 +21,7 @@
 // ------------------------------------------------------------------------
 // 2008-08-12   SLH     Created
 // 2009-03-18   SLH     Fixed up to work under the new task-based approach
+// 2009-03-24   SLH     Tests no longer rely on a fixture class
 // ========================================================================
 
 // bootstrap the framework
@@ -42,7 +43,6 @@ class DatastoreSQLite3_Record_Tests extends DatastoreXXX_Record_Tests
 
                 $oConn         = new DatastoreSQLite3_Connector('mf.sqlite');
                 $this->db      = new Datastore($oConn);
-                $this->fixture = new Datastore_Record('Test_Customer');
 
                 defineDatastoreTestStorage_RDBMS($this->db);
         }

@@ -43,6 +43,9 @@
 // 2009-03-18   SLH     Fixes for supporting complex primary keys
 // 2009-03-19   SLH     Primary keys are now always stored internally as
 //                      an array
+// 2009-03-23   SLH     Added stub for inheritance support
+// 2009-03-23   SLH     Instead of Datastore_Record wrapping the Model,
+//                      the Model now acts as a wrapper for Datastore_Record
 // ========================================================================
 
 // ========================================================================
@@ -59,6 +62,8 @@ implements Iterator
         protected $needSave             = false;
         protected $readOnly             = false;
         protected $definitionName       = null;
+
+        protected $datastoreProxy       = null;
 
         const     DATA_START            = 0;
         const     REPLACE_DATA          = 1;
@@ -116,6 +121,48 @@ implements Iterator
         public function definitionReset()
         {
         	$this->getDefinition(null, true);
+        }
+
+        public function setDatastoreProxy($proxy)
+        {
+                $this->datastoreProxy = $proxy;
+        }
+
+        // ================================================================
+        // Support for calling the datastore proxy object
+        // ----------------------------------------------------------------
+
+        public function __call($fullMethodName, $args)
+        {
+                if (!isset($this->datastoreProxy))
+                {
+                        // TODO: throw something better here
+                        throw new Exception();
+                }
+
+                return call_user_func_array(array($this->datastoreProxy, $fullMethodName), $args);
+        }
+
+        public function retrieve(Datastore $oDB, $primaryKey)
+        {
+                $this->datastoreProxy = $oDB->getNewDatastoreProxy($this);
+                $this->datastoreProxy->retrieve($oDB, $primaryKey);
+        }
+
+        public function store(Datastore $oDB = null)
+        {
+                if ($oDB == null && $this->datastoreProxy == null)
+                {
+                        // TODO: throw a better exception here
+                        throw new Exception();
+                }
+
+                if ($this->datastoreProxy == null)
+                {
+                        $this->datastoreProxy = $oDB->getNewDatastoreProxy($this);
+                }
+
+                return $this->datastoreProxy->store($oDB);
         }
 
         // ================================================================
@@ -1348,6 +1395,14 @@ class Model_Definition
                         throw new Exception();
                 }
         }
+
+        // ----------------------------------------------------------------
+        // support for more interesting data structures
+
+        public function inherits($modelName)
+        {
+                // does nothing for now
+        }
 }
 
 // ========================================================================
@@ -1700,6 +1755,8 @@ class Model_Relationship
                 $this->findViaAliasAlias = $aliasAlias;
 
                 $this->relationship = $this->relationship & Model_Relationship::MANY_TO_MANY;
+
+                return $this;
         }
         
         // ================================================================
