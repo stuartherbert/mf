@@ -46,11 +46,8 @@
 // 2009-03-23   SLH     Added stub for inheritance support
 // 2009-03-23   SLH     Instead of Datastore_Record wrapping the Model,
 //                      the Model now acts as a wrapper for Datastore_Record
-// ========================================================================
-
-// ========================================================================
-// TODO: make relationships support primary keys containing more than one
-//       field
+// 2009-03-25   SLH     Added support for extending models w/out having
+//                      to use inheritance
 // ========================================================================
 
 class Model
@@ -129,11 +126,33 @@ implements Iterator
         }
 
         // ================================================================
-        // Support for calling the datastore proxy object
+        // Support for extending the model
         // ----------------------------------------------------------------
 
         public function __call($fullMethodName, $args)
         {
+                static $oDef = null;
+
+                if ($oDef === null)
+                        $oDef = $this->getDefinition();
+
+                // step 1: does the method exist in an extension?
+                if ($extension = $oDef->getExtensionForMethod($fullMethodName))
+                {
+                        // call the extension object
+                        // the first parameter passed is always $this
+                        array_unshift($args, $this);
+                        return call_user_func_array(array($extension, $fullMethodName), $args);
+                }
+
+                // step 2: do we need to call datastore proxy instead?
+                //
+                // NOTE that we handle this separately because each instance
+                // of the model requires a unique copy of the datastore
+                // proxy, it is is perfectly possible for two separate
+                // instances of the model to have datastore proxies of
+                // different classes
+
                 if (!isset($this->datastoreProxy))
                 {
                         // TODO: throw something better here
@@ -142,6 +161,10 @@ implements Iterator
 
                 return call_user_func_array(array($this->datastoreProxy, $fullMethodName), $args);
         }
+
+        // ================================================================
+        // Support for calling the datastore proxy object
+        // ----------------------------------------------------------------
 
         public function retrieve(Datastore $oDB, $primaryKey)
         {
@@ -839,6 +862,9 @@ class Model_Definition
         protected $aRelationships       = array();
         protected $aIndices             = array();
 
+        protected $extensions           = array();
+        protected $extensionMap         = array();
+
         private $modelName              = "";
         private $modelClassName         = "";
         private $oModel                 = null;
@@ -1204,6 +1230,37 @@ class Model_Definition
 
                 // if we get here, then we can change the instance record
                 $this->oRecord = $oRecord;
+        }
+
+        // ================================================================
+        // Support for extending the model
+        // ----------------------------------------------------------------
+
+        public function addExtension ($classname)
+        {
+                $extension = new $classname;
+                $this->extensions[$classname] = $extension;
+
+                // we use reflection to make a list of all the public
+                // methods from the class
+
+                $reflection = new ReflectionClass($classname);
+                $methods    = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
+
+                foreach ($methods as $method)
+                {
+                        $this->extensionMap[$method->getName()] = $extension;
+                }
+        }
+
+        public function getExtensionForMethod($methodName)
+        {
+                if (isset($this->extensionMap[$methodName]))
+                {
+                        return $this->extensionMap[$methodName];
+                }
+
+                return null;
         }
 
         // ================================================================

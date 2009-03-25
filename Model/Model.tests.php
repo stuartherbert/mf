@@ -25,6 +25,7 @@
 // 2009-03-09   SLH     Added tests for models with complicated primary
 //                      keys
 // 2009-03-18   SLH     Fixed up to work with the new task-based approach
+// 2009-03-25   SLH     Added tests for model extensions
 // ========================================================================
 
 // bootstrap the framework
@@ -73,6 +74,20 @@ class Test_Model_Tag extends Model
 class Test_Model_Note_Tag extends Model
 {
 
+}
+
+class Test_Model_User extends Model
+{
+
+}
+
+class Test_Model_User_EmailAddress_Ext
+{
+        public function setEmailAddress($model, $emailAddress)
+        {
+                $model->emailAddress    = $emailAddress;
+                $model->hasEmailAddress = true;
+        }
 }
 
 Testsuite_registerTests('Model_Definitions_Tests');
@@ -156,6 +171,11 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
                      ->ourFieldIs('tagName')
                      ->theirModelIs('Test_Model_Tag')
                      ->theirFieldIs('name');
+
+                $oDef = Model_Definitions::get('Test_Model_User');
+                $oDef->addField('id');
+                $oDef->addField('username');
+                $oDef->addField('password');
         }
 
         public function testCanDefineModel()
@@ -243,6 +263,45 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
                 // ask for the definition a second time
                 $oDef4 = Model_Definitions::get('Test_Model_Requirement');
                 $this->assertSame($oDef3, $oDef4);
+        }
+
+        public function testCanExtendExistingModel()
+        {
+                // step 1: prove that we don't have an emailAddress
+                //         field
+
+                $user            = new Test_Model_User;
+                $extensionThrown = false;
+
+                try
+                {
+                        $emailAddress = $user->emailAddress;
+                }
+                catch (Model_E_NoSuchField $e)
+                {
+                        $exceptionThrown = true;
+                }
+
+                $this->assertEquals(true, $exceptionThrown);
+
+                // step 2: now, extend the model to add the emailAddress
+                //         field
+                $oDef = Model_Definitions::get('Test_Model_User');
+                $oDef->addField('emailAddress');
+                $oDef->addField('hasEmailAddress')
+                     ->setDefaultValue(false);
+
+                $oDef->addExtension('Test_Model_User_EmailAddress_Ext');
+
+                // now, see if the extension works
+                //
+                // note: we should not have to create a new instance
+                //       of the user object!
+                $this->assertEquals(false, $user->hasEmailAddress);
+                $user->setEmailAddress('stuart@stuartherbert.com');
+
+                $this->assertEquals(true, $user->hasEmailAddress);
+                $this->assertEquals('stuart@stuartherbert.com', $user->emailAddress);
         }
 }
 
