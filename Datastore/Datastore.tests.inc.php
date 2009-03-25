@@ -38,6 +38,7 @@
 // 2009-03-19   SLH     Added tests specifically for complex primary keys
 // 2009-03-23   SLH     Added tests for table inheritance
 // 2009-03-24   SLH     Tests no longer rely on a fixture class
+// 2009-03-25   SLH     Updated tests for many:many relationships
 // ========================================================================
 
 // ========================================================================
@@ -168,9 +169,8 @@ function defineDatastoreTestModels()
               ->theirFieldIs('productId');
 
         $oMeta->hasMany('relatedProducts')
-              ->ourFieldIs('pid')
-              ->theirModelIs('Test_Product')
               ->foundVia('Test_RelatedProducts', 'relatedProducts')
+              ->ourFieldIs('pid')
               ->theirFieldIs('productId1');
 
         $oDef = Model_Definitions::get('Test_RelatedProducts');
@@ -512,9 +512,9 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
 
                 // did we get the list we expect?
                 $this->assertEquals(3, count($products));
-                $this->assertEquals(2, $products[2]->pid);
-                $this->assertEquals(3, $products[3]->pid);
-                $this->assertEquals(4, $products[4]->pid);
+                $this->assertEquals(2, (int)$products[0]->pid);
+                $this->assertEquals(3, (int)$products[1]->pid);
+                $this->assertEquals(4, (int)$products[2]->pid);
         }
 
         public function testCanRetrieveInheritedRecords()

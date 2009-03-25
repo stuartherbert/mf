@@ -49,6 +49,7 @@
 // 2009-03-25   SLH     Added support for extending models w/out having
 //                      to use inheritance
 // 2009-03-25   SLH     Added Model_Extension interface
+// 2009-03-25   SLH     Basic functioning many:many support
 // ========================================================================
 
 class Model
@@ -1625,6 +1626,11 @@ class Model_Relationship
 
         protected $theirModelName = null;
 
+        // ----------------------------------------------------------------
+        // many:many join table support
+
+        protected $findViaModel   = null;
+
         // ================================================================
         // Constructor
         // ================================================================
@@ -1684,6 +1690,7 @@ class Model_Relationship
         {
                 if ($this->relationship === null)
                 {
+                        $this->relationship = Model_Relationship::MANY_TO_MANY;
                         return false;
                 }
 
@@ -1763,15 +1770,14 @@ class Model_Relationship
         // ----------------------------------------------------------------
         // teach us about a join table
 
-        public function foundVia($alias, $aliasAlias)
+        public function foundVia($modelName, $modelAlias)
         {
-                constraint_mustBeString($alias);
-                constraint_mustBeString($aliasAlias);
+                constraint_mustBeString($modelName);
+                constraint_mustBeString($modelAlias);
 
-                $this->findViaAlias = $alias;
-                $this->findViaAliasAlias = $aliasAlias;
-
-                $this->relationship = $this->relationship & Model_Relationship::MANY_TO_MANY;
+                $this->findViaModelName  = $modelName;
+                $this->findViaModelAlias = $modelAlias;
+                $this->relationship      = Model_Relationship::MANY_TO_MANY;
 
                 return $this;
         }
@@ -1803,6 +1809,16 @@ class Model_Relationship
         public function getTheirModelName()
         {
                 return $this->theirModelName;
+        }
+
+        public function getFindViaModelName()
+        {
+                return $this->findViaModelName;
+        }
+
+        public function getFindViaModelAlias()
+        {
+                return $this->findViaModelAlias;
         }
 
         public function cloneTheirRecord()

@@ -64,6 +64,7 @@
 // 2009-03-19   SLH     More fixes for supporting complex primary keys
 // 2009-03-23   SLH     Switched to creating datastore records via the
 //                      datastore (to allow for future flexibility)
+// 2009-03-25   SLH     Basic many:many support
 // ========================================================================
 
 // ========================================================================
@@ -882,6 +883,12 @@ class Datastore_Record extends Core
                         $oQuery->findFirst($oRelationship->getTheirModelName(), $view)
                                ->withForeignKeys($keyPairs);
                 }
+                else if ($oRelationship->hasManyToMany())
+                {
+                        $oQuery->findEvery($oRelationship->getFindViaModelName())
+                               ->withForeignKeys($keyPairs)
+                               ->includingOnly($oRelationship->getFindViaModelAlias());
+                }
                 else
                 {
                 	$oQuery->findEvery($oRelationship->getTheirModelName(), $view)
@@ -1627,6 +1634,35 @@ class Datastore_Query
                 );
 
                 $this->extractInto[] = $theirModelDef->getView($view);
+
+                return $this;
+        }
+
+        public function includingOnly($alias, $view = 'default')
+        {
+        	$oRelationship = $this->currentView->oDef->getRelationship($alias);
+                $theirModelName = $oRelationship->getTheirModelName();
+                $theirModelDef  = Model_Definitions::get($theirModelName);
+
+                $this->searchTerms[] = array
+                (
+                        'type'       => Datastore_Query::TYPE_VIEW,
+                        'view'       => $theirModelDef->getView($view),
+                );
+
+                $oOurMap   = $this->oDB->getStorageForModel($this->currentView->oDef->getModelName());
+                $oTheirMap = $this->oDB->getStorageForModel($theirModelName);
+
+                $this->searchTerms[] = array
+                (
+                        'type'        => Datastore_Query::TYPE_JOIN,
+                        'ourTable'    => $oOurMap->getTable(),
+                        'ourFields'   => $oRelationship->getOurFields(),
+                        'theirTable'  => $oTheirMap->getTable(),
+                        'theirFields' => $oRelationship->getTheirFields(),
+                );
+
+                $this->extractInto = array($theirModelDef->getView($view));
 
                 return $this;
         }
