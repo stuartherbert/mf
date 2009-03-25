@@ -26,6 +26,8 @@
 //                      keys
 // 2009-03-18   SLH     Fixed up to work with the new task-based approach
 // 2009-03-25   SLH     Added tests for model extensions
+// 2009-03-25   SLH     Updated model extension test to reflect new
+//                      Model_Extension interface
 // ========================================================================
 
 // bootstrap the framework
@@ -81,13 +83,25 @@ class Test_Model_User extends Model
 
 }
 
-class Test_Model_User_EmailAddress_Ext
+class Test_Model_User_EmailAddress_Ext implements Model_Extension
 {
+        public function extendsModelDefinition(Model_Definition $oDef)
+        {
+                $oDef->addField('emailAddress');
+                $oDef->addFakeField('hasEmailAddress')
+                     ->setDefaultValue(false);
+        }
+
         public function setEmailAddress($model, $emailAddress)
         {
                 $model->emailAddress    = $emailAddress;
                 $model->hasEmailAddress = true;
         }
+}
+
+class Test_Model_Bad_Ext
+{
+
 }
 
 Testsuite_registerTests('Model_Definitions_Tests');
@@ -287,10 +301,6 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
                 // step 2: now, extend the model to add the emailAddress
                 //         field
                 $oDef = Model_Definitions::get('Test_Model_User');
-                $oDef->addField('emailAddress');
-                $oDef->addField('hasEmailAddress')
-                     ->setDefaultValue(false);
-
                 $oDef->addExtension('Test_Model_User_EmailAddress_Ext');
 
                 // now, see if the extension works
@@ -302,6 +312,22 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 
                 $this->assertEquals(true, $user->hasEmailAddress);
                 $this->assertEquals('stuart@stuartherbert.com', $user->emailAddress);
+        }
+
+        public function testModelExtensionMustImplementInterface()
+        {
+                $exceptionThrown = false;
+                try
+                {
+                        $oDef = Model_Definitions::get('Test_Model_User');
+                        $oDef->addExtension('Test_Model_Bad_Ext');
+                }
+                catch (PHP_E_ConstraintFailed $e)
+                {
+                        $exceptionThrown = true;
+                }
+
+                $this->assertEquals(true, $exceptionThrown);
         }
 }
 

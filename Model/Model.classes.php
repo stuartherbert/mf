@@ -48,6 +48,7 @@
 //                      the Model now acts as a wrapper for Datastore_Record
 // 2009-03-25   SLH     Added support for extending models w/out having
 //                      to use inheritance
+// 2009-03-25   SLH     Added Model_Extension interface
 // ========================================================================
 
 class Model
@@ -1186,59 +1187,18 @@ class Model_Definition
         }
 
         // ================================================================
-        // Support for record instances
-        // ----------------------------------------------------------------
-
-        public function getNewRecord ()
-        {
-                // do we need to change the record instance?
-                if (isset($this->oRecord))
-                {
-                        if (get_class($this->oRecord->oModel) !== $this->modelClassName)
-                        {
-                                // yes we do
-                                $this->resetRecord();
-
-                        }
-                        else
-                        {
-                                // no, we do not
-                        }
-                }
-                else
-                {
-                        // we have no record instance - create one
-                        $this->resetRecord();
-                }
-
-                return clone $this->oRecord;
-        }
-
-        protected function resetRecord()
-        {
-                // the class *must* set the
-                $oRecord = new Datastore_Record($this->modelClassName);
-                if ($oRecord->oDef !== $this)
-                {
-                        throw new Model_E_IncompatibleDefinition
-                        (
-                                $this->recordClassName,
-                                $oRecord->oDef->getModelName(),
-                                $this->getModelName()
-                        );
-                }
-
-                // if we get here, then we can change the instance record
-                $this->oRecord = $oRecord;
-        }
-
-        // ================================================================
         // Support for extending the model
         // ----------------------------------------------------------------
 
         public function addExtension ($classname)
         {
                 $extension = new $classname;
+                if (!$extension instanceof Model_Extension)
+                {
+                        throw new PHP_E_ConstraintFailed(__FUNCTION);
+                }
+
+                $extension->extendsModelDefinition($this);
                 $this->extensions[$classname] = $extension;
 
                 // we use reflection to make a list of all the public
@@ -1948,6 +1908,14 @@ class Model_Type_Generic
         {
                 // do nothing
         }
+}
+
+// ========================================================================
+// ------------------------------------------------------------------------
+
+interface Model_Extension
+{
+        public function extendsModelDefinition(Model_Definition $oDef);
 }
 
 ?>
