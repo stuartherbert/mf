@@ -1196,7 +1196,7 @@ class Model_Definition
                 $extension = new $classname;
                 if (!$extension instanceof Model_Extension)
                 {
-                        throw new PHP_E_ConstraintFailed(__FUNCTION);
+                        throw new PHP_E_ConstraintFailed(__FUNCTION__);
                 }
 
                 $extension->extendsModelDefinition($this);
