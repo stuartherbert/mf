@@ -33,17 +33,59 @@
 //                      Removed App_Theme class (replaced by App class)
 // 2009-02-29   SLH     Simplified App class, to be the global holder for
 //                      all things to do with an MF app
+// 2009-03-24   SLH     Added support for a user authenticator object
+// 2009-03-25   SLH     Revamped theme support
 // ========================================================================
 
 class App
 {
-        public static $request    = null;
-        public static $response   = null;
-        public static $user       = null;
-        public static $theme      = null;
-        public static $languages  = null;
-        public static $routes     = null;
-        public static $config     = array();
+        /**
+         *
+         * @var App_request
+         */
+        public static $request           = null;
+
+        /**
+         *
+         * @var App_Response
+         */
+        public static $response          = null;
+
+        /**
+         *
+         * @var User
+         */
+        public static $user              = null;
+
+        /**
+         *
+         * @var Theme_Engine
+         */
+        public static $theme             = null;
+
+        /**
+         *
+         * @var App_Languages
+         */
+        public static $languages         = null;
+
+        /**
+         *
+         * @var Routing_Routes
+         */
+        public static $routes            = null;
+
+        /**
+         *
+         * @var array
+         */
+        public static $config            = array();
+
+        /**
+         *
+         * @var App_UserAutenticator
+         */
+        public static $userAuthenticator = null;
 
         // cannot be instantiated
 	private function __construct()
@@ -63,43 +105,48 @@ class App
                 self::$request    = new App_Request();
                 self::$response   = new App_Response();
                 self::$languages  = new App_Languages();
-                self::$routes     = new Routing_Routes();
+                self::$routes     = new Routing_Engine();
+                self::$theme      = new Theme_Engine();
         }
 
         // ----------------------------------------------------------------
-        // Handle creating controllers
+        // theme engine support
 
-        public static function newController()
+        public static function determineThemeEngine()
         {
-                // setup any required conditions
-                if (self::$user->authenticated)
+                // are we loading the default theme, or one chosen
+                // by the current user?
+                
+                $theme = App::$config['themes']['default'];
+                
+                if (self::$user instanceof User && self::$user->supportsThemePref)
                 {
-                        Routing_Routes::setCondition('loggedIn', true);
-                }
-                else
-                {
-                        Routing_Routes::setCondition('anonymousUser', true);
-                }
-
-                // convert the queryString into its individual components
-                $params = Routing_Routes::matchUrl(self::$request->pathInfo);
-
-                var_dump($params);
-
-                // load the controller
-        }
-
-        public static function newTheme()
-        {
-                constraint_mustBeUser(self::$user);
-
-                $theme = self::$user->theme;
-                if ($theme === null)
-                {
-                        $theme = DEFAULT_THEME;
+                        if (isset($user->theme))
+                        {
+                                $theme = $user->theme;
+                        }
                 }
 
                 return $theme;
+        }
+
+        public static function loadThemeEngine($theme)
+        {
+                // step 1: make sure we're trying to load a theme that
+                //         exists
+                constraint_mustBeValidThemeEngine($theme);
+
+                // step 2: create the theme engine. autoload will pull
+                //         in the right files
+                App::$theme = new $theme;
+        }
+
+        // ----------------------------------------------------------------
+        // user support
+        
+        public static function authenticateUserWith($userAuthenticator)
+        {
+                self::$userAuthenticator = $userAuthenticator;
         }
 }
 
@@ -472,6 +519,19 @@ class App_Languages
                 
                 // if we get here, then we do not have a suitable translation
                 return false;
+        }
+}
+
+// ========================================================================
+
+class App_Engine
+{
+        static public function runPage($route)
+        {
+                $page = APP_TOPDIR . '/app/' . $route->routeToMethod
+                        . '/pages/' . $route->routeToPage . '.page.php';
+
+                require_once($page);
         }
 }
 

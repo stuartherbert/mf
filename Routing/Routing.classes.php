@@ -27,9 +27,10 @@
 // 2009-03-01   SLH     Routing_Routes is no longer a singleton
 // 2009-03-02   SLH     Routes now support different main loops
 // 2009-03-24   SLH     Routing now supports modules and pages
+// 2009-03-30   SLH     Renamed Routing_Routes to Routing_Engine
 // ========================================================================
 
-class Routing_Routes
+class Routing_Engine
 {
         protected $routes     = array();
         protected $conditions = array();
@@ -137,7 +138,7 @@ class Routing_Routes
          * looking at
          */
 
-        public function matchUrl($url)
+        public function matchUrl($url, $userAuthenticator = null)
         {
                 $routes = $this->findRoutes($url);
 
@@ -180,7 +181,10 @@ class Routing_Routes
                 // now we know whether a route needs to know if we have
                 // a user or not
 
-                // TODO: create user
+                if ($userAuthenticator != null && $mainLoopNeedsUser)
+                {
+                        $userAuthenticator->process();
+                }
 
                 // now we have set the conditions, see which routes
                 // are left
