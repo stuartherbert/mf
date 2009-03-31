@@ -20,48 +20,67 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2008-10-17   SLH     Created
+// 2009-03-31   SLH     Moved user creation out into the main loop
 // ========================================================================
 
-class WebApp_UserAuthenticator extends User_Authenticator
+class WebApp
 {
-        public function newUser(App_Request $oRequest, Datastore $oDB)
+        // cannot be instantiated
+        private function __construct()
         {
-                $oUserCookie = new UserCookie(APP_SHORT_NAME, COOKIE_SECRET);
 
+        }
+
+        public static function preMainLoop($route)
+        {
+                // load the theme
+                self::setTheme();
+        }
+
+        public static function postMainLoop()
+        {
+                // do nothing
+        }
+        
+        public static function setTheme()
+        {
+                // if the user is anonymous, they get the default theme
+                if (!App::$user->authenticated)
+                {
+                        App::$themes->setTheme(App::$config['APP_THEME']);
+                        return;
+                }
+
+                // if the user model doesn't support user-selected themes,
+                // they get the default theme
+                if (!App::$user->supportsThemePref)
+                {
+                        App::$themes->setTheme(App::$config['APP_THEME']);
+                        return;
+                }
+
+                // if the user has not selected a theme, they get the
+                // default theme (spot the trend here ... :)
+                if (!isset(App::$user->theme) || empty(App::$user->theme))
+                {
+                        App::$themes->setTheme(App::$config['APP_THEME']);
+                        return;
+                }
+
+                // if we get here, we are trying to set the user's preferred
+                // theme
+                //
+                // there is always the chance that the user's preference is
+                // no longer valid, so we need to be careful
                 try
                 {
-                        if ($oUserCookie->isReturningUser())
-                        {
-                                $oUser = $oUserTable->retrieve($oDB, $oUserCookie->id);
-                                if ($oUser)
-                                {
-                                        if ($oUserCookie->authenticateUser($oUser))
-                                        {
-                                                // the cookie is valid
-                                                $oUser->authenticated = true;
-                                        }
-                                }
-                        }
+                        App::$themes->setTheme(App::$user->theme);
                 }
-                catch (Datastore_E_RetrieveFailed $e)
+                catch (Exception $e)
                 {
-                        // do nothing
+                        App::$themes->setTheme(App::$config['APP_THEME']);
                 }
-
-                // make sure we have a user that we can use!
-                if (!isset($oUser) || $oUser === false)
-                {
-                        // FIXME: this needs fixing
-                        $oUser = new User_Record();
-                }
-
-                // our user is loaded
-                return $oUser;
-
-                // all done
         }
 }
-
-App_User::authenticateUsing(new WebApp_UserAuthenticator);
 
 ?>

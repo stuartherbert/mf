@@ -28,9 +28,11 @@
 // 2009-03-02   SLH     Routes now support different main loops
 // 2009-03-24   SLH     Routing now supports modules and pages
 // 2009-03-30   SLH     Renamed Routing_Routes to Routing_Engine
+// 2009-03-31   SLH     Moved user creation out into the main loop
+// 2009-03-31   SLH     Renamed Routing_Engine to Routing_Manager
 // ========================================================================
 
-class Routing_Engine
+class Routing_Manager
 {
         protected $routes     = array();
         protected $conditions = array();
@@ -48,6 +50,11 @@ class Routing_Engine
                 return $this->routes[$name];
         }
 
+        /**
+         *
+         * @param string $name
+         * @return Routing_Route
+         */
         public function getRoute($name)
         {
         	$this->requireValidRouteName($name);
@@ -138,56 +145,9 @@ class Routing_Engine
          * looking at
          */
 
-        public function matchUrl($url, $userAuthenticator = null)
+        public function findRoute($url)
         {
                 $routes = $this->findRoutes($url);
-
-                // we have 1 or more routes returned
-                //
-                // we now need to loop through the routes, and work out
-                // which routes need to know if we have a user or not
-                //
-                // this will be easier with PHP 5.3 and the new support
-                // for calling static methods using variables for classnames
-
-                $mainLoopNeedsUser = false;
-                $mainLoopsNeedUser = array();
-                foreach ($routes as $route)
-                {
-
-                        $mainLoopClass = $route->mainLoop;
-                        if (!isset($mainLoopsNeedUser[$mainLoopClass]))
-                        {
-                                switch ($mainLoopClass)
-                                {
-                                        case 'AnonApi':
-                                                $mainLoopsNeedUser[$mainLoopClass] = false;
-                                                break;
-
-                                        case 'Api':
-                                        case 'WebApp':
-                                        default:
-                                                $mainLoopsNeedsUser[$mainLoopClass] = true;
-                                }
-                        }
-                }
-
-                foreach ($mainLoopsNeedUser as $tmp)
-                {
-                        if ($tmp)
-                                $mainLoopNeedsUser = true;
-                }
-
-                // now we know whether a route needs to know if we have
-                // a user or not
-
-                if ($userAuthenticator != null && $mainLoopNeedsUser)
-                {
-                        $userAuthenticator->process();
-                }
-
-                // now we have set the conditions, see which routes
-                // are left
                 return $this->filterRoutesMatchingConditions($routes);
         }
 
@@ -289,6 +249,12 @@ class Routing_Engine
         	$this->map        = array();
                 $this->conditions = array();
                 $this->routes     = array();
+        }
+
+        public function toUrl($route, $params = array())
+        {
+                $route = $this->getRoute($route);
+                return $route->toUrl($params);
         }
 }
 

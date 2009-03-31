@@ -19,8 +19,22 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2009-03-02   SLH     Created
+// 2009-03-31   SLH     Moved User creation into here
 // ========================================================================
 
+// step 1: add support for multiple websites here
+// TODO: add support for multiple virtual hosts at some point
+
+// step 2: do we have a returning user?
+//
+// after this step,
+// a) App::$user will be a valid User object (even for anonymous users)
+// b) the loggedin & anonymousUser conditions will be set as appropriate
+//    within the Routing_Engine
+
+App::$users->authenticateUser();
+
+// step 3: what page are we trying to look at?
 try
 {
         // convert the queryString into its individual components
@@ -35,7 +49,7 @@ try
         // website share the same idea of what a user is.  This is probably
         // a good thing
         
-        $route = App::$routes->matchUrl(App::$request->pathInfo);
+        $route = App::$routes->findRoute(App::$request->pathInfo);
 }
 catch (Routing_E_NoMatchingRoute $e)
 {
@@ -45,7 +59,7 @@ catch (Routing_E_NoMatchingRoute $e)
         throw $e;
 }
 
-// transfer control to the main loop
+// step 4: transfer control to the main loop
 //
 // TODO: we need to install the correct exception handler for
 //       each of our mainLoop types, to ensure the exception is
@@ -57,19 +71,66 @@ switch ($route->mainLoop)
 {
         case 'AnonApi':
                 // AnonApi::installExceptionHandler();
-                AnonApi::mainLoop($route);
+                AnonApi::preMainLoop($route);
                 break;
 
         case 'Api':
                 // Api::installExceptionHandler();
-                Api::mainLoop($route);
+                Api::preMainLoop($route);
                 break;
 
         case 'WebApp':
         default:
                 // WebApp::installExceptionHandler();
-                WebApp::mainLoop($route);
+                WebApp::preMainLoop($route);
                 break;
 }
+
+// pass control to the controller
+try
+{
+        $page = APP_TOPDIR . '/app/' . $route->routeToModule
+                . '/pages/' . $route->routeToPage . '.page.php';
+
+        require_once($page);
+}
+catch (Exception_Process $e)
+{
+        // we pass the exception on
+        throw $e;
+}
+catch (Exception $e)
+{
+        // we have an error that was not expected
+        // we will throw a generic internal server error
+        // at this point
+
+        var_dump($e);
+        throw new App_E_InternalServerError($e);
+}
+
+// prepare the data for publishing
+App::$theme->processResponse();
+
+// give the different managers an opportunity to do anything to the
+// data before it is published
+switch ($route->mainLoop)
+{
+        case 'AnonApi':
+                AnonApi::postMainLoop($route);
+                break;
+
+        case 'Api':
+                Api::postMainLoop($route);
+                break;
+
+        case 'WebApp':
+        default:
+                WebApp::postMainLoop($route);
+                break;
+}
+
+// render the final work
+App::$theme->render();
 
 ?>

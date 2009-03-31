@@ -50,6 +50,7 @@
 //                      to use inheritance
 // 2009-03-25   SLH     Added Model_Extension interface
 // 2009-03-25   SLH     Basic functioning many:many support
+// 2009-03-31   SLH     Added support for issetVariable-type overrides
 // ========================================================================
 
 class Model
@@ -402,6 +403,14 @@ implements Iterator
                         return false;
                 }
 
+                // do we have a setter defined?
+                $method = 'isset' . ucfirst($fieldName);
+                if (method_exists($this, $method))
+                {
+                        return $this->$method($data);
+                }
+
+                // no, so test the data directly
                 if (!isset($this->aData[$fieldName]))
                 {
                         return false;
@@ -1224,6 +1233,16 @@ class Model_Definition
                 return null;
         }
 
+        /**
+         * Return a list of the extensions attached to this model
+         * 
+         * @return array
+         */
+        public function getExtensions()
+        {
+                return $this->extensions;
+        }
+        
         // ================================================================
         // Support for behaviours
         // ----------------------------------------------------------------

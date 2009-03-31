@@ -35,13 +35,18 @@
 //                      all things to do with an MF app
 // 2009-03-24   SLH     Added support for a user authenticator object
 // 2009-03-25   SLH     Revamped theme support
+// 2009-03-30   SLH     Moved user authentication out to the User_Engine
+// 2009-03-31   SLH     Moved the bulk of the mainLoop into mf.mainLoop
+//                      and removed App_Engine
+// 2009-03-31   SLH     Added support for browser detection, to enable
+//                      more fine-grained theme support
 // ========================================================================
 
 class App
 {
         /**
          *
-         * @var App_request
+         * @var App_Request
          */
         public static $request           = null;
 
@@ -52,6 +57,11 @@ class App
         public static $response          = null;
 
         /**
+         * @var User_Manager
+         */
+        public static $users             = null;
+
+        /**
          *
          * @var User
          */
@@ -59,10 +69,26 @@ class App
 
         /**
          *
-         * @var Theme_Engine
+         * @var Browser_Manager
+         */
+        public static $browsers          = null;
+
+        /**
+         *
+         * @var Browser
+         */
+        public static $browser           = null;
+        /**
+         *
+         * @var Theme_Manager
+         */
+        public static $themes            = null;
+
+        /**
+         * @var Theme_BaseTheme
          */
         public static $theme             = null;
-
+        
         /**
          *
          * @var App_Languages
@@ -71,7 +97,7 @@ class App
 
         /**
          *
-         * @var Routing_Routes
+         * @var Routing_Manager
          */
         public static $routes            = null;
 
@@ -80,12 +106,6 @@ class App
          * @var array
          */
         public static $config            = array();
-
-        /**
-         *
-         * @var App_UserAutenticator
-         */
-        public static $userAuthenticator = null;
 
         // cannot be instantiated
 	private function __construct()
@@ -102,51 +122,19 @@ class App
         
         public static function init()
         {
+                // these are part of the App module
                 self::$request    = new App_Request();
                 self::$response   = new App_Response();
                 self::$languages  = new App_Languages();
-                self::$routes     = new Routing_Engine();
-                self::$theme      = new Theme_Engine();
-        }
 
-        // ----------------------------------------------------------------
-        // theme engine support
-
-        public static function determineThemeEngine()
-        {
-                // are we loading the default theme, or one chosen
-                // by the current user?
-                
-                $theme = App::$config['themes']['default'];
-                
-                if (self::$user instanceof User && self::$user->supportsThemePref)
-                {
-                        if (isset($user->theme))
-                        {
-                                $theme = $user->theme;
-                        }
-                }
-
-                return $theme;
-        }
-
-        public static function loadThemeEngine($theme)
-        {
-                // step 1: make sure we're trying to load a theme that
-                //         exists
-                constraint_mustBeValidThemeEngine($theme);
-
-                // step 2: create the theme engine. autoload will pull
-                //         in the right files
-                App::$theme = new $theme;
-        }
-
-        // ----------------------------------------------------------------
-        // user support
-        
-        public static function authenticateUserWith($userAuthenticator)
-        {
-                self::$userAuthenticator = $userAuthenticator;
+                // these have their own modules
+                //
+                // at the moment, the order we create them does not
+                // matter, but one day it might!
+                self::$browsers   = new Browser_Manager();
+                self::$users      = new User_Manager();
+                self::$routes     = new Routing_Manager();
+                self::$themes     = new Theme_Manager();
         }
 }
 
@@ -158,6 +146,33 @@ class App_Request
         // decode to determine which class to route the request to
         public $pathInfo     = null;
 
+        /**
+         * What type of content is the user asking for?
+         *
+         * this is set automatically by the constructor, but the AnonApi
+         * and Api classes will override this based on any format parameter
+         * included in the URL
+         * 
+         * @var string
+         */
+        public $requestedContentType = null;
+
+        // the different types of content that can be requested
+        const CT_XHTML   = 1;
+        const CT_XML     = 2;
+        const CT_JSON    = 3;
+        const CT_PHP     = 4;
+        const CT_CONSOLE = 5;
+
+        protected $contentTypeNames = array
+        (
+                CT_XHTML   => 'xhtml',
+                CT_XML     => 'xml',
+                CT_JSON    => 'json',
+                CT_PHP     => 'php',
+                CT_CONSOLE => 'term',
+        );
+
         public function __construct($pathInfo = null)
         {
                 if ($pathInfo === null)
@@ -166,6 +181,7 @@ class App_Request
                 }
 
                 $this->pathInfo = $pathInfo;
+                $this->requestedContentType = $this->determineContentType();
         }
 
         public function determinePathInfo()
@@ -179,6 +195,22 @@ class App_Request
 
                 return $strippedPath;
         }
+
+        /**
+         * work out what type of content the user is asking for
+         */
+        public function determineContentType()
+        {
+                // step 1: are we in a browser at all?
+                if (!isset($_SERVER))
+                {
+                        // no, so we must be a console app
+                        return App_Request::CT_CONSOLE;
+                }
+
+                // TODO: detect content negotiation properly
+                return App_Request::CT_XHTML;
+        }
 }
 
 // ========================================================================
@@ -186,7 +218,17 @@ class App_Request
 class App_Response
 {
 	public $responseCode = 200;
+
+        /**
+         *
+         * @var App_Messages
+         */
         public $messages     = null;
+
+        /**
+         *
+         * @var App_Page
+         */
         public $page         = null;
 
         public function __construct()
@@ -214,7 +256,7 @@ class App_Page
 
         public function setLayout($layoutName)
         {
-                constraint_mustBeLayout($layoutName);
+                App::$theme->requireValidLayout($layoutName);
                 $this->layout = $layoutName;
         }
 
@@ -254,7 +296,7 @@ class App_Page
         	if (!isset($this->aLinks[$name]))
                 {
                         // FIXME: replace this with a proper exception
-                	throw new Exception();
+                        throw new PHP_E_ConstraintFailed(__FUNCTION__);
                 }
         }
 }
@@ -263,8 +305,8 @@ class App_Page
 
 class App_Messages
 {
-        protected static $messages     = array();
-        protected static $errorCount   = 0;
+        protected $messages     = array();
+        protected $errorCount   = 0;
 
         public static function addMessage($message)
         {
@@ -272,14 +314,14 @@ class App_Messages
                 if ($message === null || strlen($message) == 0)
                         return;
 
-                self::$messages[] = array
+                $this->messages[] = array
                 (
                         'class' => 'message',
                         'msg'   => $message,
                 );
         }
 
-        public static function addError($message)
+        public function addError($message)
         {
                 // special case - do not add empty messages
                 if ($message === null || strlen($message) == 0)
@@ -287,25 +329,25 @@ class App_Messages
                         return;
                 }
 
-                self::$messages[] = array
+                $this->messages[] = array
                 (
                         'class' => 'error',
                         'msg'   => $message,
                 );
 
-                self::$errorCount++;
+                $this->errorCount++;
         }
 
-        public static function toXhtml()
+        public function toXhtml()
         {
                 $return = '';
 
-                if (count(self::$messages) == 0)
+                if (count($this->messages) == 0)
                 {
                         return $return;
                 }
 
-                if (self::getErrorCount() > 0)
+                if ($this->getErrorCount() > 0)
                 {
                 	$return .= '<p class="formInstructions">'
                                 .  l('Pipeline', 'LANG_RENDER_MESSAGES_ERROR_INSTRUCTIONS')
@@ -314,7 +356,7 @@ class App_Messages
 
                 $return .= '<ul class="formMessages">';
 
-                foreach (self::$messages as $message)
+                foreach ($this->messages as $message)
                 {
                         $return .= '<li class="' . $message['class'] . '">'
                                 . $message['msg']
@@ -326,14 +368,14 @@ class App_Messages
                 return $return;
         }
 
-        public static function getCount()
+        public function getCount()
         {
-                return count(self::$messages);
+                return count($this->messages);
         }
 
         public static function getErrorCount()
         {
-                return self::$errorCount;
+                return $this->errorCount;
         }
 }
 
@@ -519,19 +561,6 @@ class App_Languages
                 
                 // if we get here, then we do not have a suitable translation
                 return false;
-        }
-}
-
-// ========================================================================
-
-class App_Engine
-{
-        static public function runPage($route)
-        {
-                $page = APP_TOPDIR . '/app/' . $route->routeToMethod
-                        . '/pages/' . $route->routeToPage . '.page.php';
-
-                require_once($page);
         }
 }
 
