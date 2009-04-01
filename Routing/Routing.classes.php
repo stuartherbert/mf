@@ -30,6 +30,9 @@
 // 2009-03-30   SLH     Renamed Routing_Routes to Routing_Engine
 // 2009-03-31   SLH     Moved user creation out into the main loop
 // 2009-03-31   SLH     Renamed Routing_Engine to Routing_Manager
+// 2009-03-31   SLH     Routing_Manager::findUrl() renamed to findByUrl()
+// 2009-03-31   SLH     Routing_Manager::getRoute() renamed to findByName()
+// 2009-04-01   SLH     Now supports publishing absolute URLs
 // ========================================================================
 
 class Routing_Manager
@@ -55,7 +58,7 @@ class Routing_Manager
          * @param string $name
          * @return Routing_Route
          */
-        public function getRoute($name)
+        public function findByName($name)
         {
         	$this->requireValidRouteName($name);
 
@@ -145,7 +148,7 @@ class Routing_Manager
          * looking at
          */
 
-        public function findRoute($url)
+        public function findByUrl($url)
         {
                 $routes = $this->findRoutes($url);
                 return $this->filterRoutesMatchingConditions($routes);
@@ -253,8 +256,8 @@ class Routing_Manager
 
         public function toUrl($route, $params = array())
         {
-                $route = $this->getRoute($route);
-                return $route->toUrl($params);
+                $route = $this->findByName($route);
+                return App::$request->baseUrl . $route->toUrl($params);
         }
 }
 

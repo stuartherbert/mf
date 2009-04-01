@@ -40,6 +40,8 @@
 //                      and removed App_Engine
 // 2009-03-31   SLH     Added support for browser detection, to enable
 //                      more fine-grained theme support
+// 2009-04-01   SLH     Added support for determining the baseUrl of the
+//                      app (needed by Routing_Manager)
 // ========================================================================
 
 class App
@@ -142,6 +144,14 @@ class App
 
 class App_Request
 {
+        /**
+         * The URL of the homepage of our app.  All other URLs for our
+         * app sit beneath this one
+         * 
+         * @var string
+         */
+        public $baseUrl      = null;
+
         // holds the path the user has requested, which we later
         // decode to determine which class to route the request to
         public $pathInfo     = null;
@@ -173,15 +183,18 @@ class App_Request
                 CT_CONSOLE => 'term',
         );
 
-        public function __construct($pathInfo = null)
+        public function __construct()
         {
-                if ($pathInfo === null)
-                {
-                	$pathInfo = $this->determinePathInfo();
-                }
-
-                $this->pathInfo = $pathInfo;
+                $this->baseUrl              = $this->determineBaseUrl();
+                $this->pathInfo             = $this->determinePathInfo();
                 $this->requestedContentType = $this->determineContentType();
+        }
+
+        public function determineBaseUrl()
+        {
+                // the SCRIPT_NAME is always <url>/index.php, which is
+                // why this works at all :)
+                return dirname($_SERVER['SCRIPT_NAME']);
         }
 
         public function determinePathInfo()

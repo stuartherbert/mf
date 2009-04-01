@@ -49,7 +49,7 @@ try
         // website share the same idea of what a user is.  This is probably
         // a good thing
         
-        $route = App::$routes->findRoute(App::$request->pathInfo);
+        $route = App::$routes->findByUrl(App::$request->pathInfo);
 }
 catch (Routing_E_NoMatchingRoute $e)
 {

@@ -28,6 +28,7 @@
 //                      routes
 // 2009-03-18   SLH     Fixed up to use the new task-based approach
 // 2009-03-24   SLH     Routes now go to modules and pages instead
+// 2009-03-31   SLH     Fixes for BC breakage in Routing classes
 // ========================================================================
 
 // bootstrap the framework
@@ -94,14 +95,14 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanCreateBasicNamedRoute()
         {
-                $indexUrl = App::$routes->getRoute('index')->toUrl();
+                $indexUrl = App::$routes->findByName('index')->toUrl();
 
                 $this->assertEquals($indexUrl, '/');
         }
 
         public function testCanCreateParameterisedRoute()
         {
-                $route = App::$routes->getRoute('userProfile');
+                $route = App::$routes->findByName('userProfile');
 
                 $profileUrl = $route->toUrl(array(':username' => 'stuartherbert'));
                 $module     = $route->routeToModule();
@@ -114,7 +115,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
         {
                 try
                 {
-                	$url = App::$routes->getRoute('showPhoto')
+                	$url = App::$routes->findByName('showPhoto')
                                        ->toUrl(array(':username' => 'stuartherbert'));
                 }
                 catch (Routing_E_MissingParameters $e)
@@ -125,7 +126,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
         public function testMatchesHomepageUrl()
         {
-                $route = App::$routes->matchUrl('/');
+                $route = App::$routes->findByUrl('/');
                 $this->assertEquals('Homepage', $route->routeToModule);
                 $this->assertEquals('index',    $route->routeName);
                 $this->assertEquals('defaultHomepage', $route->routeToPage);
@@ -135,14 +136,14 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
         {
         	App::$routes->setConditions(array('loggedIn' => true));
 
-                $route = App::$routes->matchUrl('/');
+                $route = App::$routes->findByUrl('/');
                 $this->assertEquals('Homepage',      $route->routeToModule);
                 $this->assertEquals('indexLoggedIn', $route->routeName);
                 $this->assertEquals('indexLoggedIn', $route->routeToPage);
 
                 App::$routes->setConditions(array('loggedIn' => false));
 
-                $route = App::$routes->matchUrl('/');
+                $route = App::$routes->findByUrl('/');
                 $this->assertEquals('Homepage',       $route->routeToModule);
                 $this->assertEquals('indexLoggedOut', $route->routeName);
                 $this->assertEquals('indexLoggedOut', $route->routeToPage);
@@ -150,7 +151,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
         public function testMatchesParameterisedUrl()
         {
-        	$route = App::$routes->matchUrl('/photos/stuartherbert/098adf/show');
+        	$route = App::$routes->findByUrl('/photos/stuartherbert/098adf/show');
                 $this->assertEquals('stuartherbert', $route->matchedParams[':username']);
                 $this->assertEquals('098adf',        $route->matchedParams[':photoId']);
                 $this->assertEquals('showPhoto',     $route->routeName);
@@ -163,7 +164,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 // step 1 - prove we can match numbers against our
                 //          test url
 
-        	$route = App::$routes->matchUrl('/archive/2007/11/19');
+        	$route = App::$routes->findByUrl('/archive/2007/11/19');
                 $this->assertEquals('2007', $route->matchedParams[':year']);
                 $this->assertEquals('11', $route->matchedParams[':month']);
                 $this->assertEquals('19', $route->matchedParams[':day']);
@@ -174,7 +175,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 $excepted = false;
                 try
                 {
-                	App::$routes->matchUrl('/archive/fred/11/19');
+                	App::$routes->findByUrl('/archive/fred/11/19');
                 }
                 catch (Routing_E_NoMatchingRoute $e)
                 {
@@ -185,7 +186,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 $excepted = false;
                 try
                 {
-                	App::$routes->matchUrl('/archive/2007/fred/19');
+                	App::$routes->findByUrl('/archive/2007/fred/19');
                 }
                 catch (Routing_E_NoMatchingRoute $e)
                 {
@@ -196,7 +197,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 $excepted = false;
                 try
                 {
-                	App::$routes->matchUrl('/archive/2007/11/fred');
+                	App::$routes->findByUrl('/archive/2007/11/fred');
                 }
                 catch (Routing_E_NoMatchingRoute $e)
                 {
@@ -207,7 +208,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
         public function testUsesWholeUrlInParameters()
         {
-        	$route = App::$routes->matchUrl('/archive2/2007/11/19');
+        	$route = App::$routes->findByUrl('/archive2/2007/11/19');
                 $this->assertEquals('2007', $route->matchedParams[':year']);
                 $this->assertEquals('11',   $route->matchedParams[':month']);
                 $this->assertEquals('19',   $route->matchedParams[':day']);
@@ -215,14 +216,14 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
         public function testUsesMultipleParametersInPathPart()
         {
-        	$route = App::$routes->matchUrl('/api/milestone/4.xml');
+        	$route = App::$routes->findByUrl('/api/milestone/4.xml');
                 $this->assertEquals(4,     $route->matchedParams[':id']);
                 $this->assertEquals('xml', $route->matchedParams[':format']);
         }
 
         public function testCanMixParameterStyles()
         {
-        	$route = App::$routes->matchUrl('/api2/milestone/fred.xml');
+        	$route = App::$routes->findByUrl('/api2/milestone/fred.xml');
                 $this->assertEquals('fred', $route->matchedParams[':id']);
                 $this->assertEquals('xml',  $route->matchedParams[':format']);
         }
