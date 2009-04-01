@@ -255,12 +255,38 @@ class App_Response
 
 class App_Page
 {
-        public $title = null;
-        public $h1    = null;
+        /**
+         * The title to set in the HTML <title> tag or equiv
+         * @var string
+         */
+        public $title   = null;
+
+        /**
+         * The main heading to set on the page
+         * @var string
+         */
+        public $h1      = null;
+        
+        /**
+         * The tagline to set on the page, if any
+         * @var string
+         */
+        public $tagline = null;
 
         protected $layout        = null;
         protected $aLinks        = array();
         protected $aBlocks       = array();
+
+        public function setDefaultTitlesEtc()
+        {
+                if (isset(App::$config['page']))
+                {
+                        foreach (App::$config['page'] as $var => $value)
+                        {
+                                $this->$var = $value;
+                        }
+                }
+        }
 
         public function getLayout()
         {

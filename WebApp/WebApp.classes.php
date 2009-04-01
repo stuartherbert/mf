@@ -21,6 +21,7 @@
 // ------------------------------------------------------------------------
 // 2008-10-17   SLH     Created
 // 2009-03-31   SLH     Moved user creation out into the main loop
+// 2009-04-01   SLH     Setup the default titles before the main loop
 // ========================================================================
 
 class WebApp
@@ -35,6 +36,9 @@ class WebApp
         {
                 // load the theme
                 self::setTheme();
+
+                // set the default page title
+                App::$response->page->setDefaultTitlesEtc();
         }
 
         public static function postMainLoop()
