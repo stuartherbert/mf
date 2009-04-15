@@ -24,6 +24,8 @@
 // 2009-04-15   SLH     Added Page_Layout
 // 2009-04-15   SLH     Added Page_Block
 // 2009-04-15   SLH     Added Page_Content
+// 2009-04-15   SLH     Page and Page_Layout are no longer expected to be
+//                      able to render themselves
 // ========================================================================
 
 // ========================================================================
@@ -77,8 +79,8 @@ class Page_Manager
 // ========================================================================
 
 /**
- * Base class for all elements that make up a page, including the page
- * itself
+ * Base class for all elements of a page that need to know how to
+ * render for output
  */
 
 class Page_Component
@@ -118,7 +120,7 @@ class Page_Component
 
 // ========================================================================
 
-class Page extends Page_Component
+class Page
 {
         /**
          * The title to set in the HTML <title> tag or equiv
@@ -229,7 +231,7 @@ class Page extends Page_Component
 
 // ========================================================================
 
-class Page_Layout extends Page_Component
+class Page_Layout
 {
         /**
          * A list of the valid sections that appear in this page
