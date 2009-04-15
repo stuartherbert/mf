@@ -20,6 +20,7 @@
 // ------------------------------------------------------------------------
 // 2008-08-13   SLH     Created
 // 2009-03-30   SLH     Substantial improvements
+// 2009-04-15   SLH     Added support for Page_Layouts
 // ========================================================================
 
 class Theme_Manager
@@ -94,14 +95,9 @@ class Theme_BaseTheme
          */
         public function processResponse()
         {
-                // make sure we have a layout to use
-                if (App::$response->page->getLayout() == null)
-                {
-                        throw new Theme_E_NoLayoutSet();
-                }
-
                 // work out where the layout is on disk
-                $layoutFile = $this->layoutFile(App::$response->page->getLayout());
+                $layout = App::$response->page->getLayout();
+                $layoutFile = $this->layoutFile($layout->layoutFile);
 
                 // now, execute the layout, and buffer its output
                 // to help with caching in future

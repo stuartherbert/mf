@@ -42,6 +42,10 @@
 //                      more fine-grained theme support
 // 2009-04-01   SLH     Added support for determining the baseUrl of the
 //                      app (needed by Routing_Manager)
+// 2009-04-15   SLH     Moved App_Page out into separate module
+// 2009-04-15   SLH     Language support is now loaded first; required
+//                      because creating App_Response loads language strings
+//                      now (via new Page_Manager class)
 // ========================================================================
 
 class App
@@ -105,6 +109,12 @@ class App
 
         /**
          *
+         * @var Page_Manager
+         */
+        public static $pages             = null;
+
+        /**
+         *
          * @var array
          */
         public static $config            = array();
@@ -119,15 +129,16 @@ class App
          * setup the things that every app has
          *
          * it is up to the mainLoop() of the different types of app
-         * to setup the rest (user, controller, and theme)
+         * to setup the rest (user, page, and theme)
          */
         
         public static function init()
         {
                 // these are part of the App module
+                // the order matters!
+                self::$languages  = new App_Languages();
                 self::$request    = new App_Request();
                 self::$response   = new App_Response();
-                self::$languages  = new App_Languages();
 
                 // these have their own modules
                 //
@@ -136,6 +147,7 @@ class App
                 self::$browsers   = new Browser_Manager();
                 self::$users      = new User_Manager();
                 self::$routes     = new Routing_Manager();
+                self::$pages      = new Page_Manager();
                 self::$themes     = new Theme_Manager();
         }
 }
@@ -240,103 +252,14 @@ class App_Response
 
         /**
          *
-         * @var App_Page
+         * @var Page
          */
         public $page         = null;
 
         public function __construct()
         {
         	$this->messages = new App_Messages();
-        	$this->page     = new App_Page();
-        }
-}
-
-// ========================================================================
-
-class App_Page
-{
-        /**
-         * The title to set in the HTML <title> tag or equiv
-         * @var string
-         */
-        public $title   = null;
-
-        /**
-         * The main heading to set on the page
-         * @var string
-         */
-        public $h1      = null;
-        
-        /**
-         * The tagline to set on the page, if any
-         * @var string
-         */
-        public $tagline = null;
-
-        protected $layout        = null;
-        protected $aLinks        = array();
-        protected $aBlocks       = array();
-
-        public function setDefaultTitlesEtc()
-        {
-                if (isset(App::$config['page']))
-                {
-                        foreach (App::$config['page'] as $var => $value)
-                        {
-                                $this->$var = $value;
-                        }
-                }
-        }
-
-        public function getLayout()
-        {
-        	return $this->layout;
-        }
-
-        public function setLayout($layoutName)
-        {
-                App::$theme->requireValidLayout($layoutName);
-                $this->layout = $layoutName;
-        }
-
-        public function addBlock($blockName, $oBlock)
-        {
-                // constraint_mustBeValidBlock($blockName);
-                $this->aBlocks[$blockName] = $oBlock;
-        }
-
-        public function getBlock($blockName)
-        {
-        	$this->requireValidBlock($blockName);
-                return $this->aBlocks[$blockName];
-        }
-
-        public function requireValidBlock($name)
-        {
-        	if (!isset($this->aBlocks[$name]))
-                {
-                	throw new Exception();
-                }
-        }
-
-        public function addLink($name, $url)
-        {
-        	$this->aLinks[$name] = $url;
-        }
-
-        public function getLink($name)
-        {
-        	$this->requireValidLink($name);
-                return $this->aLinks[$name];
-        }
-
-        public function requireValidLink($name)
-        {
-        	if (!isset($this->aLinks[$name]))
-                {
-                        // FIXME: replace this with a proper exception
-                        throw new PHP_E_ConstraintFailed(__FUNCTION__);
-                }
+        	$this->page     = new Page();
         }
 }
 
