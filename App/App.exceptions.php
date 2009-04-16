@@ -2,8 +2,8 @@
 
 // ========================================================================
 //
-// components/Pipeline/Pipeline.exceptions.php
-//              The different exceptions thrown by the Pipeline component
+// App/App.exceptions.php
+//              The different exceptions thrown by the App component
 //
 //              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/

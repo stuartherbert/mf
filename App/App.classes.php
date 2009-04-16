@@ -3,7 +3,7 @@
 // ========================================================================
 //
 // App/App.classes.php
-//              Defines the classes used to support the pipeline approach
+//              Defines the classes required for the mainLoop to function
 //
 //              Part of the Methodosity Framework for PHP Applications
 //              http://blog.stuartherbert.com/php/mf/

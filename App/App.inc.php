@@ -2,7 +2,7 @@
 
 // ========================================================================
 //
-// components/App/App.inc.php
+// App/App.inc.php
 //              Include file for the App component
 //
 //              Part of the Methodosity Framework for PHP applications
