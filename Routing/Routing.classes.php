@@ -33,12 +33,12 @@
 // 2009-03-31   SLH     Routing_Manager::findUrl() renamed to findByUrl()
 // 2009-03-31   SLH     Routing_Manager::getRoute() renamed to findByName()
 // 2009-04-01   SLH     Now supports publishing absolute URLs
+// 2009-04-16   SLH     Promoted conditions up to be part of App
 // ========================================================================
 
 class Routing_Manager
 {
         protected $routes     = array();
-        protected $conditions = array();
         protected $map        = array();
 
         protected $defaultMainLoop = 'WebApp';
@@ -125,22 +125,6 @@ class Routing_Manager
                 {
                         $this->map[$parts[0]][] = $oRoute;
                 }
-        }
-
-        /**
-         * define additional conditions to help us work out which route
-         * we want
-         */
-
-        public function setConditions($conditions)
-        {
-        	constraint_mustBeArray($conditions);
-                $this->conditions = $conditions;
-        }
-
-        public function setCondition($name, $value)
-        {
-        	$this->conditions[$name] = $value;
         }
 
         /**
@@ -231,7 +215,7 @@ class Routing_Manager
                 // the first match wins
                 foreach ($routes as $route)
                 {
-                        if ($route->matchesConditions($this->conditions))
+                        if ($route->matchesConditions(App::$conditions))
                         {
                                 return $route;
                         }
@@ -250,7 +234,6 @@ class Routing_Manager
         public function resetRoutes()
         {
         	$this->map        = array();
-                $this->conditions = array();
                 $this->routes     = array();
         }
 

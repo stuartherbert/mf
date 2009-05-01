@@ -28,6 +28,7 @@
 // 2009-03-31   SLH     Added User_Authenticator_Anon
 // 2009-03-31   SLH     Added User_Authenticator_ApiUser
 // 2009-03-31   SLH     Added User_Authenticator_WebUser
+// 2009-04-16   SLH     Conditions have been moved up to App from Routing
 // ========================================================================
 
 // ========================================================================
@@ -203,7 +204,7 @@ class User_Authenticator_WebUser
                                         
                                         // tell the routing engine that the user
                                         // is logged in
-                                        App::$routes->setCondition('loggeded', true);
+                                        App::$conditions->loggedin = true;
                                         
                                         return true;
                                 }

@@ -29,6 +29,7 @@
 // 2009-03-18   SLH     Fixed up to use the new task-based approach
 // 2009-03-24   SLH     Routes now go to modules and pages instead
 // 2009-03-31   SLH     Fixes for BC breakage in Routing classes
+// 2009-05-01   SLH     Conditions moved to App::
 // ========================================================================
 
 // bootstrap the framework
@@ -134,14 +135,14 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
         public function testMatchesHomepageUrlWithConditions()
         {
-        	App::$routes->setConditions(array('loggedIn' => true));
+        	App::$conditions->loggedIn = true;
 
                 $route = App::$routes->findByUrl('/');
                 $this->assertEquals('Homepage',      $route->routeToModule);
                 $this->assertEquals('indexLoggedIn', $route->routeName);
                 $this->assertEquals('indexLoggedIn', $route->routeToPage);
 
-                App::$routes->setConditions(array('loggedIn' => false));
+                App::$conditions->loggedIn = false;
 
                 $route = App::$routes->findByUrl('/');
                 $this->assertEquals('Homepage',       $route->routeToModule);

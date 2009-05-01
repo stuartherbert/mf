@@ -46,6 +46,10 @@
 // 2009-04-15   SLH     Language support is now loaded first; required
 //                      because creating App_Response loads language strings
 //                      now (via new Page_Manager class)
+// 2009-04-16   SLH     Promoted conditions out of Routing to be a top-level
+//                      piece of data
+// 2009-05-01   SLH     App_Conditions now does a convincing job of
+//                      pretending to be an array
 // ========================================================================
 
 class App
@@ -119,6 +123,12 @@ class App
          */
         public static $config            = array();
 
+        /**
+         *
+         * @var App_Conditions
+         */
+        public static $conditions        = array();
+
         // cannot be instantiated
 	private function __construct()
         {
@@ -139,6 +149,7 @@ class App
                 self::$languages  = new App_Languages();
                 self::$request    = new App_Request();
                 self::$response   = new App_Response();
+                self::$conditions = new App_Conditions();
 
                 // these have their own modules
                 //
@@ -523,6 +534,136 @@ class App_Languages
                 
                 // if we get here, then we do not have a suitable translation
                 return false;
+        }
+}
+
+// ========================================================================
+
+class App_Conditions implements ArrayAccess, IteratorAggregate
+{
+        /**
+         *
+         * @var array
+         */
+        protected $conditions = array();
+
+        // ================================================================
+        // Voodoo stuff, to make App_Conditions easier to use
+        // ----------------------------------------------------------------
+
+        public function __get($name)
+        {
+                // step 1: do we have an override method?
+                $method = 'get' . ucfirst($name);
+                if (method_exists($this, $method))
+                {
+                        return $this->$method();
+                }
+
+                // step 2: return the data in the array
+                if (!isset($this->conditions[$name]))
+                {
+                        return null;
+                }
+
+                return $this->conditions[$name];
+        }
+
+        public function __set($name, $value)
+        {
+                // step 1: do we have an override method?
+                $method = 'set' . ucfirst($name);
+                if (method_exists($this, $method))
+                {
+                        return $this->$method($value);
+                }
+
+                // step 2: just store the data directly in the array
+                $this->conditions[$name] = $value;
+        }
+
+        public function __isset($name)
+        {
+                // step 1: do we have an override method?
+                $method = 'isset' . ucfirst($name);
+                if (method_exists($this, $method))
+                {
+                        return $this->$method();
+                }
+
+                // step 2: just check on the data in the array
+                return isset($this->conditions[$name]);
+        }
+
+        public function resetConditions()
+        {
+                $this->conditions = array();
+        }
+
+        // ================================================================
+        // More voodoo ... array iterator support
+
+        public function getIterator()
+        {
+                return new PHP_Array($this->conditions);
+        }
+
+        // ================================================================
+        // Just in case you've not had enough voodoo ...
+        // array [] operator support
+        
+        public function offsetSet($name, $value)
+        {
+                return $this->__set($name, $value);
+        }
+
+        public function offsetExists($name)
+        {
+                return $this->__isset($name);
+        }
+
+        public function offsetUnset($name)
+        {
+                unset($this->conditions[$name]);
+        }
+
+        public function offsetGet($name)
+        {
+                return $this->__get($name);
+        }
+
+        // ================================================================
+        // The reasons for the voodoo ...
+        //
+        //
+        // ----------------------------------------------------------------
+
+        public function setLoggedin($value)
+        {
+                if ($value)
+                {
+                        $this->conditions['loggedIn']  = true;
+                        $this->conditions['loggedOut'] = false;
+                }
+                else
+                {
+                        $this->conditions['loggedIn']  = false;
+                        $this->conditions['loggedOut'] = true;
+                }
+        }
+
+        public function setLoggedout($value)
+        {
+                if ($value)
+                {
+                        $this->conditions['loggedIn']  = false;
+                        $this->conditions['loggedOut'] = true;
+                }
+                else
+                {
+                        $this->conditions['loggedIn']  = true;
+                        $this->conditions['loggedOut'] = false;
+                }
         }
 }
 
