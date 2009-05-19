@@ -20,6 +20,7 @@
 // ------------------------------------------------------------------------
 // 2009-03-02   SLH     Created
 // 2009-03-31   SLH     Moved User creation into here
+// 2009-05-19   SLH     Use browser type to determine which page to load
 // ========================================================================
 
 // step 1: add support for multiple websites here
@@ -33,6 +34,12 @@
 //    within the Routing_Engine
 
 App::$users->authenticateUser();
+
+// step 3: what type of browser is the user poking us with?
+//
+// aka what type of content does the user want us to return?
+
+App::$browser = App::$browsers->determineBrowser();
 
 // step 3: what page are we trying to look at?
 try
@@ -90,7 +97,8 @@ switch ($route->mainLoop)
 try
 {
         $page = APP_TOPDIR . '/app/' . $route->routeToModule
-                . '/pages/' . $route->routeToPage . '.page.php';
+                . '/' . App::$browser->platform . '-pages/'
+                . $route->routeToPage . '.page.php';
 
         require_once($page);
 }

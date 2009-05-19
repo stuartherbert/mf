@@ -21,6 +21,7 @@
 // ------------------------------------------------------------------------
 // 2009-03-25   SLH     Created
 // 2009-03-31   SLH     Added basic browser test for Firefox 2, 3.0, 3.5
+// 2009-05-19   SLH     Added default of unknown desktop
 // ========================================================================
 
 class Browser_Manager
@@ -60,15 +61,21 @@ class Browser_Manager
                 // TODO: check for Safari
                 // TODO: provide a catchall for niche browsers
 
+                // if we get here, then we do not know what we are looking
+                // at ... assume it is a desktop browser
+
+                $browser->setUnknownDesktop();
+
                 return $browser;
         }
 }
 
 class Browser
 {
-        public $platform = null;
-        public $name     = null;
-        public $version  = null;
+        public $platform  = null;
+        public $name      = null;
+        public $shortName = null;
+        public $version   = null;
 
         const PLATFORM_DESKTOP = 'desktop';
         const PLATFORM_IPHONE  = 'iPhone';
@@ -103,6 +110,22 @@ class Browser
                         $this->version = $versionDetails[0] . '.' . $versionDetails[1];
                 else
                         $this->version = 'unknown';
+        }
+
+        public function setInternetExplorer($version)
+        {
+                $this->platform  = Browser::PLATFORM_DESKTOP;
+                $this->name      = 'Internet Explorer';
+                $this->shortName = 'ie';
+                $this->version   = $version;
+        }
+
+        public function setUnknownDesktop()
+        {
+                $this->platform  = Browser::PLATFORM_DESKTOP;
+                $this->name      = 'Unknown';
+                $this->shortName = 'unknown';
+                $this->version   = 'unknown';
         }
 }
 
