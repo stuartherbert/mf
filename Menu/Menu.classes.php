@@ -21,6 +21,7 @@
 // 2007-08-07   SLH     Created
 // 2007-11-15   SLH     Renamed from 'MainMenu' to just 'Menu'
 // 2009-04-16   SLH     Added Menu_Option
+// 2009-05-19   SLH     Fixed bug in Menu_Block::addOption()
 // ========================================================================
 
 class Menu_Block extends Page_Block
@@ -33,7 +34,7 @@ class Menu_Block extends Page_Block
 
         public function addOption($name)
         {
-                $option = new Menu_Option($name);
+                $option = new Menu_Option($this, $name);
                 $this->menu[$name] = $option;
 
                 return $option;
