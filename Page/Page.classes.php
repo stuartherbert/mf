@@ -26,6 +26,7 @@
 // 2009-04-15   SLH     Added Page_Content
 // 2009-04-15   SLH     Page and Page_Layout are no longer expected to be
 //                      able to render themselves
+// 2009-05-19   SLH     Fixes for Page_Layout to actually work
 // ========================================================================
 
 // ========================================================================
@@ -187,7 +188,8 @@ class Page
         public function setLayout(Page_Layout $layout)
         {
                 $this->layout = $layout;
-                $this->setValidSections($layout->getSectionNames());
+                $this->setValidSections($layout->getSections());
+                $layout->addDefaultBlocks($this);
         }
 
         public function requireValidLayout()
@@ -288,9 +290,9 @@ class Page_Layout
                 $this->sections[$name] = $name;
         }
 
-        public function getSectionNames()
+        public function getSections()
         {
-                return array_keys($this->sections);
+                return $this->sections;
         }
 }
 
