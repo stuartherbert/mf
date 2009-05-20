@@ -65,6 +65,7 @@
 // 2009-03-23   SLH     Switched to creating datastore records via the
 //                      datastore (to allow for future flexibility)
 // 2009-03-25   SLH     Basic many:many support
+// 2009-05-20   SLH     Updated to work with latest changes to Model
 // ========================================================================
 
 // ========================================================================
@@ -201,7 +202,7 @@ class Datastore extends Core
                 $oStmt->execute();
 
                 $oRecord->setDatastoreWhereStored($this);
-                $oRecord->resetNeedSave();
+                $oRecord->resetNeedsSaving();
         }
 
         public function retrieveRecord (Datastore_Record $oRecord, $fields, $view = 'default')
@@ -222,8 +223,8 @@ class Datastore extends Core
                         throw new Datastore_E_RetrieveFailed($e->getMessage(), $e);
                 }
 
-                $oRecord->setData(array_shift($aRecords));
-                $oRecord->resetNeedSave();
+                $oRecord->setFields(array_shift($aRecords));
+                $oRecord->resetNeedsSaving();
                 $oRecord->setDatastoreWhereStored($this);
         }
 
@@ -237,7 +238,7 @@ class Datastore extends Core
                 $oStmt->bindValues($oRecord);
                 $oStmt->execute();
 
-                $oRecord->resetNeedSave();
+                $oRecord->resetNeedsSaving();
                 $oRecord->setDatastoreWhereStored($this);
         }
 
@@ -346,7 +347,7 @@ class Datastore extends Core
                                 foreach ($recordLine as $record)
                                 {
                                         // skip records that have not changed
-                                        if ($record->needSave())
+                                        if ($record->getNeedsSaving())
                                         {
                                                 $this->updateRecord($recordLine);
                                         }
@@ -354,7 +355,7 @@ class Datastore extends Core
                         }
                         else
                         {
-                                if ($record->needSave())
+                                if ($record->getNeedSaving())
                                 {
                                 	$this->updateRecord($recordLine);
                                 }
@@ -753,7 +754,7 @@ class Datastore_Record extends Core
                 // record to a different datastore
                 if ($oDB === $oLastDB)
                 {
-                        if (!$this->getNeedSave())
+                        if (!$this->getNeedsSaving())
                         {
                                 return;
                         }
@@ -951,7 +952,7 @@ class Datastore_Record extends Core
 
         public function create($oDB = null)
         {
-                if (!$this->getNeedSave())
+                if (!$this->getNeedsSaving())
                         return;
 
                 if ($oDB === null)
@@ -968,7 +969,7 @@ class Datastore_Record extends Core
 
                 $oDB->createRecord($this);
 
-                $this->resetNeedSave();
+                $this->resetNeedsSaving();
                 $this->execPostBehaviours($oDB, $this, 'create');
                 $this->afterCreate($oDB);
         }
@@ -983,7 +984,7 @@ class Datastore_Record extends Core
 
         public function update($oDB = null)
         {
-                if (!$this->getNeedSave())
+                if (!$this->getNeedsSaving())
                         return;
 
                 if ($oDB === null)
@@ -1000,7 +1001,7 @@ class Datastore_Record extends Core
 
                 $oDB->updateRecord($this);
 
-                $this->resetNeedSave();
+                $this->resetNeedsSaving();
                 $this->execPostBehaviours($oDB, 'update');
                 $this->afterUpdate($oDB);
         }
@@ -1775,7 +1776,7 @@ class Datastore_Query
                         $record = new $recordName();
 
                         // debug_vardump(__FILE__, __LINE__, __FUNCTION__, '$aFields', $aFields);
-                        $record->setData($aFields);
+                        $record->setFields($aFields);
                         // debug_vardump(__FILE__,__LINE__, __FUNCTION__, 'getData()', $record->getData());
                         return $record;
                 }
@@ -1792,7 +1793,7 @@ class Datastore_Query
                 {
                         $recordName = $oView->oDef->getModelName();
                 	$record = new $recordName();
-                        $record->setData($aFields);
+                        $record->setFields($aFields);
                         $return[$oView->oDef->getModelName()] = $record;
                 }
 

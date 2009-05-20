@@ -39,6 +39,7 @@
 // 2009-03-23   SLH     Added tests for table inheritance
 // 2009-03-24   SLH     Tests no longer rely on a fixture class
 // 2009-03-25   SLH     Updated tests for many:many relationships
+// 2009-05-20   SLH     Fixes for latest changes to Model
 // ========================================================================
 
 // ========================================================================
@@ -352,7 +353,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                 $this->assertEquals('Stuart', $customer->customerFirstName);
 
                 $customer->customerFirstName = 'Kristi';
-                $this->assertTrue($customer->getNeedSave());
+                $this->assertTrue($customer->getNeedsSaving());
                 $customer->store();
 
                 $oCustomer = new Test_Customer();

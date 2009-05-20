@@ -53,6 +53,10 @@
 // 2009-03-31   SLH     Added support for issetVariable-type overrides
 // 2009-05-20   SLH     Added support for auto-conversion for HTML output
 // 2009-05-20   SLH     Added support for auto-conversion for XML output
+// 2009-05-20   SLH     Added __unset() support to Model
+// 2009-05-20   SLH     Added isWriteable()
+// 2009-05-20   SLH     Renamed methods for needsSaving support in Model
+// 2009-05-20   SLH     requireWritable() renamed to requireWriteable()
 // ========================================================================
 
 class Model
@@ -61,7 +65,7 @@ implements Iterator
         protected $aData                = array();
         protected $primaryKey           = null;
         protected $iterKey              = 0;
-        protected $needSave             = false;
+        protected $needsSaving          = false;
         protected $readOnly             = false;
         protected $definitionName       = null;
 
@@ -84,7 +88,7 @@ implements Iterator
 
                 if (count($aData) > 0)
                 {
-                        $this->setData($aData, $dataAction);
+                        $this->setFields($aData, $dataAction);
                 }
                 else
                 {
@@ -204,19 +208,19 @@ implements Iterator
 
         public function resetData ()
         {
-                $this->requireWritable();
+                $this->requireWriteable();
 
                 $this->aData = array();
-                $this->resetNeedSave();
+                $this->resetNeedsSaving();
         }
 
         /**
          * set all the fields of this record in one go
          */
 
-        public function setData ($mData, $dataAction = Model::REPLACE_DATA)
+        public function setFields ($mData, $dataAction = Model::REPLACE_DATA)
         {
-                $this->requireWritable();
+                $this->requireWriteable();
 
                 if ($mData instanceof Model)
                 {
@@ -244,15 +248,16 @@ implements Iterator
                                 debug_unreachable(__FILE__, __LINE__);
                 }
 
-                $this->setFieldsToDefaults();
-                $this->setNeedSave();
+                $this->setNeedsSaving();
         }
 
         protected function replaceDataWithArray($aData)
         {
-                $this->requireWritable();
+                $this->requireWriteable();
                 $oDef = $this->getDefinition();
 
+                $this->setFieldsToDefaults();
+                
                 // NOTE:
                 //
                 // We cannot 'just' replace $this->aData with $a_aData,
@@ -271,7 +276,7 @@ implements Iterator
 
         protected function mergeDataFromArray($aData)
         {
-                $this->requireWritable();
+                $this->requireWriteable();
                 $oDef = $this->getDefinition();
 
                 $aKeys = array_keys($aData);
@@ -300,7 +305,7 @@ implements Iterator
         public function emptyWithoutSave ()
         {
                 $this->resetData();
-                $this->resetNeedSave();
+                $this->resetNeedsSaving();
         }
 
         public function getFields($fields = array())
@@ -380,15 +385,12 @@ implements Iterator
 
         public function resetField ($fieldName)
         {
-                $this->requireWritable();
-
                 $this->setField($fieldName, null);
-                $this->setNeedSave();
         }
 
         public function setField ($fieldName, $data)
         {
-                $this->requireWritable();
+                $this->requireWriteable();
                 $oDef = $this->getDefinition();
 
                 // are we trying to set a field that has been defined?
@@ -404,7 +406,7 @@ implements Iterator
                 {
                         if ($this->$method($data) !== false)
                         {
-                                $this->setNeedSave();
+                                $this->setNeedsSaving();
                         }
 
                         return;
@@ -420,7 +422,7 @@ implements Iterator
                         }
 
                         unset($this->aData[$fieldName]);
-                        $this->setNeedSave();
+                        $this->setNeedsSaving();
                         return;
                 }
 
@@ -428,7 +430,7 @@ implements Iterator
                 // and quiet like
 
                 $this->aData[$fieldName] = $data;
-                $this->setNeedSave();
+                $this->setNeedsSaving();
         }
 
         public function hasField ($fieldName)
@@ -470,6 +472,11 @@ implements Iterator
                 return $this->hasField($fieldName);
         }
 
+        public function __unset($fieldName)
+        {
+                return $this->setField($fieldName, null);
+        }
+
         protected function validateData (&$aData)
         {
                 foreach ($aData as $fieldName => $value)
@@ -507,6 +514,17 @@ implements Iterator
         }
 
         public function setFieldsToDefaults()
+        {
+                $oDef   = $this->getDefinition();
+                $fields = $oDef->getFields();
+
+                foreach ($fields as $fieldName => $field)
+                {
+                        $this->setField($fieldName, $field->getDefaultValue());
+                }
+        }
+
+        public function setEmptyFieldsToDefaults()
         {
                 $oDef   = $this->getDefinition();
                 $fields = $oDef->getFields();
@@ -577,7 +595,7 @@ implements Iterator
 
         public function resetUniqueId ()
         {
-                $this->requireWritable();
+                $this->requireWriteable();
 
                 $this->requireUniqueIdDefined();
 
@@ -600,7 +618,7 @@ implements Iterator
 
         public function setUniqueId ($value)
         {
-                $this->requireWritable();
+                $this->requireWriteable();
 
                 $this->requireUniqueIdDefined();
 
@@ -667,21 +685,21 @@ implements Iterator
         // Support for whether the record needs saving or not
         // ----------------------------------------------------------------
 
-        public function getNeedSave ()
+        public function getNeedsSaving ()
         {
-                return $this->needSave;
+                return $this->needsSaving;
         }
 
-        public function resetNeedSave()
+        public function resetNeedsSaving()
         {
-                $this->requireWritable();
-                $this->needSave = false;
+                $this->requireWriteable();
+                $this->needsSaving = false;
         }
 
-        public function setNeedSave()
+        public function setNeedsSaving()
         {
-                $this->requireWritable();
-                $this->needSave = true;
+                $this->requireWriteable();
+                $this->needsSaving = true;
         }
 
         // ================================================================
@@ -693,7 +711,12 @@ implements Iterator
                 return $this->readOnly;
         }
 
-        public function resetReadOnly ()
+        public function isWriteable()
+        {
+                return !$this->readOnly;
+        }
+
+        public function setWriteable ()
         {
                 $this->readOnly = false;
         }
@@ -701,13 +724,13 @@ implements Iterator
         public function setReadOnly ()
         {
                 // readonly objects cannot be saved
-                $this->resetNeedSave();
+                $this->resetNeedsSaving();
                 $this->readOnly = true;
         }
 
-        public function requireWritable()
+        public function requireWriteable()
         {
-                if ($this->readOnly == true)
+                if ($this->readOnly === true)
                 {
                         throw new Model_E_IsReadOnly($this);
                 }

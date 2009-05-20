@@ -29,6 +29,7 @@
 // 2009-03-31   SLH     Added User_Authenticator_ApiUser
 // 2009-03-31   SLH     Added User_Authenticator_WebUser
 // 2009-04-16   SLH     Conditions have been moved up to App from Routing
+// 2009-05-20   SLH     Updated to work with changes to Model
 // ========================================================================
 
 // ========================================================================
@@ -200,7 +201,7 @@ class User_Authenticator_WebUser
                                 $userFromCookie->retrieve(App::$config['DB'], $userCookie->id);
                                 if ($userCookie->authenticateUser($user))
                                 {
-                                        $user->setData($userFromCookie->getData());
+                                        $user->setFields($userFromCookie->getData());
                                         
                                         // tell the routing engine that the user
                                         // is logged in
