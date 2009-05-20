@@ -51,6 +51,8 @@
 // 2009-03-25   SLH     Added Model_Extension interface
 // 2009-03-25   SLH     Basic functioning many:many support
 // 2009-03-31   SLH     Added support for issetVariable-type overrides
+// 2009-05-20   SLH     Added support for auto-conversion for HTML output
+// 2009-05-20   SLH     Added support for auto-conversion for XML output
 // ========================================================================
 
 class Model
@@ -318,28 +320,62 @@ implements Iterator
                 return $return;
         }
 
+        public function decodeFieldName ($fieldName)
+        {
+                $realFieldName = $fieldName;
+                $conversion    = null;
+
+                $oDef = $this->getDefinition();
+                if ($oDef->isValidFieldName($fieldName))
+                {
+                        $oFieldDef = $oDef->getField($fieldName);
+                        return array($fieldName, null, $oFieldDef);
+                }
+
+                // the fieldname *does* need decoding
+                $parts = explode('_', $fieldName);
+                $lastPart = count($parts) - 1;
+                $conversion = 'to' . ucfirst($parts[$lastPart]);
+                unset($parts[$lastPart]);
+
+                $realFieldName = implode('_', $parts);
+
+                $oFieldDef = $oDef->getField($realFieldName);
+                $oFieldDef->requireValidConvertor($conversion);
+
+                return array ($realFieldName, $conversion, $oFieldDef);
+        }
+
         public function getField ($fieldName)
         {
-                $oDef = $this->getDefinition();
-
-                // the field must exist
-                $oDef->requireValidFieldName($fieldName);
+                list($realFieldName, $conversion, $oFieldDef) = $this->decodeFieldName($fieldName);
 
                 // do we have a getter for this method?
-                $method = 'get' . ucfirst($fieldName);
+                $method = 'get' . ucfirst($realFieldName);
                 if (method_exists($this, $method))
                 {
-                        return $this->$method();
+                        $return = $this->$method();
                 }
-
-                // do we have any data for this field?
-                if (isset($this->aData[$fieldName]))
+                else if (isset($this->aData[$realFieldName]))
                 {
-                        return $this->aData[$fieldName];
+                        // do we have any data for this field?
+                        $return = $this->aData[$realFieldName];
+                }
+                else
+                {
+                        // we're out of ideas, so return null
+                        return null;
                 }
 
-                // we're out of ideas, so return null
-                return null;
+                // has a conversion been requested?
+                if ($conversion === null)
+                {
+                        // no, so return the requested data
+                        return $return;
+                }
+
+                // yes it has
+                return $oFieldDef->convertData($conversion, $realFieldName, $return);
         }
 
         public function resetField ($fieldName)
@@ -762,9 +798,33 @@ implements Iterator
                 return $aConditions;
         }
 
+        // ================================================================
+        // different conversions for output
+
         public function toString()
         {
                 return $this->name;
+        }
+
+        public function toXml($name = null)
+        {
+                if ($name === null)
+                {
+                        $oDef = $this->getDefinition();
+                        $name = $oDef->getModelName();
+                }
+
+                $return  = '<' . $name . '>';
+                $fields = $this->getFields();
+                foreach ($fields as $fieldName => $data)
+                {
+                        $fieldName .= '_xml';
+                        $return .= $this->$fieldName;
+                }
+
+                $return .= '</' . $name . '>';
+
+                return $return;
         }
 }
 
@@ -1565,6 +1625,35 @@ class Model_FieldDefinition
         {
                 $this->defaultValue = $mValue;
         }
+
+        // ================================================================
+        // Support for data conversions
+        // ----------------------------------------------------------------
+
+        public function hasConvertor($convertor)
+        {
+                if (!isset($this->oType))
+                        return false;
+
+                if (!method_exists($this->oType, $convertor))
+                        return false;
+
+                return true;
+        }
+
+        public function requireValidConvertor($convertor)
+        {
+                if (!$this->hasConvertor($convertor))
+                {
+                        throw new Model_E_NoSuchConvertor(get_class($this->oType), $convertor);
+                }
+        }
+
+        public function convertData($convertor, $fieldName, $data)
+        {
+                $this->requireValidConvertor($convertor);
+                return $this->oType->$convertor($fieldName, $data);
+        }
 }
 
 // ========================================================================
@@ -1932,7 +2021,7 @@ class Model_View
 // ========================================================================
 // ------------------------------------------------------------------------
 
-class Model_Type_Generic
+class Model_Type_Generic extends Core
 {
         public function getDefaultValue()
         {
@@ -1942,6 +2031,21 @@ class Model_Type_Generic
         public function validateData(&$a_mData)
         {
                 // do nothing
+        }
+
+        public function toHtml($name, $data)
+        {
+                return htmlentities($data);
+        }
+
+        public function toXml($name, $data)
+        {
+                $convertedData = str_replace(array('<', '>', '&'), array ('&lt;', '&gt;', '&amp;'), $data);
+
+                // convert anything else into numerical entities
+                // to be done
+
+                return '<' . $name . '>' . $convertedData . '</' . $name . '>';
         }
 }
 

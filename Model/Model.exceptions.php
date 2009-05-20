@@ -21,6 +21,7 @@
 // ------------------------------------------------------------------------
 // 2007-08-11   SLH     Consolidated from separate files
 // 2008-01-06   SLH     Stopped using constants for language strings
+// 2009-05-20   SLH     Added Model_E_NoSuchConvertor
 // ========================================================================
 
 class Model_E_Exception_Technical extends Exception_Technical
@@ -81,6 +82,20 @@ class Model_E_IsReadOnly extends Model_E_Exception_Technical
                 parent::__construct (
                         l('Model', 'LANG_MODEL_E_ISREADONLY'),
                         array (get_class($oObject)),
+                        $oCause
+                );
+        }
+}
+
+// ========================================================================
+
+class Model_E_NoSuchConvertor extends Model_E_Exception_Technical
+{
+        function __construct($class, $convertor, Exception $oCause = null)
+        {
+                parent::__construct (
+                        l('Model', 'E_NoSuchConvertor'),
+                        array ($class, $convertor),
                         $oCause
                 );
         }

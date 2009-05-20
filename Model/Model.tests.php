@@ -28,6 +28,7 @@
 // 2009-03-25   SLH     Added tests for model extensions
 // 2009-03-25   SLH     Updated model extension test to reflect new
 //                      Model_Extension interface
+// 2009-05-20   SLH     Added tests for auto-conversion of model fields
 // ========================================================================
 
 // bootstrap the framework
@@ -362,5 +363,48 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
                 $this->assertNotSame($oDef1, $oDef2);
         }
+
+        public function testCanConvertFieldToHtml()
+        {
+                $this->setupDefineModels();
+
+                $req = new Test_Model_Requirement();
+                $req->title = 'serve & protect';
+
+                // make sure the original title is preserved
+                $this->assertEquals('serve & protect', $req->title);
+
+                // make sure the auto-conversion to html occurred
+                $this->assertEquals('serve &amp; protect', $req->title_html);
+        }
+
+        public function testCanConvertFieldToXml()
+        {
+                $this->setupDefineModels();
+
+                $req = new Test_Model_Requirement();
+                $req->title = 'serve & protect';
+
+                // make sure the original title is preserved
+                $this->assertEquals('serve & protect', $req->title);
+
+                // make sure the auto-conversion to xml occurred
+                $this->assertEquals('<title>serve &amp; protect</title>', $req->title_xml);
+        }
+
+        public function testCanConvertModelToXml()
+        {
+                $this->setupDefineModels();
+
+                $req = new Test_Model_Requirement();
+                $req->title = 'serve & protect';
+
+                // make sure the original title is preserved
+                $this->assertEquals('serve & protect', $req->title);
+
+                // convert the object to xml
+                $this->assertEquals('<Test_Model_Requirement><title>serve &amp; protect</title></Test_Model_Requirement>', $req->toXml());
+        }
 }
+
 ?>

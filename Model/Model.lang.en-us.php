@@ -31,6 +31,7 @@ App::$languages->addTranslationsForModule('Model', 'en-us', array
         'LANG_MODEL_E_FOREIGNKEYNOTDEFINED'     => "Foreign key on '%s' for '%s' not defined",
         'LANG_MODEL_E_INCOMPATIBLEDEFINITION'   => 'Expected %s to use definition %s; it actually uses definition %s',
         'LANG_MODEL_E_ISREADONLY'               => "Record of type '%s' is readonly",
+        'E_NoSuchConvertor'                     => "Class '%s' does not have a '%s' convertor method",
         'LANG_MODEL_E_NOSUCHDEFINITION'         => "No model definition exists for '%s'",
         'LANG_MODEL_E_NOSUCHFIELD'              => "Field '%s' is not supported for records of type '%s'",
         'LANG_MODEL_E_NOSUCHRECORDCLASS_1'      => "No such class '%s'; rename your existing class '%s' to have _Record on the end of the name",
