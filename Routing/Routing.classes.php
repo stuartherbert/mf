@@ -34,14 +34,30 @@
 // 2009-03-31   SLH     Routing_Manager::getRoute() renamed to findByName()
 // 2009-04-01   SLH     Now supports publishing absolute URLs
 // 2009-04-16   SLH     Promoted conditions up to be part of App
+// 2009-05-19   SLH     Added support for caching routes (experimental)
 // ========================================================================
 
-class Routing_Manager
+class Routing_Manager implements DimensionCache_PublicCacheable
 {
         protected $routes     = array();
         protected $map        = array();
 
         protected $defaultMainLoop = 'WebApp';
+
+        /**
+         * A list of the files we load routes from
+         *
+         * @var array
+         */
+
+        protected $routeFiles = array();
+
+        protected $cache = null;
+
+        public function __construct()
+        {
+                $this->cache = new DimensionCache_FileCache('routes');
+        }
 
         /**
          * define a new route
@@ -241,6 +257,44 @@ class Routing_Manager
         {
                 $route = $this->findByName($route);
                 return App::$request->baseUrl . $route->toUrl($params);
+        }
+
+        // ================================================================
+        //
+        // Support for caching loaded routes
+
+        public function addRoutesFile($file)
+        {
+                $this->routesFiles[] = $file;
+        }
+
+        public function cacheRoutes()
+        {
+                $this->cache->loadOrRefreshCache($this, $this->routesFiles);
+        }
+
+        public function loadFromOriginalSources()
+        {
+                foreach ($this->routesFiles as $routeFile)
+                {
+                        require_once($routeFile);
+                }
+        }
+        
+        public function loadFromPublicCache()
+        {
+                $contents = $this->cache->loadCache();
+
+                $cache = unserialize($contents);
+                $this->routes = $cache['routes'];
+                $this->map    = $cache['map'];
+        }
+
+        public function saveToPublicCache()
+        {
+                $contents = array ('routes' => $this->routes, 'map' => $this->map);
+
+                $this->cache->saveCache(serialize($contents));
         }
 }
 

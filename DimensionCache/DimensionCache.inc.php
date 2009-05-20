@@ -2,8 +2,8 @@
 
 // ========================================================================
 //
-// Routing/Routing.inc.php
-//              Include file for the Routing component
+// DimensionCache/DimensionCache.inc.php
+//              Include file for the DimensionCache component
 //
 //              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
@@ -19,23 +19,12 @@
 // ========================================================================
 // When         Who     What
 // ------------------------------------------------------------------------
-// 2007-11-19   SLH     Created
-// 2009-05-19   SLH     Added support for routing-related functions
+// 2009-05-19   SLH     Created
 // ========================================================================
 
-// pull in our dependencies
-__mf_require_once('PHP');
-
-// who we are
 $componentDir  = dirname(__FILE__) . DIRECTORY_SEPARATOR;
-$componentName = 'Routing';
+$componentName = 'DimensionCache';
 
-// load our files
-require_once($componentDir . $componentName . '.exceptions.php');
 require_once($componentDir . $componentName . '.classes.php');
-require_once($componentDir . $componentName . '.funcs.php');
-
-// support for the user's chosen language
-App::$languages->moduleSpeaks($componentName, $componentDir, 'en-us');
 
 ?>
