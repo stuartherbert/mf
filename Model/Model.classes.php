@@ -60,6 +60,9 @@
 // 2009-05-20   SLH     Model extensions can now have get/set methods for
 //                      fields
 // 2009-05-21   SLH     Performance improvements for handling get/set
+// 2009-05-21   SLH     Added basic support for FIEO
+// 2009-05-21   SLH     Added basic support for loading a model's data
+//                      from $_POST
 // ========================================================================
 
 // ========================================================================
@@ -265,9 +268,29 @@ implements Iterator
                 $this->setNeedsSaving();
         }
 
-        public function setFieldsFromPost()
+        public function setFieldsFromPost($post, $prefix = null)
         {
-                // do nothing for now
+                constraint_mustBeArray($post);
+
+                $this->requireWriteable();
+                $oDef = $this->getDefinition();
+
+                $fields = $oDef->getFields();
+
+                foreach ($fields as $field)
+                {
+                        $fieldName = $field->getName();
+                        $postFieldName = $prefix . $fieldName;
+
+                        if (isset($post[$fieldName]))
+                        {
+                                // the whole reason why we have a special
+                                // method ... to make sure we filter the
+                                // input
+                                $data = $field->filterInput($post[$fieldName]);
+                                $this->$fieldName = $data;
+                        }
+                }
         }
 
         protected function replaceDataWithArray($aData)
@@ -359,15 +382,15 @@ implements Iterator
                 // the fieldname *does* need decoding
                 $parts = explode('_', $fieldName);
                 $lastPart = count($parts) - 1;
-                $conversion = 'to' . ucfirst($parts[$lastPart]);
+                $escaper = 'escapeOutputFor' . ucfirst($parts[$lastPart]);
                 unset($parts[$lastPart]);
 
                 $realFieldName = implode('_', $parts);
 
                 $oFieldDef = $oDef->getField($realFieldName);
-                $oFieldDef->requireValidConvertor($conversion);
+                $oFieldDef->requireValidEscaper($escaper);
 
-                return array ($realFieldName, $conversion, $oFieldDef);
+                return array ($realFieldName, $escaper, $oFieldDef);
         }
 
         public function getField ($fieldName)
@@ -375,7 +398,7 @@ implements Iterator
                 $oDef = $this->getDefinition();
 
                 // are we getting a real field, or a auto-converted one?
-                list($realFieldName, $conversion, $oFieldDef) = $this->decodeFieldName($fieldName);
+                list($realFieldName, $escaper, $oFieldDef) = $this->decodeFieldName($fieldName);
 
                 list($obj, $method) = $oDef->getMethodFor($this, 'get', $realFieldName);
                 if ($method === null)
@@ -391,11 +414,11 @@ implements Iterator
                         $return = $obj->$method();
                 }
 
-                // if we have a convertor to call, call it
-                if ($conversion === null)
+                // if we have an escaper to call, call it
+                if ($escaper === null)
                         return $return;
 
-                return $oFieldDef->convertData($conversion, $realFieldName, $return);
+                return $oFieldDef->escapeOutput($escaper, $realFieldName, $return);
         }
 
 /*
@@ -449,6 +472,9 @@ implements Iterator
         {
                 $this->requireWriteable();
                 $oDef = $this->getDefinition();
+
+                // validate the contents of the field
+                $this->validateField($fieldName, $data);
 
                 list($obj, $method) = $oDef->getMethodFor($this, 'set', $fieldName);
                 if ($method === null)
@@ -653,6 +679,16 @@ implements Iterator
 
                         $this->$method($value);
                 }
+        }
+
+        public function filterAndSetField($fieldName, &$value)
+        {
+                $oDef = $this->getDefinition();
+
+                $oField = $oDef->$fieldName;
+                $oField->filterInput($value);
+
+                $this->$fieldName = $value;
         }
 
         public function requireValidMethod($method)
@@ -1779,7 +1815,7 @@ class Model_FieldDefinition
 
         // ----------------------------------------------------------------
 
-        public function asType(Model_Type_I_Datatype $oType)
+        public function asType(Model_Type $oType)
         {
                 $this->oType = $oType;
                 $oDef->updateDispatchMapFromType($this->name, $this->oType);
@@ -1863,32 +1899,40 @@ class Model_FieldDefinition
         }
 
         // ================================================================
-        // Support for data conversions
+        // Support for filter input / escape output
         // ----------------------------------------------------------------
 
-        public function hasConvertor($convertor)
+        public function filterInput(&$data)
+        {
+                if (!isset($this->oType))
+                        return;
+
+                $this->oType->filterInput($data);
+        }
+
+        public function hasEscaper($escaper)
         {
                 if (!isset($this->oType))
                         return false;
 
-                if (!method_exists($this->oType, $convertor))
+                if (!method_exists($this->oType, $escaper))
                         return false;
 
                 return true;
         }
 
-        public function requireValidConvertor($convertor)
+        public function requireValidEscaper($escaper)
         {
-                if (!$this->hasConvertor($convertor))
+                if (!$this->hasEscaper($escaper))
                 {
-                        throw new Model_E_NoSuchConvertor(get_class($this->oType), $convertor);
+                        throw new Model_E_NoSuchEscaper(get_class($this->oType), $escaper);
                 }
         }
 
-        public function convertData($convertor, $fieldName, $data)
+        public function escapeOutput($escaper, $fieldName, $data)
         {
-                $this->requireValidConvertor($convertor);
-                return $this->oType->$convertor($fieldName, $data);
+                $this->requireValidEscaper($escaper);
+                return $this->oType->$escaper($fieldName, $data);
         }
 }
 
@@ -2257,24 +2301,37 @@ class Model_View
 // ========================================================================
 // ------------------------------------------------------------------------
 
+interface Model_Type
+{
+        public function getDefaultValue();
+        public function filterInput(&$data);
+        public function validateData(&$data);
+}
+
 class Model_Type_Generic extends Core
+        implements Model_Type
 {
         public function getDefaultValue()
         {
                 return null;
         }
 
-        public function validateData(&$a_mData)
+        public function filterInput(&$data)
         {
                 // do nothing
         }
 
-        public function toHtml($name, $data)
+        public function validateData(&$data)
+        {
+                // do nothing
+        }
+
+        public function escapeOutputForHtml($name, $data)
         {
                 return htmlentities($data);
         }
 
-        public function toXml($name, $data)
+        public function escapeOutputForXml($name, $data)
         {
                 $convertedData = str_replace(array('<', '>', '&'), array ('&lt;', '&gt;', '&amp;'), $data);
 
