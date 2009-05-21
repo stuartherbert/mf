@@ -30,6 +30,7 @@
 //                      Model_Extension interface
 // 2009-05-20   SLH     Added tests for auto-conversion of model fields
 // 2009-05-20   SLH     Added some fundamental tests for Model
+// 2009-05-21   SLH     Extensions are now passed as objects, not classes
 // ========================================================================
 
 // bootstrap the framework
@@ -96,14 +97,9 @@ class Test_Model_User_EmailAddress_Ext implements Model_Extension
 
         public function setEmailAddress($model, $emailAddress)
         {
-                $model->emailAddress    = $emailAddress;
+                $model->_setFieldInData('emailAddress', $emailAddress);
                 $model->hasEmailAddress = true;
         }
-}
-
-class Test_Model_Bad_Ext
-{
-
 }
 
 Testsuite_registerTests('Model_Definitions_Tests');
@@ -303,7 +299,7 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
                 // step 2: now, extend the model to add the emailAddress
                 //         field
                 $oDef = Model_Definitions::get('Test_Model_User');
-                $oDef->addExtension('Test_Model_User_EmailAddress_Ext');
+                $oDef->addExtension(new Test_Model_User_EmailAddress_Ext());
 
                 // now, see if the extension works
                 //
@@ -314,22 +310,6 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 
                 $this->assertEquals(true, $user->hasEmailAddress);
                 $this->assertEquals('stuart@stuartherbert.com', $user->emailAddress);
-        }
-
-        public function testModelExtensionMustImplementInterface()
-        {
-                $exceptionThrown = false;
-                try
-                {
-                        $oDef = Model_Definitions::get('Test_Model_User');
-                        $oDef->addExtension('Test_Model_Bad_Ext');
-                }
-                catch (PHP_E_ConstraintFailed $e)
-                {
-                        $exceptionThrown = true;
-                }
-
-                $this->assertEquals(true, $exceptionThrown);
         }
 }
 
