@@ -21,6 +21,7 @@
 // 2009-03-02   SLH     Created
 // 2009-03-31   SLH     Moved User creation into here
 // 2009-05-19   SLH     Use browser type to determine which page to load
+// 2009-05-20   SLH     The requested route is now stored in App_Request
 // ========================================================================
 
 // step 1: add support for multiple websites here
@@ -56,7 +57,7 @@ try
         // website share the same idea of what a user is.  This is probably
         // a good thing
         
-        $route = App::$routes->findByUrl(App::$request->pathInfo);
+        App::$request->currentRoute = App::$routes->findByUrl(App::$request->pathInfo);
 }
 catch (Routing_E_NoMatchingRoute $e)
 {
@@ -74,31 +75,31 @@ catch (Routing_E_NoMatchingRoute $e)
 //
 // TODO: this switch statement goes away when PHP 5.3 comes out
 
-switch ($route->mainLoop)
+switch (App::$request->currentRoute->mainLoop)
 {
         case 'AnonApi':
                 // AnonApi::installExceptionHandler();
-                AnonApi::preMainLoop($route);
+                AnonApi::preMainLoop(App::$request->currentRoute);
                 break;
 
         case 'Api':
                 // Api::installExceptionHandler();
-                Api::preMainLoop($route);
+                Api::preMainLoop(App::$request->currentRoute);
                 break;
 
         case 'WebApp':
         default:
                 // WebApp::installExceptionHandler();
-                WebApp::preMainLoop($route);
+                WebApp::preMainLoop(App::$request->currentRoute);
                 break;
 }
 
 // pass control to the controller
 try
 {
-        $page = APP_TOPDIR . '/app/' . $route->routeToModule
+        $page = APP_TOPDIR . '/app/' . App::$request->currentRoute->routeToModule
                 . '/' . App::$browser->platform . '-pages/'
-                . $route->routeToPage . '.page.php';
+                . App::$request->currentRoute->routeToPage . '.page.php';
 
         require_once($page);
 }

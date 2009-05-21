@@ -50,6 +50,7 @@
 //                      piece of data
 // 2009-05-01   SLH     App_Conditions now does a convincing job of
 //                      pretending to be an array
+// 2009-05-20   SLH     Added currentRoute to App_Request
 // ========================================================================
 
 class App
@@ -178,6 +179,13 @@ class App_Request
         // holds the path the user has requested, which we later
         // decode to determine which class to route the request to
         public $pathInfo     = null;
+
+        /**
+         * What route are we being asked to process?
+         *
+         * @var Routing_Route
+         */
+        public $currentRoute = null;
 
         /**
          * What type of content is the user asking for?
