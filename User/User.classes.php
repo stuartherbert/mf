@@ -30,6 +30,7 @@
 // 2009-03-31   SLH     Added User_Authenticator_WebUser
 // 2009-04-16   SLH     Conditions have been moved up to App from Routing
 // 2009-05-20   SLH     Updated to work with changes to Model
+// 2009-05-20   SLH     Set 'loggedIn' condition, not 'loggedin'
 // ========================================================================
 
 // ========================================================================
@@ -205,7 +206,7 @@ class User_Authenticator_WebUser
                                         
                                         // tell the routing engine that the user
                                         // is logged in
-                                        App::$conditions->loggedin = true;
+                                        App::$conditions->loggedIn = true;
                                         
                                         return true;
                                 }
