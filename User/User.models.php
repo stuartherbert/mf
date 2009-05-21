@@ -42,6 +42,7 @@
 // 2009-03-25   SLH     Moved theme support into separate extension
 // 2009-03-30   SLH     User_Password_Ext now implements Model_Extension
 // 2009-03-31   SLH     Added authType field to generic User model
+// 2009-05-20   SLH     Added User_VerifiedEmail_Ext
 // ========================================================================
 
 class User extends Model
@@ -177,25 +178,25 @@ class User_Address_Ext implements Model_Extension
                 $return = array();
 
                 // do we have the first line of the address?
-                if (!isset($this->address1) || strlen(trim($this->address1)) == 0)
+                if (!isset($model->address1) || strlen(trim($model->address1)) == 0)
                 {
                 	$return[] = User_Address_Ext::E_NO_ADDRESS1;
                 }
 
                 // do we have the town/city?
-                if (!isset($this->addressCity) || strlen(trim($this->addressCity)) == 0)
+                if (!isset($model->addressCity) || strlen(trim($model->addressCity)) == 0)
                 {
                 	$return[] = User_Address_Ext::E_NO_ADDRESSCITY;
                 }
 
                 // do we have the county / state?
-                if (!isset($this->addressState) || strlen(trim($this->addressState)) == 0)
+                if (!isset($model->addressState) || strlen(trim($model->addressState)) == 0)
                 {
                 	$return[] = User_Address_Ext::E_NO_ADDRESSSTATE;
                 }
 
                 // what about the postcode?
-                if (!isset($this->addressPostcode) || strlen(trim($this->addressPostcode)) == 0)
+                if (!isset($model->addressPostcode) || strlen(trim($model->addressPostcode)) == 0)
                 {
                 	$return[] = User_Address_Ext::E_NO_ADDRESSPOSTCODE;
                 }
@@ -229,7 +230,7 @@ class User_Email_Ext implements Model_Extension
 
         	// step 1: do we have an email address to validate?
 
-                if (!$this->emailAddress)
+                if (!$model->emailAddress)
                 {
                 	$return[] = User_Email_Ext::E_NO_EMAILADDRESS;
                 }
@@ -247,7 +248,7 @@ class User_Email_Ext implements Model_Extension
 
                 // step 2: do we have a confirm email address to validate?
 
-                if (!$this->confirmEmailAddress)
+                if (!$model->confirmEmailAddress)
                 {
                 	$return[] = User_Email_Ext::E_NO_CONFIRMEMAILADDRESS;
                 }
@@ -259,11 +260,11 @@ class User_Email_Ext implements Model_Extension
                 return $return;
         }
 
-        public function hasValidEmailAddress()
+        public function hasValidEmailAddress($model)
         {
         	try
                 {
-                	constraint_mustBeEmailAddress($this->emailAddress);
+                	constraint_mustBeEmailAddress($model->emailAddress);
                 }
                 catch (PHP_E_ConstraintFailed $e)
                 {
@@ -273,9 +274,9 @@ class User_Email_Ext implements Model_Extension
                 return true;
         }
 
-        public function hasUniqueEmailAddress(Datastore $oDB)
+        public function hasUniqueEmailAddress(User $model, Datastore $oDB)
         {
-                if (!isset($this->emailAddress))
+                if (!isset($model->emailAddress))
                 {
                         return true;
                 }
@@ -292,9 +293,9 @@ class User_Email_Ext implements Model_Extension
                 return true;
         }
 
-        public function emailAddressesMatch()
+        public function emailAddressesMatch(User $model)
         {
-        	if ($this->emailAddress == $this->confirmEmailAddress)
+        	if ($model->emailAddress == $model->confirmEmailAddress)
                 {
                 	return true;
                 }
@@ -314,7 +315,7 @@ class User_Name_Ext implements Model_Extension
                 $oDef->addField('lastName');
         }
 
-        public function validateName($model)
+        public function validateName(User $model)
         {
         	// we can return one or more error codes!
                 $return = array();
@@ -334,10 +335,10 @@ class User_Name_Ext implements Model_Extension
                 return $return;
         }
 
-        public function postAuth()
+        public function postAuth(User $model)
         {
-                $this->firstName = 'Guest';
-                $this->lastName  = 'User';
+                $model->firstName = 'Guest';
+                $model->lastName  = 'User';
         }
 }
 
@@ -353,20 +354,20 @@ class User_Password_Ext implements Model_Extension
                 $oDef->addFakeField('confirmPassword');
         }
 
-        public function validatePassword()
+        public function validatePassword(User $model)
         {
                 $aReturn = array();
 
-                if ($this->passwordIsBlank())
+                if ($model->passwordIsBlank())
                 {
                 	$aReturn[] = User_Password_Ext::E_BLANK_PASSWORD;
                 }
-                else if ($this->passwordIsWeak())
+                else if ($model->passwordIsWeak())
                 {
                 	$aReturn[] = User_Password_Ext::E_WEAK_PASSWORD;
                 }
 
-                if (!$this->passwordsMatch())
+                if (!$model->passwordsMatch())
                 {
                 	$aReturn[] = User_Password_Ext::E_PASSWORDS_DIFFERENT;
                 }
@@ -376,7 +377,7 @@ class User_Password_Ext implements Model_Extension
 
         public function hasBlankPassword()
         {
-                if (!isset($this->password) || strlen($this->password) == 0)
+                if (!isset($model->password) || strlen($model->password) == 0)
                 {
                         return true;
                 }
@@ -386,7 +387,7 @@ class User_Password_Ext implements Model_Extension
 
         public function hasWeakPassword()
         {
-        	if (strlen($this->password) < 6)
+        	if (strlen($model->password) < 6)
                 {
                 	return true;
                 }
@@ -396,7 +397,7 @@ class User_Password_Ext implements Model_Extension
 
         public function passwordsMatch()
         {
-        	if ($this->password == $this->confirmPassword)
+        	if ($model->password == $model->confirmPassword)
                 {
                 	return true;
                 }
@@ -412,6 +413,32 @@ class User_Theme_Ext implements Model_Extension
                 $oDef->addField('theme');
                 $oDef->getField('supportsThemePref')
                      ->setDefaultValue(true);
+        }
+}
+
+class User_VerifiedEmail_Ext implements Model_Extension
+{
+        public function extendsModelDefinition(Model_Definition $oDef)
+        {
+                $oDef->addField('verified')
+                     ->setDefaultValue(0);
+                $oDef->addField('verificationCode');
+        }
+
+        public function setVerified($model, $value)
+        {
+                $data =& $model->getData();
+
+                if ($value)
+                {
+                        $data['verified'] = 1;
+                        $data['verificationCode'] = null;
+                }
+                else
+                {
+                        $data['verified'] = 0;
+                        $data['verificationCode'] = md5(srand(1,999999) . App::$config['APP_SECRET_KEY']);
+                }
         }
 }
 

@@ -57,6 +57,16 @@
 // 2009-05-20   SLH     Added isWriteable()
 // 2009-05-20   SLH     Renamed methods for needsSaving support in Model
 // 2009-05-20   SLH     requireWritable() renamed to requireWriteable()
+// 2009-05-20   SLH     Model extensions can now have get/set methods for
+//                      fields
+// ========================================================================
+
+// ========================================================================
+//
+// TODO list
+//
+// @todo create a dispatch table for get/set to speed it up
+//
 // ========================================================================
 
 class Model
@@ -355,9 +365,17 @@ implements Iterator
         {
                 list($realFieldName, $conversion, $oFieldDef) = $this->decodeFieldName($fieldName);
 
-                // do we have a getter for this method?
+                // does the method exist in an extension?
                 $method = 'get' . ucfirst($realFieldName);
-                if (method_exists($this, $method))
+                if ($extension = $oDef->getExtensionForMethod($method))
+                {
+                        // call the extension object
+                        // the first parameter passed is always $this
+                        array_unshift($args, $this);
+                        return call_user_func_array(array($extension, $method));
+                }
+                // or do we have a method to handle this?
+                else if (method_exists($this, $method))
                 {
                         $return = $this->$method();
                 }
@@ -400,9 +418,17 @@ implements Iterator
                 // throws an exception if things are not good
                 $this->validateField($fieldName, $data);
 
-                // do we have a setter defined?
+                // do we have an extension that supports this field?
                 $method = 'set' . ucfirst($fieldName);
-                if (method_exists($this, $method))
+                if ($extension = $oDef->getExtensionForMethod($method))
+                {
+                        // call the extension object
+                        // the first parameter passed is always $this
+                        array_unshift($args, $this);
+                        return call_user_func_array(array($extension, $method), array($data));
+                }
+                // do we have a setter defined?
+                else if (method_exists($this, $method))
                 {
                         if ($this->$method($data) !== false)
                         {
