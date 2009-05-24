@@ -23,6 +23,7 @@
 // 2009-03-01   SLH     Made App the global place holder for everything else
 // 2009-03-18   SLH     Added support for loading mock objects for unit
 //                      testing
+// 2009-05-24   SLH     Added lcfirst() as a temporary workaround
 // ========================================================================
 
 // ========================================================================
@@ -211,6 +212,22 @@ function __test_require_once($moduleName)
 
         // if we get to here, there is no special mock object
         __mf_require_once($moduleName);
+}
+
+// ========================================================================
+//
+// Cheat: we define this here so that it exists for everyone
+//
+// Should really move this out to a separate PHP patches file
+//
+// ------------------------------------------------------------------------
+
+if (!function_exists('lcfirst'))
+{
+        function lcfirst($string)
+        {
+                return strtolower(substr($string, 0, 1)) . substr($string, 1);
+        }
 }
 
 // ========================================================================
