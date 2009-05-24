@@ -20,6 +20,7 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2009-05-24   SLH     Created
+// 2009-05-24   SLH     Added tests for static listeners
 // ========================================================================
 //
 // bootstrap the framework
@@ -62,9 +63,39 @@ class Test_Event_ListenerObj
         }
 }
 
+class Test_Event_ListenerStatic
+{
+        static public $eventsTriggered = 0;
+        static public $data            = array();
+
+        static public function listenToTestEvent1($source, $data)
+        {
+                self::$eventsTriggered++;
+                self::$data = $data;
+        }
+
+        static public function listenToTestEvent2($source, $data)
+        {
+                self::$eventsTriggered++;
+                self::$data = $data;
+        }
+
+        static public function reset()
+        {
+                self::$eventsTriggered = 0;
+                self::$data            = array();
+        }
+}
+
 Testsuite_registerTests('Events_Tests');
 class Events_Tests extends PHPUnit_Framework_TestCase
 {
+        public function setup()
+        {
+                Events_Manager::destroy();
+                Test_Event_ListenerStatic::reset();
+        }
+        
         public function testCanRegisterEvents()
         {
                 // entry conditions
@@ -119,6 +150,64 @@ class Events_Tests extends PHPUnit_Framework_TestCase
                 // retest
                 $this->assertEquals(2, $listener->eventsTriggered);
                 $this->assertEquals(array('e', 'f', 'g'), $listener->data);
+        }
+
+        public function testCanRegisterStaticListeningMethods()
+        {
+                // entry conditions
+                $listeners = Events_Manager::getListeners();
+                $this->assertEquals(0, count($listeners));
+
+                // change state
+                Events_Manager::listensToEvents('Test_Event_ListenerStatic');
+
+                // retest
+                $listeners = Events_Manager::getListeners();
+                $this->assertEquals(2, count($listeners));
+        }
+
+        public function testCanTriggerStaticListeningMethods()
+        {
+                Events_Manager::listensToEvents('Test_Event_ListenerStatic');
+                $obj = new Test_Event_Triggered();
+
+                // entry conditions
+                $listeners = Events_Manager::getListeners();
+                $this->assertEquals(2, count($listeners));
+
+                // change state
+                $obj->doSomething();
+                $obj->doSomethingElse();
+
+                // retest
+                $this->assertEquals(2, Test_Event_ListenerStatic::$eventsTriggered);
+                $this->assertEquals(array('e', 'f', 'g'), Test_Event_ListenerStatic::$data);
+        }
+
+        public function testCanTriggerMultipleListeners()
+        {
+                $listener = new Test_Event_ListenerObj();
+                Events_Manager::listensToEvents($listener);
+                Events_Manager::listensToEvents('Test_Event_ListenerStatic');
+
+                $obj = new Test_Event_Triggered();
+
+                // entry conditions
+                $listeners = Events_Manager::getListeners();
+                $this->assertEquals(2, count($listeners));
+                $this->assertEquals(2, count($listeners['testEvent1']));
+                $this->assertEquals(2, count($listeners['testEvent2']));
+
+                // change state
+                $obj->doSomething();
+                $obj->doSomethingElse();
+
+                // retest
+                $this->assertEquals(2, $listener->eventsTriggered);
+                $this->assertEquals(array('e','f','g'), $listener->data);
+
+                $this->assertEquals(2, Test_Event_ListenerStatic::$eventsTriggered);
+                $this->assertEquals(array('e','f','g'), Test_Event_ListenerStatic::$data);
         }
 }
 

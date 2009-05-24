@@ -20,6 +20,8 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2009-05-24   SLH     Created
+// 2009-05-24   SLH     Added Events_Manager::destroy() to make the code
+//                      testable
 // ========================================================================
 
 class Events_Manager
@@ -29,6 +31,11 @@ class Events_Manager
         const TYPE_OBJECT = 1;
         const TYPE_STATIC = 2;
 
+        static public function destroy()
+        {
+                self::$listeners = array();
+        }
+        
         static protected function objectListensToEvents(Events_Listener $obj)
         {
                 $reflectionObj = new ReflectionObject($obj);
@@ -51,7 +58,7 @@ class Events_Manager
         static protected function staticListensToEvents($className)
         {
                 $reflectionClass = new ReflectionClass($className);
-                $methods = $reflectionClass->getMethods(ReflectionMethod::IS_STATIC & ReflectionMethod::IS_PUBLIC);
+                $methods = $reflectionClass->getMethods(ReflectionMethod::IS_STATIC);
 
                 foreach ($methods as $method)
                 {
