@@ -66,13 +66,15 @@
 //                      datastore (to allow for future flexibility)
 // 2009-03-25   SLH     Basic many:many support
 // 2009-05-20   SLH     Updated to work with latest changes to Model
+// 2009-05-23   SLH     No longer needs Core to help w/ calling methods
+// 2009-05-23   SLH     Fix for missing storageMap member of Datastore
 // ========================================================================
 
 // ========================================================================
 // Base class for all types of datastore
 // ------------------------------------------------------------------------
 
-class Datastore extends Core
+class Datastore extends Obj
 {
         const ORDER_START = 0;
         const ORDER_ASC   = 1;
@@ -86,6 +88,8 @@ class Datastore extends Core
         const HINT_END     = 4;
 
         public $oConnector = null;
+
+        protected $storageMap = array();
 
         public function __construct ($oConnector)
         {
@@ -457,9 +461,8 @@ class Datastore extends Core
                 }
 
                 // if we get here, then the method exists
-                // unravel the array, and call the method
-                $callName = '__call_' . count($args);
-                return $this->$callName($this->oConnector, $funcName, $args);
+
+                return call_user_func_array(array($this->oConnector, $funcName), $args);
         }
 }
 
@@ -717,7 +720,7 @@ class Datastore_Storage
 //
 // ------------------------------------------------------------------------
 
-class Datastore_Record extends Core
+class Datastore_Record extends Obj
 {
         public    $oModel        = null;
 
@@ -1348,8 +1351,7 @@ class Datastore_Record extends Core
                 }
                 else
                 {
-                	$callMethod = '__call_' . count($aArgs);
-                        return $this->$callMethod($objectToCall, $methodToCall, $aArgs);
+                        return call_user_func_array(array($objectToCall, $methodToCall), $aArgs);
                 }
         }
 }

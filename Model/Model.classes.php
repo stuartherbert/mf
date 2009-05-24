@@ -268,7 +268,7 @@ implements Iterator
                 $this->setNeedsSaving();
         }
 
-        public function setFieldsFromPost($post, $prefix = null)
+        public function setFieldsFromPost($post, $prefix = '')
         {
                 constraint_mustBeArray($post);
 
@@ -282,7 +282,7 @@ implements Iterator
                         $fieldName = $field->getName();
                         $postFieldName = $prefix . $fieldName;
 
-                        if (isset($post[$fieldName]))
+                        if (isset($post[$postFieldName]))
                         {
                                 // the whole reason why we have a special
                                 // method ... to make sure we filter the
@@ -1902,12 +1902,12 @@ class Model_FieldDefinition
         // Support for filter input / escape output
         // ----------------------------------------------------------------
 
-        public function filterInput(&$data)
+        public function filterInput($data)
         {
                 if (!isset($this->oType))
-                        return;
+                        return $data;
 
-                $this->oType->filterInput($data);
+                return $this->oType->filterInput($data);
         }
 
         public function hasEscaper($escaper)
@@ -2304,11 +2304,11 @@ class Model_View
 interface Model_Type
 {
         public function getDefaultValue();
-        public function filterInput(&$data);
+        public function filterInput($data);
         public function validateData(&$data);
 }
 
-class Model_Type_Generic extends Core
+class Model_Type_Generic extends Obj
         implements Model_Type
 {
         public function getDefaultValue()
@@ -2316,9 +2316,10 @@ class Model_Type_Generic extends Core
                 return null;
         }
 
-        public function filterInput(&$data)
+        public function filterInput($data)
         {
                 // do nothing
+                return $data;
         }
 
         public function validateData(&$data)
