@@ -63,17 +63,11 @@
 // 2009-05-21   SLH     Added basic support for FIEO
 // 2009-05-21   SLH     Added basic support for loading a model's data
 //                      from $_POST
+// 2009-05-26   SLH     Supports the new generic mixin / decorator features
+//                      added to Obj
 // ========================================================================
 
-// ========================================================================
-//
-// TODO list
-//
-// @todo create a dispatch table for get/set to speed it up
-//
-// ========================================================================
-
-class Model
+class Model extends Obj
 implements Iterator
 {
         protected $aData                = array();
@@ -84,9 +78,6 @@ implements Iterator
         protected $definitionName       = null;
 
         protected $datastoreProxy       = null;
-
-        protected $fieldGetDispatch     = array();
-        protected $fieldSetDispatch     = array();
 
         const     DATA_START            = 0;
         const     REPLACE_DATA          = 1;
@@ -99,6 +90,8 @@ implements Iterator
                 {
                         $modelName = get_class($this);
                 }
+
+                parent::__construct($modelName);
 
                 $oDef = $this->getDefinition($modelName);
                 $this->primaryKey = $oDef->getPrimaryKey();
@@ -155,37 +148,35 @@ implements Iterator
         // Support for extending the model
         // ----------------------------------------------------------------
 
-        public function __call($fullMethodName, $args)
+        public function __call($fullMethodName, $origArgs)
         {
-                static $oDef = null;
+                // step 1: do the same that Obj would normally do
+                //
+                // It may appear bad form to copy Obj's code, but the
+                // alternative is to call Obj's __call in a try/catch
+                // block, and we want to keep the overhead to a minimum
 
-                if ($oDef === null)
-                        $oDef = $this->getDefinition();
+                // prepare the args to pass to the method
 
-                // step 1: does the method exist in an extension?
-                if ($extension = $oDef->getExtensionForMethod($fullMethodName))
+                $args = array($this);
+                foreach ($origArgs as $arg)
                 {
-                        // call the extension object
-                        // the first parameter passed is always $this
-                        array_unshift($args, $this);
-                        return call_user_func_array(array($extension, $fullMethodName), $args);
+                        $args[] = $arg;
+                }
+
+                $obj = $this->findObjForMethod($fullMethodName);
+                if ($obj)
+                {
+                        return call_user_func_array(array($obj, $fullMethodName), $args);
                 }
 
                 // step 2: do we need to call datastore proxy instead?
-                //
-                // NOTE that we handle this separately because each instance
-                // of the model requires a unique copy of the datastore
-                // proxy, it is is perfectly possible for two separate
-                // instances of the model to have datastore proxies of
-                // different classes
-
                 if (!isset($this->datastoreProxy))
                 {
-                        // TODO: throw something better here
-                        throw new Exception();
+                        throw new Obj_E_NoSuchMethod($fullMethodName, $this);
                 }
 
-                return call_user_func_array(array($this->datastoreProxy, $fullMethodName), $args);
+                return call_user_func_array(array($this->datastoreProxy, $fullMethodName), $origArgs);
         }
 
         // ================================================================
@@ -379,8 +370,13 @@ implements Iterator
                         return array($fieldName, null, $oFieldDef);
                 }
 
-                // the fieldname *does* need decoding
+                // the fieldname *may* need decoding
                 $parts = explode('_', $fieldName);
+                if (count($parts) == 1)
+                {
+                        throw new Model_E_NoSuchField($fieldName, $oDef->getModelName());
+                }
+
                 $lastPart = count($parts) - 1;
                 $escaper = 'escapeOutputFor' . ucfirst($parts[$lastPart]);
                 unset($parts[$lastPart]);
@@ -400,68 +396,31 @@ implements Iterator
                 // are we getting a real field, or a auto-converted one?
                 list($realFieldName, $escaper, $oFieldDef) = $this->decodeFieldName($fieldName);
 
-                list($obj, $method) = $oDef->getMethodFor($this, 'get', $realFieldName);
-                if ($method === null)
+                $obj = $this->findObjForProperty($realFieldName);
+                if ($obj)
                 {
-                        $return = $this->_getFieldInData($realFieldName);
-                }
-                else if ($obj instanceof Model_Extension)
-                {
-                        $return = $obj->$method($this);
+                        $return = $obj->$propertyName;
                 }
                 else
                 {
-                        $return = $obj->$method();
+                        $method = 'get' . ucfirst($realFieldName);
+                        $obj = $this->findObjForMethod($method);
+                        if ($obj)
+                        {
+                                $return = $obj->$method($this);
+                        }
+                        else
+                        {
+                                $return = $this->_getFieldInData($realFieldName);
+                        }
                 }
-
+                
                 // if we have an escaper to call, call it
                 if ($escaper === null)
                         return $return;
 
                 return $oFieldDef->escapeOutput($escaper, $realFieldName, $return);
         }
-
-/*
-        public function getField ($fieldName)
-        {
-                list($realFieldName, $conversion, $oFieldDef) = $this->decodeFieldName($fieldName);
-
-                // does the method exist in an extension?
-                $method = 'get' . ucfirst($realFieldName);
-                if ($extension = $oDef->getExtensionForMethod($method))
-                {
-                        // call the extension object
-                        // the first parameter passed is always $this
-                        array_unshift($args, $this);
-                        return call_user_func_array(array($extension, $method));
-                }
-                // or do we have a method to handle this?
-                else if (method_exists($this, $method))
-                {
-                        $return = $this->$method();
-                }
-                else if (isset($this->aData[$realFieldName]))
-                {
-                        // do we have any data for this field?
-                        $return = $this->aData[$realFieldName];
-                }
-                else
-                {
-                        // we're out of ideas, so return null
-                        return null;
-                }
-
-                // has a conversion been requested?
-                if ($conversion === null)
-                {
-                        // no, so return the requested data
-                        return $return;
-                }
-
-                // yes it has
-                return $oFieldDef->convertData($conversion, $realFieldName, $return);
-        }
-*/
 
         public function resetField ($fieldName)
         {
@@ -476,76 +435,17 @@ implements Iterator
                 // validate the contents of the field
                 $this->validateField($fieldName, $data);
 
-                list($obj, $method) = $oDef->getMethodFor($this, 'set', $fieldName);
-                if ($method === null)
+                $method = 'set' . ucfirst($realFieldName);
+                $obj = $this->findObjForMethod($method);
+                if ($obj !== null)
                 {
-                        return $this->_setFieldInData($fieldName, $data);
-                }
-
-                if ($obj instanceof Model_Extension)
-                {
-                        return $obj->$method($this, $fieldName, $data);
+                        return $obj->$method($this, $data);
                 }
                 else
                 {
-                        return $obj->$method($fieldName, $data);
+                        return $this->_setFieldInData($fieldName, $data);
                 }
         }
-
-/*
-        public function setField ($fieldName, $data)
-        {
-                $this->requireWriteable();
-                $oDef = $this->getDefinition();
-
-                // are we trying to set a field that has been defined?
-                $oDef->requireValidFieldName($fieldName);
-
-                // validate the field
-                // throws an exception if things are not good
-                $this->validateField($fieldName, $data);
-
-                // do we have an extension that supports this field?
-                $method = 'set' . ucfirst($fieldName);
-                if ($extension = $oDef->getExtensionForMethod($method))
-                {
-                        // call the extension object
-                        // the first parameter passed is always $this
-                        array_unshift($args, $this);
-                        return call_user_func_array(array($extension, $method), array($data));
-                }
-                // do we have a setter defined?
-                else if (method_exists($this, $method))
-                {
-                        if ($this->$method($data) !== false)
-                        {
-                                $this->setNeedsSaving();
-                        }
-
-                        return;
-                }
-
-                // special case: are we actually resetting the field?
-                if ($data === null)
-                {
-                        if (!isset($this->aData[$fieldName]))
-                        {
-                                // we're not changing the state of the field
-                                return;
-                        }
-
-                        unset($this->aData[$fieldName]);
-                        $this->setNeedsSaving();
-                        return;
-                }
-
-                // if we get here, then we'll just store the data nice
-                // and quiet like
-
-                $this->aData[$fieldName] = $data;
-                $this->setNeedsSaving();
-        }
-*/
 
         public function hasField ($fieldName)
         {
@@ -560,19 +460,20 @@ implements Iterator
                         return false;
                 }
 
-                $oDef = $this->getDefinition();
-                list($obj, $method) = $oDef->getMethodFor($this, 'isset', $fieldName);
-                if ($method === null)
+                $obj = $this->findObjForProperty($fieldName);
+                if ($obj)
                 {
-                        return $this->_issetFieldInData($fieldName);
+                        return isset($obj->$fieldName);
                 }
 
-                if ($obj instanceof Model_Extension)
+                $method = 'isset' . ucfirst($fieldName);
+                $obj = $this->findObjForMethod($method);
+                if ($obj)
                 {
-                        return call_user_func_array(array($obj, $method), array ($this));
+                        return $obj->$method($this);
                 }
 
-                return call_user_func_array(array($obj, $method));
+                return $this->_issetFieldInData($fieldName);
         }
 
         /**
@@ -1036,7 +937,7 @@ implements Iterator
         }
 }
 
-final class Model_Definitions
+final class Model_Definitions implements Events_Listener
 {
         static private $aInstances = array();
         static private $aCaches    = array();
@@ -1123,7 +1024,22 @@ final class Model_Definitions
         {
         	self::$aCaches[$modelName][] = $cache;
         }
+
+        static public function listenToModelExtended($extensionClass, $modelName)
+        {
+                // var_dump('Model_Definitions::listenToModelExtended() called');
+                // a model has just been extended
+
+                // now, give the extension a chance to add new fields to
+                // the model's definition
+
+                $oDef = self::get($modelName);
+                call_user_func_array(array($extensionClass, 'extendsModelDefinition'), array($oDef));
+        }
 }
+
+// tell the Events mechanism that we need to be kept in the loop ..
+Events_Manager::listensToEvents('Model_Definitions');
 
 // ========================================================================
 // ------------------------------------------------------------------------
@@ -1140,11 +1056,6 @@ class Model_Definition
         protected $aViews               = array();
         protected $aRelationships       = array();
         protected $aIndices             = array();
-
-        protected $extensions           = array();
-        protected $extensionMap         = array();
-        protected $dispatchMap          = array();
-        protected $overrideMethods      = array ('get', 'set', 'isset');
 
         private $modelName              = "";
         private $modelClassName         = "";
@@ -1372,62 +1283,6 @@ class Model_Definition
         }
 
         // ================================================================
-        // Support for the dispatch map
-        //
-        // The dispatch map is used to speed up the performance of
-        // individual models
-        // ----------------------------------------------------------------
-
-        public function getMethodFor($model, $type, $fieldName)
-        {
-                if (isset($this->dispatchMap[$type][$fieldName]))
-                {
-                        return array (
-                                $this->dispatchMap[$type][$fieldName]['obj'],
-                                $this->dispatchMap[$type][$fieldName]['method']
-                        );
-                }
-
-                // we do not have an entry in the dispatch map
-                // maybe the model itself can help?
-                //
-                // I cannot think of an efficient way to store these in
-                // the dispatch map at this time
-
-                $method = $type . ucfirst($fieldName);
-                if (method_exists($model, $method))
-                {
-                        return array($model, $method);
-                }
-                
-                // if we get here, then we don't know ... it's the
-                // model's problem from here on in
-
-                return array ($model, null);
-        }
-
-        public function setMethodFor($type, $fieldName, $obj, $method)
-        {
-                $this->dispatchMap[$type][$fieldName]['obj']    = $obj;
-                $this->dispatchMap[$type][$fieldName]['method'] = $method;
-        }
-
-        public function updateDispatchMapForField($fieldName, $obj)
-        {
-                // does this type offer automatic convertors at all?
-                $ucFieldName = ucfirst($fieldName);
-
-                foreach ($this->overrideMethods as $overrideMethod)
-                {
-                        $method = $overrideMethod . $ucFieldName;
-                        if (method_exists($obj, $method))
-                        {
-                                $this->setMethodFor($overrideMethod, $fieldName, $obj, $method);
-                        }
-                }
-        }
-
-        // ================================================================
         // Foreign key support
         // ----------------------------------------------------------------
 
@@ -1523,58 +1378,10 @@ class Model_Definition
         }
 
         // ================================================================
-        // Support for extending the model
-        // ----------------------------------------------------------------
-
-        public function addExtension (Model_Extension $extension)
-        {
-                $extension->extendsModelDefinition($this);
-                $this->extensions[$classname] = $extension;
-
-                // we use reflection to make a list of all the public
-                // methods from the class
-
-                $reflection = new ReflectionClass(get_class($extension));
-                $methods    = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
-
-                foreach ($methods as $method)
-                {
-                        $this->extensionMap[$method->getName()] = $extension;
-                }
-
-                // check the extension to see if it overrides any of
-                // the get/set field methods
-                $fields = $this->getFields();
-                foreach ($fields as $fieldDef)
-                {
-                        $this->updateDispatchMapForField($fieldDef->getName(), $extension);
-                }
-        }
-
-
-        public function getExtensionForMethod($methodName)
-        {
-                if (isset($this->extensionMap[$methodName]))
-                {
-                        return $this->extensionMap[$methodName];
-                }
-
-                return null;
-        }
-
-
-        /**
-         * Return a list of the extensions attached to this model
-         * 
-         * @return array
-         */
-        public function getExtensions()
-        {
-                return $this->extensions;
-        }
-        
-        // ================================================================
         // Support for behaviours
+        //
+        // This will be replaced with the generic mixin / decorator
+        // support before too long
         // ----------------------------------------------------------------
 
         public function addBehaviour(Datastore_RecordBehaviour_Base $oBehaviour)
@@ -1796,7 +1603,6 @@ class Model_FieldDefinition
                 // we must always have a type
                 // users can override this if they wish
                 $this->oType = new Model_Type_Generic();
-                $oDef->updateDispatchMapForField($this->name, $this->oType);
         }
 
         // ================================================================
@@ -2348,7 +2154,7 @@ class Model_Type_Generic extends Obj
 
 interface Model_Extension
 {
-        public function extendsModelDefinition(Model_Definition $oDef);
+        static public function extendsModelDefinition(Model_Definition $oDef);
 }
 
 ?>

@@ -95,7 +95,10 @@ class Events_Manager
         {
                 // do we have anyone who cares about this event?
                 if (!isset(self::$listeners[$event]))
+                {
+                        // var_dump('triggerEvent:: no listeners for event ' . $event);
                         return;
+                }
 
                 // yes we do (fancy that!)
                 foreach (self::$listeners[$event] as $listener)

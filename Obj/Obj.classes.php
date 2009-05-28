@@ -24,11 +24,75 @@
 // 2009-05-23   SLH     Removed __call_X() - just not needed
 // 2009-05-23   SLH     Added generic mixin support
 // 2009-05-24   SLH     Renamed to Obj
+// 2009-05-25   SLH     Trigger an event when a class is extended
+// 2009-05-25   SLH     Added generic decorator support too, for
+//                      completeness
+// 2009-05-25   SLH     Obj_MixinDefinitions renamed Obj_MixinsManager
+// 2009-05-27   SLH     Fixed Obj::__call to pass correct args
 // ========================================================================
 
 class Obj
 {
-        protected $mixins     = array();
+        /**
+         * A list of the mixin objects that extend this object
+         * @var array
+         */
+        protected $mixins = array();
+        
+        /**
+         * When we are looking for mixins, what name shall we give?
+         * 
+         * This was originally added to allow Model to use this generic
+         * mixin support rather than have its own generic implementation.
+         * 
+         * @var string
+         */
+        protected $extensibleName = null;
+
+        /**
+         * Objects that extends this *specific* instance. (Mixins extend
+         * *all* instances).
+         *
+         * @var object
+         */
+        protected $decorators = array();
+
+        public function __construct($extensibleName = null)
+        {
+                if ($extensibleName !== null)
+                {
+                        $this->extensibleName = $extensibleName;
+                }
+                else
+                {
+                        $this->extensibleName = get_class($this);
+                }
+        }
+
+        // ================================================================
+        // Helper methods for decorators
+        // ----------------------------------------------------------------
+
+        public function addDecorator($obj)
+        {
+                $refObj = new ReflectionObject($obj);
+                $methods = $refObj->getMethods(ReflectionMethod::IS_PUBLIC);
+                foreach ($methods as $method)
+                {
+                        $this->decorators['methods'][$method->name] = $obj;
+                }
+
+                $properties = $refObj->getProperties(ReflectionProperty::IS_PUBLIC);
+                foreach ($properties as $property)
+                {
+                        $this->decorators['properties'][$property->name] = $obj;
+                }
+        }
+
+        public function resetDecorators()
+        {
+                $this->decorators = array();
+        }
 
         // ================================================================
         // Helper methods for mixins
@@ -46,7 +110,8 @@ class Obj
 
         public function getMixinCount()
         {
-                $mixins = Obj_MixinDefinitions::getMixinsFor(get_class($this));
+                $mixins = Obj_MixinsManager::getMixinsFor($this->extensibleName);
+                
                 if ($mixins === null)
                 {
                         // we have no mixins at all yet
@@ -65,43 +130,74 @@ class Obj
         {
                 return ($this->getMixinCount() > 0);
         }
-        
+
         // ================================================================
         // Member support
         // ----------------------------------------------------------------
 
+        protected function findObjForProperty($propertyName)
+        {
+                $mixins = Obj_MixinsManager::getMixinsFor($this->extensibleName);
+                if ($mixins !== null)
+                {
+                        $class = $mixins->getClassnameForProperty($propertyName);
+                        if ($class !== null)
+                        {
+                                return $this->getMixinObject($class);
+                        }
+                }
+
+                // if we get here, the property does not exist in a mixin
+                // what about our decorators?
+
+                if (isset($this->decorators['properties'][$propertyName]))
+                {
+                        return $this->decorators['properties'][$propertyName];
+                }
+
+                // if we get here, we have nowhere else left to look
+                return null;
+        }
+
+        protected function findObjForMethod($methodName)
+        {
+                // does the method exist in our own class?
+                if (method_exists($this, $methodName))
+                        return $this;
+
+                // what about in the mixins?
+                $mixins = Obj_MixinsManager::getMixinsFor($this->extensibleName);
+                if ($mixins !== null)
+                {
+                        $class = $mixins->getClassnameForMethod($methodName);
+                        if ($class !== null)
+                        {
+                                return $this->getMixinObject($class);
+                        }
+                }
+
+                // what about our decorators?
+                if (isset($this->decorators['methods'][$methodName]))
+                {
+                        return $this->decorators['methods'][$methodName];
+                }
+
+                // if we get here, we have nowhere else left to look
+                return null;
+        }
+
         public function __get($propertyName)
         {
-                // var_dump(get_class() . '::$' . $propertyName);
-
-                $method = 'get' . ucfirst($propertyName);
-                if (method_exists($this, $method))
+                $obj = $this->findObjForProperty($propertyName);
+                if ($obj)
                 {
-                        // var_dump('Calling ' . get_class() . '::' . $method . '()');
-                        return $this->$method();
-                }
-
-                $mixins = Obj_MixinDefinitions::getMixinsFor(get_class($this));
-                if ($mixins === null)
-                {
-                        throw new Obj_E_NoSuchProperty($propertyName, $this);
-                }
-
-                // how about a mixin property?
-                $class = $mixins->getClassnameForProperty($propertyName);
-                if ($class !== null)
-                {
-                        $obj = $this->getMixinObject($class);
-
-                        // var_dump('Retrieving ' . get_class($obj) . '::$' . $propertyName);
                         return $obj->$propertyName;
                 }
 
-                // do we have a mixin method for this property?
-                $class = $mixins->getClassnameForMethod($method);
-                if ($class !== null)
+                $method = 'get' . ucfirst($propertyName);
+                $obj = $this->findObjForMethod($method);
+                if ($obj)
                 {
-                        $obj = $this->getMixinObject($class);
                         return $obj->$method($this);
                 }
 
@@ -111,33 +207,19 @@ class Obj
 
         public function __set($propertyName, $value)
         {
-                $method = 'set' . ucfirst($propertyName);
-                if (method_exists($this, $method))
+                $obj = $this->findObjForProperty($propertyName);
+                if ($obj)
                 {
-                        return $this->$method($value);
-                }
-
-                $mixins = Obj_MixinDefinitions::getMixinsFor(get_class($this));
-                if ($mixins === null)
-                {
-                        throw new Obj_E_NoSuchProperty($propertyName, $this);
-                }
-
-                // how about a mixin property?
-                $class = $mixins->getClassnameForProperty($propertyName);
-                if ($class !== null)
-                {
-                        $obj = $this->getMixinObject($class);
                         $obj->$propertyName = $value;
                         return;
                 }
 
-                // do we have a mixin method for this property?
-                $class = $mixins->getClassnameForMethod($method);
-                if ($class !== null)
+                $method = 'set' . ucfirst($propertyName);
+                $obj = $this->findObjForMethod($method);
+                if ($obj)
                 {
-                        $obj = $this->getMixinObject($class);
-                        return $obj->$method($this, $value);
+                        $obj->$method($value);
+                        return;
                 }
 
                 // if we get here, the property does not exist
@@ -146,32 +228,16 @@ class Obj
 
         public function __isset($propertyName)
         {
-                $method = 'isset' . ucfirst($propertyName);
-                if (method_exists($this, $method))
+                $obj = $this->findObjForProperty($propertyName);
+                if ($obj)
                 {
-                        return $this->$method();
-                }
-
-                $mixins = Obj_MixinDefinitions::getMixinsFor(get_class($this));
-                if ($mixins === null)
-                {
-                        return false;
-                }
-
-                // how about a mixin property?
-                // how about a mixin property?
-                $class = $mixins->getClassnameForProperty($propertyName);
-                if ($class !== null)
-                {
-                        $obj = $this->getMixinObject($class);
                         return isset($obj->$propertyName);
                 }
 
-                // do we have a mixin method for this property?
-                $class = $mixins->getClassnameForMethod($method);
-                if ($class !== null)
+                $method = 'isset' . ucfirst($propertyName);
+                $obj = $this->findObjForMethod($method);
+                if ($obj)
                 {
-                        $obj = $this->getMixinObject($class);
                         return $obj->$method($this);
                 }
 
@@ -185,65 +251,48 @@ class Obj
 
         public function __unset($propertyName)
         {
-                $method = 'unset' . ucfirst($propertyName);
-                if (method_exists($this, $method))
+                $obj = $this->findObjForProperty($propertyName);
+                if ($obj)
                 {
-                        return $this->$method();
-                }
-
-                $mixins = Obj_MixinDefinitions::getMixinsFor(get_class($this));
-                if ($mixins === null)
-                {
-                        throw new Obj_E_NoSuchProperty($propertyName, $this);
-                }
-
-                // how about a mixin property?
-                $class = $mixins->getClassnameForProperty($propertyName);
-                if ($class !== null)
-                {
-                        $obj = $this->getMixinObject($class);
                         unset($obj->$propertyName);
+                        return;
                 }
 
-                // do we have a mixin method for this property?
-                $class = $mixins->getClassnameForMethod($method);
-                if ($class !== null)
+                $method = 'unset' . ucfirst($propertyName);
+                $obj = $this->findObjForMethod($method);
+                if ($obj)
                 {
-                        $obj = $this->getMixinObject($class);
-                        return $obj->$method($this);
+                        $obj->$method($this);
+                        return;
                 }
 
                 // if we get here, the property does not exist
-                throw new Obj_E_NoSuchProperty($propertyName, $this);
+                //
+                // as a special case, we silently ignore this error, to
+                // be consistent with the semantics of isset()
         }
 
         // ================================================================
         // Method support
         // ----------------------------------------------------------------
 
-        public function __call($method, $args)
+        public function __call($method, $origArgs)
         {
-                // do we have any mixins at all?
-                $mixins = Obj_MixinDefinitions::getMixinsFor(get_class($this));
-                if ($mixins === null)
+                // prepare the args to pass to the method
+                $args = array($this);
+                foreach ($origArgs as $arg)
                 {
-                        throw new Obj_E_NoSuchMethod($method, $this);
-                }
-                $class = $mixins->getClassnameForMethod($method);
-                if ($class === null)
-                {
-                        throw new Obj_E_NoSuchMethod($method, $this);
+                        $args[] = $arg;
                 }
 
-                $obj = $this->getMixinObject($method);
+                $obj = $this->findObjForMethod($method);
+                if ($obj)
+                {
+                        return $obj->$method($args);
+                }
 
-                // we have a mixin that can accept this method                
-                // the thing to do now is make sure that $this is the
-                // first parameter passed
-
-                $args = array($this) . $args;
-
-                return call_user_func_array(array($obj, $method), $args);
+                // if we get here, then the method does not exist
+                throw new Obj_E_NoSuchMethod($method, $this);
         }
 
         // ================================================================
@@ -267,7 +316,7 @@ class Obj_Singleton
         }
 }
 
-class Obj_MixinDefinitions extends Obj_Singleton
+class Obj_MixinsManager extends Obj_Singleton
 {
         static protected $mixins          = array();
         static protected $extendedClasses = array();
@@ -308,6 +357,9 @@ class Obj_MixinDefinitions extends Obj_Singleton
                         self::$extendedClasses[$classname] = new Obj_Mixins($classname);
                 }
                 self::$extendedClasses[$classname]->addMixin($mixin);
+
+                // let everyone else know that this has happened
+                Events_Manager::triggerEvent('classExtended', null, array('class' => $classname));
         }
 
         /**
@@ -381,7 +433,7 @@ class Obj_Mixins
 
                 foreach ($baseClasses as $baseClass)
                 {
-                        $mixins = Obj_MixinDefinitions::getMixinsFor($baseClass);
+                        $mixins = Obj_MixinsManager::getMixinsFor($baseClass);
                         if ($mixins === null)
                                 continue;
                         $count += $mixins->_getMixinCount();
@@ -425,13 +477,13 @@ class Obj_Mixins
                 // counter in Obj_MixinDefinitions to see whether our
                 // cache is still valid or not
 
-                if (count($this->baseClasses) == 0 || $this->lastSeenMixinAutoInc !== Obj_MixinDefintions::$mixinAutoInc)
+                if ($this->lastSeenMixinAutoInc !== Obj_MixinsManager::$mixinAutoInc)
                 {
                         // we need to rebuild our list
                         $baseClasses = $this->getBaseClasses();
                         foreach ($baseClasses as $baseClass)
                         {
-                                $mixins = Obj_MixinDefinitions::_getMixinsFor($baseClass);
+                                $mixins = Obj_MixinsManager::_getMixinsFor($baseClass);
                                 
                                 // skip over any classes that have not been
                                 // extended at this time
@@ -444,6 +496,8 @@ class Obj_Mixins
                                 $properties = $mixins->getProperties();
                                 $this->cachedMixinProperties += $properties;
                         }
+
+                        $this->lastSeenMixinAutoInc = Obj_MixinsManager::$mixinAutoInc;
                 }
 
                 // at this point, the cachedMixin* properties have the
@@ -548,7 +602,7 @@ class Obj_Mixin
 
         public function toClass($classname)
         {
-                Obj_MixinDefinitions::_extend($classname, $this);
+                Obj_MixinsManager::_extend($classname, $this);
         }
 }
 

@@ -722,7 +722,7 @@ class Datastore_Storage
 
 class Datastore_Record extends Obj
 {
-        public    $oModel        = null;
+        public    $oModel                       = null;
 
         protected $oDatastoreWhereStored        = null;
         protected $storageHint                  = Datastore::HINT_UNKNOWN;

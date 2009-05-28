@@ -31,6 +31,8 @@
 // 2009-05-20   SLH     Added tests for auto-conversion of model fields
 // 2009-05-20   SLH     Added some fundamental tests for Model
 // 2009-05-21   SLH     Extensions are now passed as objects, not classes
+// 2009-05-26   SLH     Extensions now use the generic mixin / decorator
+//                      support
 // ========================================================================
 
 // bootstrap the framework
@@ -88,8 +90,10 @@ class Test_Model_User extends Model
 
 class Test_Model_User_EmailAddress_Ext implements Model_Extension
 {
-        public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(Model_Definition $oDef)
         {
+                // var_dump('Test_Model_User_EmailAddress_Ext::extendsModelDefinition() called');
+                
                 $oDef->addField('emailAddress');
                 $oDef->addFakeField('hasEmailAddress')
                      ->setDefaultValue(false);
@@ -298,8 +302,7 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 
                 // step 2: now, extend the model to add the emailAddress
                 //         field
-                $oDef = Model_Definitions::get('Test_Model_User');
-                $oDef->addExtension(new Test_Model_User_EmailAddress_Ext());
+                __mf_extend_model('Test_Model_User', 'Test_Model_User_EmailAddress_Ext');
 
                 // now, see if the extension works
                 //

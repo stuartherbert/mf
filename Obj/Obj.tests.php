@@ -20,6 +20,7 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2009-05-22   SLH     Created
+// 2009-05-25   SLH     Added tests for decorators
 // ========================================================================
 
 // bootstrap the framework
@@ -68,6 +69,11 @@ class Test_ObjExt extends Test_ObjBase
                 
                 $this->protVar = null;
         }
+}
+
+class Test_Obj2 extends Test_ObjBase
+{
+
 }
 
 class Test_Obj_BaseMixin extends Obj
@@ -123,9 +129,30 @@ class Test_Obj_ExtMixin extends Obj
         }
 }
 
-class Test_Obj2 extends Obj
+class Test_Obj_Decorator extends Obj
 {
+        public    $decoratorProp = 'alice';
+        protected $protVar       = 'lisa';
 
+        public function getName($orig)
+        {
+                return $this->protVar;
+        }
+
+        public function setName($orig, $value)
+        {
+                $this->protVar = $value;
+        }
+
+        public function issetName($orig)
+        {
+                return isset($this->protVar);
+        }
+
+        public function unsetFish($orig)
+        {
+                $this->protVar = null;
+        }
 }
 
 Testsuite_registerTests('Obj_Tests');
@@ -133,7 +160,7 @@ class Obj_Tests extends PHPUnit_Framework_TestCase
 {
 	public function setup()
         {
-                Obj_MixinDefinitions::destroy();
+                Obj_MixinsManager::destroy();
 
                 $this->fixture = new Test_ObjExt();
                 __mf_extend('Test_ObjExt', 'Test_Obj_ExtMixin');
@@ -195,6 +222,7 @@ class Obj_Tests extends PHPUnit_Framework_TestCase
         public function testCanAddAMixin()
         {
                 // entry conditions
+                $this->assertEquals('Test_ObjExt', get_class($this->fixture));
                 $this->assertEquals(1, $this->fixture->mixinCount);
 
                 // change state
@@ -203,6 +231,7 @@ class Obj_Tests extends PHPUnit_Framework_TestCase
                 // retest
                 $this->assertEquals(2, $this->fixture->mixinCount);
         }
+
 
         public function testCanGetMixinProperty()
         {
@@ -257,6 +286,34 @@ class Obj_Tests extends PHPUnit_Framework_TestCase
                 // retest to prove each mixin has separate state
                 $this->assertEquals('harry', $this->fixture->mixinProp);
                 $this->assertEquals('larry', $obj->mixinProp);
+        }
+
+        public function testCanGetDecoratorProperty()
+        {
+                $decorator = new Test_Obj_Decorator();
+
+                // change state
+                $this->fixture->addDecorator($decorator);
+
+                // retest
+                $this->assertEquals('alice', $this->fixture->decoratorProp);
+                $this->assertEquals('lisa',  $this->fixture->name);                
+        }
+
+        public function testCanSetDecoratorProperty()
+        {
+                $decorator = new Test_Obj_Decorator();
+                $this->fixture->addDecorator($decorator);
+
+                // entry conditions
+                $this->assertEquals('alice', $this->fixture->decoratorProp);
+
+                // change state
+                $this->fixture->decoratorProp = 'katie';
+
+                // retest
+                $this->assertEquals('katie', $this->fixture->decoratorProp);
+                $this->assertEquals('katie', $decorator->decoratorProp);
         }
 }
 
