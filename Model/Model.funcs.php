@@ -22,6 +22,7 @@
 // 2008-07-28   SLH     Created
 // 2008-08-11   SLH     Added constraint_mustBeValidModel()
 // 2009-05-26   SLH     Added __mf_extend_model()
+// 2009-06-01   SLH     Updated __mf_extend_model() to use new API
 // ========================================================================
 
 function constraint_modelMustBeCalled($oDef, $name)
@@ -44,7 +45,7 @@ function constraint_mustBeValidModel($model)
 
 function __mf_extend_model($modelName, $extensionClass)
 {
-        Obj_MixinsManager::addMixin($extensionClass)->toClass($modelName);
+        Obj_MixinsManager::extend($modelName)->withClass($extensionClass);
         Events_Manager::triggerEvent('modelExtended', $extensionClass, $modelName);
 }
 
