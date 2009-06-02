@@ -31,6 +31,7 @@
 // 2009-05-27   SLH     Fixed Obj::__call to pass correct args
 // 2009-05-28   SLH     Added ability to call same method on all
 //                      decorators and mixins at once
+// 2009-06-02   SLH     Fix for calling same method on all mixins at once
 // ========================================================================
 
 class Obj
@@ -201,6 +202,7 @@ class Obj
                 $mixins = Obj_MixinsManager::getMixinsFor($this->extensibleName);
                 if ($mixins !== null)
                 {
+                        // var_dump($mixins);
                         $classes = $mixins->getClassnamesForMethod($methodName);
                         if ($classes !== null)
                         {
@@ -212,11 +214,14 @@ class Obj
                 }
 
                 // now, what about our decorators too?
-                foreach ($this->decorators['objs'] as $decorator)
+                if (isset($this->decorators['objs']))
                 {
-                        if (method_exists($decorator, $methodName))
+                        foreach ($this->decorators['objs'] as $decorator)
                         {
-                                $return[] = $decorator;
+                                if (method_exists($decorator, $methodName))
+                                {
+                                        $return[] = $decorator;
+                                }
                         }
                 }
 
@@ -463,7 +468,7 @@ class Obj_Mixins
 
                 foreach ($methods as $method)
                 {
-                        $this->mixinMethods[$method] = $extensionClass;
+                        $this->mixinMethods[$method][] = $extensionClass;
                 }
 
                 foreach ($properties as $property)
@@ -525,10 +530,14 @@ class Obj_Mixins
                                         continue;
 
                                 $methods    = $mixins->getMethods();
-                                foreach ($methods as $method => $classname)
+                                
+                                foreach ($methods as $method => $classnames)
                                 {
-                                        // var_dump('Adding ' . $classname . '::' . $method . ' to list of cached methods');
-                                        $this->cachedMixinMethods[$method][] = $classname;
+                                        foreach ($classnames as $classname)
+                                        {
+                                                // var_dump('Adding ' . $classname . '::' . $method . ' to list of cached methods');
+                                                $this->cachedMixinMethods[$method][] = $classname;
+                                        }
                                 }
                                 
                                 $properties = $mixins->getProperties();

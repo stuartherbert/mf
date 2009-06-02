@@ -21,6 +21,7 @@
 // ------------------------------------------------------------------------
 // 2009-05-22   SLH     Created
 // 2009-05-25   SLH     Added tests for decorators
+// 2009-06-01   SLH     Added test for calling same method on all mixins
 // ========================================================================
 
 // bootstrap the framework
@@ -69,6 +70,20 @@ class Test_ObjExt extends Test_ObjBase
                 
                 $this->protVar = null;
         }
+
+        public function validateCalled()
+        {
+                $return = array();
+
+                $objs = $this->findObjsForMethod(__FUNCTION__);
+                foreach ($objs as $obj)
+                {
+                        $result = $obj->validateCalled($this);
+                        $return[] = $result;
+                }
+
+                return $return;
+        }
 }
 
 class Test_Obj2 extends Test_ObjBase
@@ -100,6 +115,11 @@ class Test_Obj_BaseMixin extends Obj
         {
                 unset($this->protVar);
         }
+
+        public function validateCalled($obj)
+        {
+                return get_class($this);
+        }
 }
 
 // we think it is interesting to make the mixin also extends Obj :)
@@ -126,6 +146,19 @@ class Test_Obj_ExtMixin extends Obj
         public function unsetFish($orig)
         {
                 $this->protVar = null;
+        }
+
+        public function validateCalled($obj)
+        {
+                return get_class($this);
+        }
+}
+
+class Test_Obj_ExtMixin2 extends Obj
+{
+        public function validateCalled($obj)
+        {
+                return get_class($this);
         }
 }
 
@@ -314,6 +347,38 @@ class Obj_Tests extends PHPUnit_Framework_TestCase
                 // retest
                 $this->assertEquals('katie', $this->fixture->decoratorProp);
                 $this->assertEquals('katie', $decorator->decoratorProp);
+        }
+
+        public function testCanCallSameMethodOnAllMixins()
+        {
+                $this->assertEquals('Test_ObjExt', get_class($this->fixture));
+                __mf_extend('Test_ObjBase', 'Test_Obj_BaseMixin');
+
+                // entry conditions
+                $this->assertEquals(2, $this->fixture->mixinCount);
+
+                // change state
+                $result = $this->fixture->validateCalled();
+
+                // test results
+                $this->assertEquals(array('Test_Obj_ExtMixin', 'Test_Obj_BaseMixin'), $result);
+        }
+
+        public function testCanCallSameMethodWhenMultipleMixinsPerClass()
+        {
+                $this->assertEquals('Test_ObjExt', get_class($this->fixture));
+                __mf_extend('Test_ObjBase', 'Test_Obj_BaseMixin');
+                __mf_extend('Test_ObjExt', 'Test_Obj_ExtMixin2');
+
+                // entry conditions
+                $this->assertEquals(3, $this->fixture->mixinCount);
+
+                // change state
+                $result = $this->fixture->validateCalled();
+
+                // test results
+                $this->assertEquals(array('Test_Obj_ExtMixin', 'Test_Obj_ExtMixin2', 'Test_Obj_BaseMixin'), $result);
+
         }
 }
 
