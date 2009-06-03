@@ -27,6 +27,8 @@
 //                      (more fixes to come as we get better tests)
 // 2009-03-19   SLH     More fixes for supporting complex primary keys,
 //                      now that we have better tests
+// 2009-06-03   SLH     Fix for using models in queries that have fake
+//                      fields in their definition
 // ========================================================================
 
 // ========================================================================
@@ -442,7 +444,7 @@ class DatastoreRdbms_Query extends Datastore_Query
         {
                 $oMap   = $this->oDB->getStorageForModel($searchTerm['view']->oDef->getModelName());
                 $table  = $oMap->getTable();
-        	$fields = $searchTerm['view']->getFields();
+        	$fields = $searchTerm['view']->oDef->getFieldsBySourceAndView(Model_Definition::SOURCE_DB, $searchTerm['view']->getName());
                 foreach ($fields as $field)
                 {
                 	$queryBuilder['fieldsToSelect'][] = $table . '.' . $field->getName();

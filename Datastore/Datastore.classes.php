@@ -404,6 +404,8 @@ class Datastore extends Obj
 
         public function search(Datastore_Query $query)
         {
+                // var_dump($query);
+                
                 $oStmt = $this->oConnector->getStatement();
                 $oStmt->beQueryStatement($query->getRawQuery(), $query->getPrimaryKey());
 

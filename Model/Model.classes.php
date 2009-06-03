@@ -65,6 +65,7 @@
 //                      from $_POST
 // 2009-05-26   SLH     Supports the new generic mixin / decorator features
 //                      added to Obj
+// 2009-06-03   SLH     Added Model_View::getName()
 // ========================================================================
 
 class Model extends Obj
@@ -2101,6 +2102,11 @@ class Model_View
         public function getFields()
         {
                 return $this->aFields;
+        }
+
+        public function getName()
+        {
+                return $this->name;
         }
 }
 

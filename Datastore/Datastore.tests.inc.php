@@ -40,6 +40,7 @@
 // 2009-03-24   SLH     Tests no longer rely on a fixture class
 // 2009-03-25   SLH     Updated tests for many:many relationships
 // 2009-05-20   SLH     Fixes for latest changes to Model
+// 2009-06-03   SLH     Added tests for fake field bug in queries
 // ========================================================================
 
 // ========================================================================
@@ -924,6 +925,21 @@ class DatastoreXXX_Query_Tests extends PHPUnit_Framework_TestCase
                 );
         }
 
+        public function testCanRetrieveWhenFakeFieldsAreDefined()
+        {
+//                $this->setup();
+
+                $oDef = Model_Definitions::get('Test_Customer');
+                $oDef->addFakeField('trouble');
+
+                $custQ = $this->db->newQuery()
+                       ->findFirst('Test_Customer')
+                       ->withUniqueID(1);
+
+                $customer = $this->db->search($custQ);
+                $this->assertTrue($customer instanceof Test_Customer);
+                $this->assertEquals(1, (int) $customer->customerId);
+        }
 }
 
 ?>
