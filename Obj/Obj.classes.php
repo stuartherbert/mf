@@ -32,6 +32,8 @@
 // 2009-05-28   SLH     Added ability to call same method on all
 //                      decorators and mixins at once
 // 2009-06-02   SLH     Fix for calling same method on all mixins at once
+// 2009-06-03   SLH     Added ability for mixins and decorators to act
+//                      as if truly part of the object they are extending
 // ========================================================================
 
 class Obj
@@ -107,10 +109,20 @@ class Obj
         {
                 if (!isset($this->mixins[$classname]))
                 {
-                        $this->mixins[$classname] = new $classname;
+                        $mixin = new $classname($this);
+                        $this->requireValidMixin($mixin);
+                        $this->mixins[$classname] = $mixin;
                 }
 
                 return $this->mixins[$classname];
+        }
+
+        protected function requireValidMixin($obj)
+        {
+                if (!$obj instanceof Obj_Mixin)
+                {
+                        throw new PHP_E_ConstraintFailed(__METHOD__);
+                }
         }
 
         public function getMixinCount()
@@ -142,6 +154,7 @@ class Obj
 
         protected function findObjForProperty($propertyName)
         {
+                // we are not a mixin ... so look at our mixins instead
                 $mixins = Obj_MixinsManager::getMixinsFor($this->extensibleName);
                 if ($mixins !== null)
                 {
@@ -242,7 +255,7 @@ class Obj
                 $obj = $this->findObjForMethod($method);
                 if ($obj)
                 {
-                        return $obj->$method($this);
+                        return $obj->$method();
                 }
 
                 // if we get here, the property does not exist
@@ -282,7 +295,7 @@ class Obj
                 $obj = $this->findObjForMethod($method);
                 if ($obj)
                 {
-                        return $obj->$method($this);
+                        return $obj->$method();
                 }
 
                 // if we get here, the property does not exist
@@ -306,7 +319,7 @@ class Obj
                 $obj = $this->findObjForMethod($method);
                 if ($obj)
                 {
-                        $obj->$method($this);
+                        $obj->$method();
                         return;
                 }
 
@@ -323,16 +336,24 @@ class Obj
         public function __call($method, $origArgs)
         {
                 // prepare the args to pass to the method
-                $args = array($this);
-                foreach ($origArgs as $arg)
-                {
-                        $args[] = $arg;
-                }
-
                 $obj = $this->findObjForMethod($method);
                 if ($obj)
                 {
-                        return $obj->$method($args);
+                        if ($obj instanceof Obj_Mixin)
+                        {
+                                return call_user_func_array(array($obj, $method), $origArgs);
+                        }
+                        else
+                        {
+                                // put $this at the front of the args
+                                $args = array($this);
+                                foreach ($origArgs as $arg)
+                                {
+                                        $args[] = $arg;
+                                }
+
+                                return call_user_func_array(array($obj, $method), $args);
+                        }
                 }
 
                 // if we get here, then the method does not exist
@@ -349,6 +370,71 @@ class Obj
                 {
                         throw new Obj_E_NoSuchMethod($method, $this);
                 }
+        }
+}
+
+class Obj_Mixin
+{
+        protected $extending = null;
+
+        public function __construct($extending)
+        {
+                $this->extending = $extending;
+        }
+
+        public function __get($property)
+        {
+                if (!is_object($this->extending))
+                {
+                        throw new Obj_E_NoSuchProperty($property, $this);
+                }
+
+                $obj = $this->extending;
+                return $obj->$property;
+        }
+
+        public function __set($property, $value)
+        {
+                if (!is_object($this->extending))
+                {
+                        throw new Obj_E_NoSuchProperty($property, $this);
+                }
+
+                $obj = $this->extending;
+                $obj->$property = $value;
+        }
+
+        public function __isset($property)
+        {
+                if (!is_object($this->extending))
+                {
+                        throw new Obj_E_NoSuchProperty($property, $this);
+                }
+
+                $obj = $this->extending;
+                return isset($obj->$property);
+        }
+
+        public function __unset($property)
+        {
+                if (!is_object($this->extending))
+                {
+                        throw new Obj_E_NoSuchProperty($property, $this);
+                }
+
+                $obj = $this->extending;
+                unset($obj->$property);
+        }
+
+        public function __call($method, $args)
+        {
+                if (!is_object($this->extending))
+                {
+                        throw new Obj_E_NoSuchMethod($method, $this);
+                }
+
+                $obj = $this->extending;
+                return call_user_func_array(array($obj, $method), $args);
         }
 }
 
@@ -452,19 +538,11 @@ class Obj_Mixins
                 // var_dump('We have ' . count($this->mixins) . ' mixins before this one');
                 
                 constraint_mustBeString($extensionClass);
+
+                $this->mixins[$extensionClass] = $extensionClass;
                 
-                if (!isset($this->mixins[$extensionClass]))
-                {
-                        $this->mixins[$extensionClass] = new Obj_Mixin($extensionClass);
-                }
-
-                $mixin = $this->mixins[$extensionClass];
-
-//                $this->mixins[$mixinName]['mixin'] = $mixin;
-//                $this->mixins[$mixinName]['class'] = $extensionClass;
-
-                $methods    = $mixin->getMethods();
-                $properties = $mixin->getProperties();
+                $methods    = $this->getMethodsFromClass($extensionClass);
+                $properties = $this->getPropertiesFromClass($extensionClass);
 
                 foreach ($methods as $method)
                 {
@@ -569,6 +647,34 @@ class Obj_Mixins
                 return $baseClasses;
         }
 
+        public function getMethodsFromClass($classname)
+        {
+                $reflection = new ReflectionClass($classname);
+                $methods    = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
+                $return     = array();
+
+                foreach ($methods as $method)
+                {
+                        $return[$method->getName()] = $method->getName();
+                }
+
+                return $return;
+        }
+
+        public function getPropertiesfromClass($classname)
+        {
+                $reflection = new ReflectionClass($classname);
+                $properties = $reflection->getProperties(ReflectionProperty::IS_PUBLIC);
+                $return     = array();
+
+                foreach ($properties as $property)
+                {
+                        $return[$property->getName()] = $property->getName();
+                }
+
+                return $return;
+        }
+
         public function getMethods()
         {
                 return $this->mixinMethods;
@@ -618,62 +724,6 @@ class Obj_Mixins
                         return null;
                 }
                 return $this->cachedMixinProperties[$property];
-        }
-}
-
-class Obj_Mixin
-{
-        protected $name = '';
-        protected $mixinMethods    = array();
-        protected $mixinProperties = array();
-
-        public function __construct($extensionName)
-        {
-                $this->name = $extensionName;
-                $this->determineMethodsAndProperties();
-        }
-
-        protected function determineMethodsAndProperties()
-        {
-                $reflection = new ReflectionClass($this->name);
-                $methods    = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
-
-                foreach ($methods as $method)
-                {
-                        $this->mixinMethods[$method->getName()] = $method->getName();
-                }
-
-                $properties = $reflection->getProperties(ReflectionProperty::IS_PUBLIC);
-                foreach ($properties as $property)
-                {
-                        $this->mixinProperties[$property->getName()] = $property->getName();
-                }
-        }
-
-        // ================================================================
-        // $this->name is readonly to the outside
-
-        public function getName()
-        {
-                return $this->name;
-        }
-
-        public function getMethods()
-        {
-                return $this->mixinMethods;
-        }
-
-        public function getProperties()
-        {
-                return $this->mixinProperties;
-        }
-
-        // ================================================================
-        // API used to register a mixin for a specific class
-
-        public function toClass($classname)
-        {
-                Obj_MixinsManager::_extend($classname, $this);
         }
 }
 

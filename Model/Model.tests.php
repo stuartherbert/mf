@@ -33,6 +33,7 @@
 // 2009-05-21   SLH     Extensions are now passed as objects, not classes
 // 2009-05-26   SLH     Extensions now use the generic mixin / decorator
 //                      support
+// 2009-06-04   SLH     Updated to support latest mixin API
 // ========================================================================
 
 // bootstrap the framework
@@ -88,7 +89,9 @@ class Test_Model_User extends Model
 
 }
 
-class Test_Model_User_EmailAddress_Ext implements Model_Extension
+class Test_Model_User_EmailAddress_Ext
+        extends Obj_Mixin
+        implements Model_Extension
 {
         static public function extendsModelDefinition(Model_Definition $oDef)
         {

@@ -66,6 +66,7 @@
 // 2009-05-26   SLH     Supports the new generic mixin / decorator features
 //                      added to Obj
 // 2009-06-03   SLH     Added Model_View::getName()
+// 2009-06-04   SLH     Updated to support latest mixin API
 // ========================================================================
 
 class Model extends Obj
@@ -157,18 +158,11 @@ implements Iterator
                 // alternative is to call Obj's __call in a try/catch
                 // block, and we want to keep the overhead to a minimum
 
-                // prepare the args to pass to the method
-
-                $args = array($this);
-                foreach ($origArgs as $arg)
-                {
-                        $args[] = $arg;
-                }
 
                 $obj = $this->findObjForMethod($fullMethodName);
                 if ($obj)
                 {
-                        return call_user_func_array(array($obj, $fullMethodName), $args);
+                        return call_user_func_array(array($obj, $fullMethodName), $origArgs);
                 }
 
                 // step 2: do we need to call datastore proxy instead?
@@ -408,7 +402,7 @@ implements Iterator
                         $obj = $this->findObjForMethod($method);
                         if ($obj)
                         {
-                                $return = $obj->$method($this);
+                                $return = $obj->$method();
                         }
                         else
                         {
@@ -436,11 +430,11 @@ implements Iterator
                 // validate the contents of the field
                 $this->validateField($fieldName, $data);
 
-                $method = 'set' . ucfirst($realFieldName);
+                $method = 'set' . ucfirst($fieldName);
                 $obj = $this->findObjForMethod($method);
                 if ($obj !== null)
                 {
-                        return $obj->$method($this, $data);
+                        return $obj->$method($data);
                 }
                 else
                 {
@@ -471,7 +465,7 @@ implements Iterator
                 $obj = $this->findObjForMethod($method);
                 if ($obj)
                 {
-                        return $obj->$method($this);
+                        return $obj->$method();
                 }
 
                 return $this->_issetFieldInData($fieldName);

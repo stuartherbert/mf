@@ -22,6 +22,7 @@
 // 2009-05-22   SLH     Created
 // 2009-05-25   SLH     Added tests for decorators
 // 2009-06-01   SLH     Added test for calling same method on all mixins
+// 2009-06-04   SLH     Changes for updated mixin API
 // ========================================================================
 
 // bootstrap the framework
@@ -50,6 +51,7 @@ class Test_ObjExt extends Test_ObjBase
 
         public function setPlanet($value)
         {
+                // var_dump($value);
                 $this->protVar = $value;
         }
 
@@ -78,7 +80,7 @@ class Test_ObjExt extends Test_ObjBase
                 $objs = $this->findObjsForMethod(__FUNCTION__);
                 foreach ($objs as $obj)
                 {
-                        $result = $obj->validateCalled($this);
+                        $result = $obj->validateCalled();
                         $return[] = $result;
                 }
 
@@ -91,72 +93,71 @@ class Test_Obj2 extends Test_ObjBase
 
 }
 
-class Test_Obj_BaseMixin extends Obj
+class Test_Obj_BaseMixin extends Obj_Mixin
 {
         public    $baseMixinProp = 'silver';
         protected $protVar       = 'gold';
 
-        public function getMetal($orig)
+        public function getMetal()
         {
                 return $this->protVar;
         }
 
-        public function setMetal($orig, $value)
+        public function setMetal($value)
         {
                 $this->protVar = $value;
         }
 
-        public function issetMetal($orig)
+        public function issetMetal()
         {
                 return isset($this->protVar);
         }
 
-        public function unsetMetal($orig)
+        public function unsetMetal()
         {
                 unset($this->protVar);
         }
 
-        public function validateCalled($obj)
+        public function validateCalled()
         {
                 return get_class($this);
         }
 }
 
-// we think it is interesting to make the mixin also extends Obj :)
-class Test_Obj_ExtMixin extends Obj
+class Test_Obj_ExtMixin extends Obj_Mixin
 {
         public    $mixinProp = 'fred';
         protected $protVar   = 'trout';
 
-        public function getFish($orig)
+        public function getFish()
         {
                 return $this->mixinProtVar;
         }
 
-        public function setFish($orig, $value)
+        public function setFish($value)
         {
                 $this->protVar = $value;
         }
 
-        public function issetFish($orig)
+        public function issetFish()
         {
                 return isset($this->protVar);
         }
 
-        public function unsetFish($orig)
+        public function unsetFish()
         {
                 $this->protVar = null;
         }
 
-        public function validateCalled($obj)
+        public function validateCalled()
         {
                 return get_class($this);
         }
 }
 
-class Test_Obj_ExtMixin2 extends Obj
+class Test_Obj_ExtMixin2 extends Obj_Mixin
 {
-        public function validateCalled($obj)
+        public function validateCalled()
         {
                 return get_class($this);
         }
@@ -167,22 +168,22 @@ class Test_Obj_Decorator extends Obj
         public    $decoratorProp = 'alice';
         protected $protVar       = 'lisa';
 
-        public function getName($orig)
+        public function getName()
         {
                 return $this->protVar;
         }
 
-        public function setName($orig, $value)
+        public function setName($value)
         {
                 $this->protVar = $value;
         }
 
-        public function issetName($orig)
+        public function issetName()
         {
                 return isset($this->protVar);
         }
 
-        public function unsetFish($orig)
+        public function unsetFish()
         {
                 $this->protVar = null;
         }

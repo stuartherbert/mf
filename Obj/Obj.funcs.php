@@ -23,6 +23,7 @@
 // 2009-05-24   SLH     Added helper function for mixins
 // 2009-05-25   SLH     Obj_MixinDefinitions renamed Obj_MixinsManager
 // 2009-06-01   SLH     Updated __mf_extend() to reflect improved API
+// 2009-06-04   SLH     Added constraint_mustBeValidMixin()
 // ========================================================================
 
 function debug_vardump($file, $line, $function, $title, $var)
@@ -37,6 +38,19 @@ function debug_vardump($file, $line, $function, $title, $var)
 function __mf_extend($classname, $extensionClass)
 {
         Obj_MixinsManager::extend($classname)->withClass($extensionClass);
+}
+
+function constraint_mustBeValidMixin($obj)
+{
+        if (!is_object($obj))
+        {
+                throw new PHP_E_ConstraintFailed(__FUNCTION__, null);
+        }
+
+        if (!$obj instanceof Obj_Mixin)
+        {
+                throw new PHP_E_ConstraintFailed(__FUNCTION__, null);
+        }
 }
 
 ?>
