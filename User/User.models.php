@@ -43,6 +43,8 @@
 // 2009-03-30   SLH     User_Password_Ext now implements Model_Extension
 // 2009-03-31   SLH     Added authType field to generic User model
 // 2009-05-20   SLH     Added User_VerifiedEmail_Ext
+// 2009-06-04   SLH     Updated to work with the generic mixin API
+// 2009-06-07   SLH     Validation now uses the Messages object
 // ========================================================================
 
 class User extends Model
@@ -116,17 +118,20 @@ class User extends Model
         {
                 $this->aData['authType'] = $authType;
 
-                // now, give each extension a chance to perform whatever
-                // setup they need to do
-                $oDef = Model_Definitions::get('User');
-                $extensions = $oDef->getExtensions();
-
-                foreach ($extensions as $extension)
+                if ($authType != User::AUTHTYPE_ANON)
                 {
-                        if (method_exists($extension, 'postAuth'))
-                        {
-                                $extension->postAuth();
-                        }
+                    Events_Manager::triggerEvent('User_Auth', $this, null);
+                }
+        }
+
+        public function validateRegistration(Messages $messages, Datastore $oDB)
+        {
+                $objs   = $this->findObjsForMethod('validateRegistration');
+
+                foreach ($objs as $obj)
+                {
+                        // var_dump('Calling ' . get_class($obj) . '::validateRegistration()');
+                        $obj->validateRegistration($messages, $oDB);
                 }
         }
 }
@@ -156,12 +161,11 @@ $oDef->addFakeField('supportsThemePref')
 // ========================================================================
 // Extensions to the original User model
 
-class User_Address_Ext implements Model_Extension
+class User_Address_Ext 
+        extends Obj_Mixin
+        implements Model_Extension
 {
-        const E_NO_ADDRESS1                     = 1;
-        const E_NO_ADDRESSCITY                  = 2;
-
-        public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('address1');
                 $oDef->addField('address2');
@@ -172,48 +176,46 @@ class User_Address_Ext implements Model_Extension
                 $oDef->addField('addressCountry');
         }
 
-        public function validateAddress($model)
+        public function validateAddress(Messages $messages)
         {
-        	// we can return one or more error codes!
-                $return = array();
-
                 // do we have the first line of the address?
-                if (!isset($model->address1) || strlen(trim($model->address1)) == 0)
+                if (!isset($this->address1) || strlen(trim($this->address1)) == 0)
                 {
-                	$return[] = User_Address_Ext::E_NO_ADDRESS1;
+                        $messages->addErrorForField('address1', 'User', 'E_NoAddress1');
                 }
 
                 // do we have the town/city?
-                if (!isset($model->addressCity) || strlen(trim($model->addressCity)) == 0)
+                if (!isset($this->addressCity) || strlen(trim($this->addressCity)) == 0)
                 {
-                	$return[] = User_Address_Ext::E_NO_ADDRESSCITY;
+                	$messages->addErrorForField('addressCity', 'User', 'E_NoAddressCity');
                 }
 
                 // do we have the county / state?
-                if (!isset($model->addressState) || strlen(trim($model->addressState)) == 0)
+                if (!isset($this->addressState) || strlen(trim($this->addressState)) == 0)
                 {
-                	$return[] = User_Address_Ext::E_NO_ADDRESSSTATE;
+                        $messages->addErrorForField('addressState', 'User', 'E_NoAddressState');
                 }
 
                 // what about the postcode?
-                if (!isset($model->addressPostcode) || strlen(trim($model->addressPostcode)) == 0)
+                if (!isset($this->addressPostcode) || strlen(trim($this->addressPostcode)) == 0)
                 {
-                	$return[] = User_Address_Ext::E_NO_ADDRESSPOSTCODE;
+                        $messages->addErrorForField('addressPostcode', 'User', 'E_NoAddressPostcode');
                 }
 
                 // and what about the country?
         }
+
+        public function validateRegistration(Messages $messages)
+        {
+                $this->validateAddress($messages);
+        }
 }
 
-class User_Email_Ext implements Model_Extension
+class User_Email_Ext
+        extends Obj_Mixin
+        implements Model_Extension
 {
-        const E_NO_EMAILADDRESS                 = 1;
-        const E_INVALID_EMAILADDRESS            = 2;
-        const E_NO_CONFIRMEMAILADDRESS          = 3;
-        const E_EMAILADDRESSES_DIFFERENT        = 4;
-        const E_EMAILADDRESS_INUSE              = 5;
-
-        public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('emailAddress');
                 $oDef->addFakeField('confirmEmailAddress');
@@ -223,48 +225,53 @@ class User_Email_Ext implements Model_Extension
                      ->withField('emailAddress');
         }
 
-        public function validateEmailAddress(Datastore $oDB)
+        public function validateRegistration(Messages $messages, Datastore $oDB)
+        {
+                return $this->validateEmailAddress($messages, $oDB);
+        }
+
+        public function validateEmailAddress(Messages $messages, Datastore $oDB)
         {
                 // we can return one or more error codes!
                 $return = array();
 
         	// step 1: do we have an email address to validate?
 
-                if (!$model->emailAddress)
+                if (!$this->emailAddress)
                 {
-                	$return[] = User_Email_Ext::E_NO_EMAILADDRESS;
+			$messages->addErrorForField('emailAddress', 'User', 'E_NoEmailAddress');
                 }
                 else
                 {
-                        if (!$this->hasValidEmailAddress())
+                        if (!$this->hasValidEmailAddress($oDB))
                         {
-                                $return[] = User_Email_Ext::E_INVALID_EMAILADDRESS;
+				$messages->addErrorForField('emailAddress', 'User', 'E_InvalidEmailAddress', array ($this->emailAddress));
                         }
                         else if (!$this->hasUniqueEmailAddress($oDB))
                         {
-                        	$return[] = User_Email_Ext::E_EMAILADDRESS_INUSE;
+				$messages->addErrorForField('emailAddress', 'User', 'E_EmailAddressInUse', array ($this->emailAddress));
                         }
                 }
 
                 // step 2: do we have a confirm email address to validate?
 
-                if (!$model->confirmEmailAddress)
+                if (!$this->confirmEmailAddress)
                 {
-                	$return[] = User_Email_Ext::E_NO_CONFIRMEMAILADDRESS;
+			$messages->addErrorForField('confirmEmailAddress', 'User', 'E_NoConfirmEmailAddress');
                 }
                 else if (!$this->emailAddressesMatch())
                 {
-                	$return[] = User_Email_Ext::E_EMAILADDRESSES_DIFFERENT;
+			$messages->addErrorForField('confirmEmailAddress', 'User', 'E_EmailAddressesDifferent', array($this->emailAddress, $this->confirmEmailAddress));
                 }
 
                 return $return;
         }
 
-        public function hasValidEmailAddress($model)
+        public function hasValidEmailAddress()
         {
         	try
                 {
-                	constraint_mustBeEmailAddress($model->emailAddress);
+                	constraint_mustBeEmailAddress($this->emailAddress);
                 }
                 catch (PHP_E_ConstraintFailed $e)
                 {
@@ -274,28 +281,31 @@ class User_Email_Ext implements Model_Extension
                 return true;
         }
 
-        public function hasUniqueEmailAddress(User $model, Datastore $oDB)
+        public function hasUniqueEmailAddress(Datastore $oDB)
         {
-                if (!isset($model->emailAddress))
+                if (!isset($this->emailAddress))
                 {
                         return true;
                 }
 
-                // FIXME
-                $oTable   = new User_Table();
-                $oMatches = $oTable->findAllBy_emailAddress($oDB, $this->emailAddress, 'emailAddress');
-
-                if ($oMatches->getCount() > 0)
+                try
                 {
-                        return false;
+                        $users = $oDB->newQuery()
+                                 ->findFirst('User')
+                                 ->withForeignKeys(array('emailAddress' => $this->emailAddress))
+                                 ->go();
+                }
+                catch (Datastore_E_RetrieveFailed $e)
+                {
+                        return true;
                 }
 
-                return true;
+                return false;
         }
 
-        public function emailAddressesMatch(User $model)
+        public function emailAddressesMatch()
         {
-        	if ($model->emailAddress == $model->confirmEmailAddress)
+        	if ($this->emailAddress == $this->confirmEmailAddress)
                 {
                 	return true;
                 }
@@ -304,72 +314,68 @@ class User_Email_Ext implements Model_Extension
         }
 }
 
-class User_Name_Ext implements Model_Extension
+class User_Name_Ext
+        extends Obj_Mixin
+        implements Model_Extension
 {
-        const E_NO_FIRSTNAME                    = 1;
-        const E_NO_LASTNAME                     = 2;
-
-        public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('firstName');
                 $oDef->addField('lastName');
         }
 
-        public function validateName(User $model)
+        public function validateRegistration(Messages $messages)
         {
-        	// we can return one or more error codes!
-                $return = array();
+                return $this->validateName($messages);
+        }
 
+        public function validateName(Messages $messages)
+        {
                 // do we have a first name?
-                if (!isset($model->firstName) || strlen(trim($model->firstName)) == 0)
+                if (!isset($this->firstName) || strlen(trim($this->firstName)) == 0)
                 {
-                	$return[] = User_Name_Ext::E_NO_FIRSTNAME;
+			$messages->addErrorForField('firstName', 'User', 'E_NoFirstName');
                 }
 
                 // do we have a last name?
-                if (!isset($model->lastName) || strlen(trim($model->lastName)) == 0)
+                if (!isset($this->lastName) || strlen(trim($this->lastName)) == 0)
                 {
-                	$return[] = User_Name_Ext::E_NO_LASTNAME;
+			$messages->addErrorForField('lastName', 'User', 'E_NoLastName');
                 }
 
                 return $return;
         }
-
-        public function postAuth(User $model)
-        {
-                $model->firstName = 'Guest';
-                $model->lastName  = 'User';
-        }
 }
 
-class User_Password_Ext implements Model_Extension
+class User_Password_Ext
+        extends Obj_Mixin
+        implements Model_Extension
 {
-        const E_BLANK_PASSWORD                  = 1;
-        const E_WEAK_PASSWORD                   = 2;
-        const E_PASSWORDS_DIFFERENT             = 3;
-
-        public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('password');
                 $oDef->addFakeField('confirmPassword');
         }
 
-        public function validatePassword(User $model)
+        public function validateRegistration(Messages $messages)
         {
-                $aReturn = array();
-
-                if ($model->passwordIsBlank())
+                return $this->validatePassword($messages);
+        }
+        
+        public function validatePassword(Messages $messages)
+        {
+                if ($this->hasBlankPassword())
                 {
-                	$aReturn[] = User_Password_Ext::E_BLANK_PASSWORD;
+			$messages->addErrorForField('password', 'User', 'E_BlankPassword');
                 }
-                else if ($model->passwordIsWeak())
+                else if ($this->hasWeakPassword())
                 {
-                	$aReturn[] = User_Password_Ext::E_WEAK_PASSWORD;
+			$messages->addErrorForField('password', 'User', 'E_WeakPassword');
                 }
 
-                if (!$model->passwordsMatch())
+                if (!$this->passwordsMatch())
                 {
-                	$aReturn[] = User_Password_Ext::E_PASSWORDS_DIFFERENT;
+			$messages->addErrorForField('confirmPassword', 'User', 'E_PasswordsDifferent');
                 }
 
                 return $aReturn;
@@ -377,7 +383,7 @@ class User_Password_Ext implements Model_Extension
 
         public function hasBlankPassword()
         {
-                if (!isset($model->password) || strlen($model->password) == 0)
+                if (!isset($this->password) || strlen($this->password) == 0)
                 {
                         return true;
                 }
@@ -387,7 +393,7 @@ class User_Password_Ext implements Model_Extension
 
         public function hasWeakPassword()
         {
-        	if (strlen($model->password) < 6)
+        	if (strlen($this->password) < 6)
                 {
                 	return true;
                 }
@@ -397,7 +403,7 @@ class User_Password_Ext implements Model_Extension
 
         public function passwordsMatch()
         {
-        	if ($model->password == $model->confirmPassword)
+        	if ($this->password == $this->confirmPassword)
                 {
                 	return true;
                 }
@@ -406,9 +412,11 @@ class User_Password_Ext implements Model_Extension
         }
 }
 
-class User_Theme_Ext implements Model_Extension
+class User_Theme_Ext 
+        extends Obj_Mixin
+        implements Model_Extension
 {
-        public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('theme');
                 $oDef->getField('supportsThemePref')
@@ -416,18 +424,20 @@ class User_Theme_Ext implements Model_Extension
         }
 }
 
-class User_VerifiedEmail_Ext implements Model_Extension
+class User_VerifiedEmail_Ext 
+        extends Obj_Mixin
+        implements Model_Extension
 {
-        public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('verified')
                      ->setDefaultValue(0);
                 $oDef->addField('verificationCode');
         }
 
-        public function setVerified($model, $value)
+        public function setVerified($value)
         {
-                $data =& $model->getData();
+                $data =& $this->getData();
 
                 if ($value)
                 {
@@ -437,7 +447,7 @@ class User_VerifiedEmail_Ext implements Model_Extension
                 else
                 {
                         $data['verified'] = 0;
-                        $data['verificationCode'] = md5(srand(1,999999) . App::$config['APP_SECRET_KEY']);
+                        $data['verificationCode'] = md5(srand(999999) . App::$config['APP_SECRET_KEY']);
                 }
         }
 }

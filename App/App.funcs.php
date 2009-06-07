@@ -23,6 +23,8 @@
 // 2008-02-11   SLH     Now looks in $APP_CONFIG for the language string
 // 2009-03-01   SLH     Moved from Languages to App
 //                      Now supports App_Language class
+// 2009-05-22   SLH     Added m() to assist with handling data validation
+//                      errors
 // ========================================================================
 
 /**
@@ -35,6 +37,26 @@
 function l($module, $stringName)
 {
         return App::$languages->getTranslation($module, $stringName);
+}
+
+function m($module, $messages = array())
+{
+        if (count($messages) == 0)
+        {
+                return;
+        }
+
+        foreach ($messages as $message)
+        {
+                if (strstr($message, 0, 2) == 'M_')
+                {
+                        App::$response->messages->addMessage(l($module, $message));
+                }
+                else
+                {
+                        App::$response->messages->addError(l($module, $error));
+                }
+        }
 }
 
 ?>

@@ -2,8 +2,8 @@
 
 // ========================================================================
 //
-// User/User.inc.php
-//              The include file for the User component
+// Messages/Messages.inc.php
+//              Include file for the Messages component
 //
 //              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
@@ -19,22 +19,19 @@
 // ========================================================================
 // When         Who     What
 // ------------------------------------------------------------------------
-// 2007-07-20   SLH     Created
-// 2007-08-06   SLH     Added loading of Users.funcs.php
-// 2009-06-02   SLH     Added dependency on Email component
+// 2007-12-02   SLH     Created
 // ========================================================================
 
-// load our dependencies
-__mf_require_once('Email');
-
-// who are we?
+// who we are
 $componentDir  = dirname(__FILE__) . DIRECTORY_SEPARATOR;
-$componentName = 'User';
+$componentName = 'Messages';
 
-require_once($componentDir . $componentName . '.funcs.php');
-require_once($componentDir . $componentName . '.models.php');
+// load our files
+//require_once($componentDir . $componentName . '.exceptions.php');
+//require_once($componentDir . $componentName . '.funcs.php');
 require_once($componentDir . $componentName . '.classes.php');
 
-App::$languages->moduleSpeaks($componentName, $componentDir, 'en-us');
+// support for the user's chosen language
+// App::$languages->moduleSpeaks($componentName, $componentDir, 'en-us');
 
 ?>
