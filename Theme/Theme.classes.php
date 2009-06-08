@@ -110,6 +110,42 @@ class Theme_BaseTheme
                 ob_end_flush();
         }
 
+        public function possiblePartialFilenames($name, $suffix)
+        {
+                // check the list of possible files
+                //
+                // we check the following:
+                //
+                // a) a file specific to this version of the browser
+                //    (e.g. ie7)
+                // b) a file specific to this type of browser
+                //    (e.g. ie)
+                // c) a default file to fall back on
+
+                $possibles = array (
+                        $this->themeDir . '/' . App::$browser->platform . '/' . $name . '.' . App::$browser->name . '.' . App::$browser->version . '.' . $suffix . '.php',
+                        $this->themeDir . '/' . App::$browser->platform . '/' . $name . '.' . App::$browser->name . '.' . $suffix . '.php',
+                        $this->themeDir . '/' . App::$browser->platform . '/' . $name . '.' . $suffix . '.php'
+                );
+
+                return $possibles;
+        }
+
+        public function partialFilename($name, $suffix)
+        {
+                $possibles = $this->possiblePartialFilenames($name, $suffix);
+
+                foreach ($possibles as $filename)
+                {
+                        if (file_exists($filename))
+                        {
+                                return $filename;
+                        }
+                }
+
+                return null;
+        }
+
         public function requireValidLayout($layout)
         {
                 // this will do the job
@@ -124,29 +160,7 @@ class Theme_BaseTheme
 
                 if (!isset($layouts[$layout]))
                 {
-                        // check the list of possible files
-                        //
-                        // we check the following:
-                        //
-                        // a) a layout specific to this version of the browser
-                        //    (e.g. ie7)
-                        // b) a layout specific to this type of browser
-                        //    (e.g. ie)
-                        // c) a default layout to fall back on
-
-                        $possibles = array (
-                                $this->themeDir . '/' . App::$browser->platform . '/' . $layout . '.' . App::$browser->name . App::$browser->version . '.layout.php',
-                                $this->themeDir . '/' . App::$browser->platform . '/' . $layout . '.' . App::$browser->name . '.layout.php',
-                                $this->themeDir . '/' . App::$browser->platform . '/' . $layout . '.layout.php'
-                        );
-
-                        foreach ($possibles as $layout)
-                        {
-                                if (file_exists($layout))
-                                {
-                                        $layouts[$layout] = $layout;
-                                }
-                        }
+                        $layouts[$layout] = $this->partialFilename($layout, 'layout');
                 }
 
                 if (!isset($layouts[$layout]))
@@ -155,6 +169,17 @@ class Theme_BaseTheme
                 }
 
                 return $layouts[$layout];
+        }
+
+        public function snippetFile($snippet)
+        {
+                $filename = $this->partialFilename($snippet, 'snippet');
+                if ($filename === null)
+                {
+                        throw new Theme_E_NoSuchSnippet($snippet);
+                }
+
+                return $filename;
         }
 }
 

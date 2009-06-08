@@ -286,10 +286,10 @@ class App_Response
 
 class App_Messages
 {
-        protected $messages     = array();
-        protected $errorCount   = 0;
+        public $messages     = array();
+        public $errors       = array();
 
-        public static function addMessage($message)
+        public function addMessage($module, $message, $params = array())
         {
                 // special case - do not add empty messages
                 if ($message === null || strlen($message) == 0)
@@ -297,66 +297,36 @@ class App_Messages
 
                 $this->messages[] = array
                 (
-                        'class' => 'message',
-                        'msg'   => $message,
+                        'module'    => $module,
+                        'message'   => $message,
+                        'params'    => $params,
                 );
         }
 
-        public function addError($message)
-        {
-                // special case - do not add empty messages
-                if ($message === null || strlen($message) == 0)
-                {
-                        return;
-                }
-
-                $this->messages[] = array
-                (
-                        'class' => 'error',
-                        'msg'   => $message,
-                );
-
-                $this->errorCount++;
-        }
-
-        public function toXhtml()
-        {
-                $return = '';
-
-                if (count($this->messages) == 0)
-                {
-                        return $return;
-                }
-
-                if ($this->getErrorCount() > 0)
-                {
-                	$return .= '<p class="formInstructions">'
-                                .  l('Pipeline', 'LANG_RENDER_MESSAGES_ERROR_INSTRUCTIONS')
-                                . '</p>';
-                }
-
-                $return .= '<ul class="formMessages">';
-
-                foreach ($this->messages as $message)
-                {
-                        $return .= '<li class="' . $message['class'] . '">'
-                                . $message['msg']
-                                . "</li>\n";
-                }
-
-                $return .= "</ul>\n";
-
-                return $return;
-        }
-
-        public function getCount()
+        public function getMessageCount()
         {
                 return count($this->messages);
         }
 
-        public static function getErrorCount()
+        public function addError($module, $message, $params = array())
         {
-                return $this->errorCount;
+                // special case - do not add empty messages
+                if ($message === null || strlen($message) == 0)
+                {
+                        return;
+                }
+
+                $this->errors[] = array
+                (
+                        'module'  => $module,
+                        'message' => $message,
+                        'params'  => $params,
+                );
+        }
+
+        public function getErrorCount()
+        {
+                return count($this->messages);
         }
 }
 

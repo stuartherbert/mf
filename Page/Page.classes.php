@@ -218,16 +218,44 @@ class Page
                 }
         }
 
-        public function addBlockToSection($sectionName, Page_Block $block)
+        public function addBlockToSection($sectionName)
         {
                 $this->requireValidSection($sectionName);
-                $this->blocks[$sectionName] = $block;
+                $block = new Page_Block();
+                $this->blocks[$sectionName][] = $block;
+
+                return $block;
         }
 
         public function getBlocks($sectionName)
         {
         	$this->requireValidSection($sectionName);
                 return $this->blocks[$sectionName];
+        }
+
+        public function outputBlocks($sectionName)
+        {
+                $blocks = $this->getBlocks($sectionName);
+
+                foreach ($blocks as $block)
+                {
+                        $this->outputBlock($block);
+                }
+        }
+
+        protected function outputBlock(Page_Block $block)
+        {
+                // step 1: create the models in the current scope
+                foreach ($block->models as $name => $model)
+                {
+                        $$name = $model;
+                }
+
+                // step 2: load the correct snippet
+                $snippetFilename = App::$theme->snippetFile($block->snippet);
+
+                // step 3: execute the snippet
+                require($snippetFilename);
         }
 }
 
@@ -310,7 +338,31 @@ class Page_Block extends Page_Component
          * A list of the different content held within this block
          * @var array
          */
-        public $content = array();
+        public $models = array();
+
+        /**
+         * Name of the (probably) XHTML snippet to use to render this block
+         *
+         * @var string
+         */
+        public $snippet = null;
+
+        public function usingSnippet($snippet)
+        {
+                constraint_mustBeString($snippet);
+                $this->snippet = $snippet;
+
+                // fluid interface
+                return $this;
+        }
+
+        public function usingModel($name, Model $obj)
+        {
+                $this->models[$name] = $obj;
+
+                // fluid interface
+                return $this;
+        }
 }
 
 // ========================================================================

@@ -21,14 +21,20 @@
 // ------------------------------------------------------------------------
 // 2007-07-20   SLH     Created
 // 2007-08-06   SLH     Added loading of Users.funcs.php
+// 2009-06-02   SLH     Added dependency on Email component
 // ========================================================================
 
-$componentDir = dirname(__FILE__) . DIRECTORY_SEPARATOR;
+// load our dependencies
+__mf_require_once('Email');
 
-require_once($componentDir . 'User.funcs.php');
-require_once($componentDir . 'User.models.php');
-require_once($componentDir . 'User.classes.php');
+// who are we?
+$componentDir  = dirname(__FILE__) . DIRECTORY_SEPARATOR;
+$componentName = 'User';
 
-App::$languages->moduleSpeaks('User', $componentDir, 'en-us');
+require_once($componentDir . $componentName . '.funcs.php');
+require_once($componentDir . $componentName . '.models.php');
+require_once($componentDir . $componentName . '.classes.php');
+
+App::$languages->moduleSpeaks($componentName, $componentDir, 'en-us');
 
 ?>
