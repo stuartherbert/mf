@@ -44,6 +44,7 @@
 // 2009-03-31   SLH     Added authType field to generic User model
 // 2009-05-20   SLH     Added User_VerifiedEmail_Ext
 // 2009-06-04   SLH     Updated to work with the generic mixin API
+// 2009-06-07   SLH     Validation now uses the Messages object
 // ========================================================================
 
 class User extends Model
@@ -117,26 +118,20 @@ class User extends Model
         {
                 $this->aData['authType'] = $authType;
 
-                $objs = $this->findObjsForMethod('postAuth');
-                foreach ($objs as $obj)
+                if ($authType != User::AUTHTYPE_ANON)
                 {
-                        $obj->postAuth($authType);
+                        Events_Manager::triggerEvent('User_Auth', $this, null);
                 }
         }
 
-        public function validateRegistration(Datastore $oDB)
+        public function validateRegistration(Messages $messages, Datastore $oDB)
         {
-                $return = array();
                 $objs   = $this->findObjsForMethod('validateRegistration');
 
                 foreach ($objs as $obj)
                 {
-                        var_dump('Calling ' . get_class($obj) . '::validateRegistration()');
-                        $results = $obj->validateRegistration($oDB);
-                        foreach ($results as $result)
-                        {
-                                $return[] = $result;
-                        }
+                        // var_dump('Calling ' . get_class($obj) . '::validateRegistration()');
+                        $obj->validateRegistration($messages, $oDB);
                 }
 
                 if (count($return) > 0)
@@ -176,9 +171,6 @@ class User_Address_Ext
         extends Obj_Mixin
         implements Model_Extension
 {
-        const E_NO_ADDRESS1                     = 'E_NoAddress1';
-        const E_NO_ADDRESSCITY                  = 'E_NoAddressCity';
-
         static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('address1');
@@ -190,41 +182,38 @@ class User_Address_Ext
                 $oDef->addField('addressCountry');
         }
 
-        public function validateAddress()
+        public function validateAddress(Messages $messages)
         {
-        	// we can return one or more error codes!
-                $return = array();
-
                 // do we have the first line of the address?
                 if (!isset($this->address1) || strlen(trim($this->address1)) == 0)
                 {
-                	$return[] = User_Address_Ext::E_NO_ADDRESS1;
+                        $messages->addErrorForField('address1', 'User', 'E_NoAddress1');
                 }
 
                 // do we have the town/city?
                 if (!isset($this->addressCity) || strlen(trim($this->addressCity)) == 0)
                 {
-                	$return[] = User_Address_Ext::E_NO_ADDRESSCITY;
+                	$messages->addErrorForField('addressCity', 'User', 'E_NoAddressCity');
                 }
 
                 // do we have the county / state?
                 if (!isset($this->addressState) || strlen(trim($this->addressState)) == 0)
                 {
-                	$return[] = User_Address_Ext::E_NO_ADDRESSSTATE;
+                        $messages->addErrorForField('addressState', 'User', 'E_NoAddressState');
                 }
 
                 // what about the postcode?
                 if (!isset($this->addressPostcode) || strlen(trim($this->addressPostcode)) == 0)
                 {
-                	$return[] = User_Address_Ext::E_NO_ADDRESSPOSTCODE;
+                        $messages->addErrorForField('addressPostcode', 'User', 'E_NoAddressPostcode');
                 }
 
                 // and what about the country?
         }
 
-        public function validateRegistration()
+        public function validateRegistration(Messages $messages)
         {
-                return $this->validateAddress();
+                $this->validateAddress($messages);
         }
 }
 
@@ -232,12 +221,6 @@ class User_Email_Ext
         extends Obj_Mixin
         implements Model_Extension
 {
-        const E_NO_EMAILADDRESS                 = 'E_NoEmailAddress';
-        const E_INVALID_EMAILADDRESS            = 'E_InvalidEmailAddress';
-        const E_NO_CONFIRMEMAILADDRESS          = 'E_NoConfirmEmailAddress';
-        const E_EMAILADDRESSES_DIFFERENT        = 'E_EmailAddressesDifferent';
-        const E_EMAILADDRESS_INUSE              = 'E_EmailAddressInUse';
-
         static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('emailAddress');
@@ -248,12 +231,12 @@ class User_Email_Ext
                      ->withField('emailAddress');
         }
 
-        public function validateRegistration(Datastore $oDB)
+        public function validateRegistration(Messages $messages, Datastore $oDB)
         {
-                return $this->validateEmailAddress($oDB);
+                return $this->validateEmailAddress($messages, $oDB);
         }
 
-        public function validateEmailAddress(Datastore $oDB)
+        public function validateEmailAddress(Messages $messages, Datastore $oDB)
         {
                 // we can return one or more error codes!
                 $return = array();
@@ -262,17 +245,17 @@ class User_Email_Ext
 
                 if (!$this->emailAddress)
                 {
-                	$return[] = User_Email_Ext::E_NO_EMAILADDRESS;
+			$messages->addErrorForField('emailAddress', 'User', 'E_NoEmailAddress');
                 }
                 else
                 {
                         if (!$this->hasValidEmailAddress($oDB))
                         {
-                                $return[] = User_Email_Ext::E_INVALID_EMAILADDRESS;
+				$messages->addErrorForField('emailAddress', 'User', 'E_InvalidEmailAddress', array ($this->emailAddress));
                         }
                         else if (!$this->hasUniqueEmailAddress($oDB))
                         {
-                        	$return[] = User_Email_Ext::E_EMAILADDRESS_INUSE;
+				$messages->addErrorForField('emailAddress', 'User', 'E_EmailAddressInUse', array ($this->emailAddress));
                         }
                 }
 
@@ -280,11 +263,11 @@ class User_Email_Ext
 
                 if (!$this->confirmEmailAddress)
                 {
-                	$return[] = User_Email_Ext::E_NO_CONFIRMEMAILADDRESS;
+			$messages->addErrorForField('confirmEmailAddress', 'User', 'E_NoConfirmEmailAddress');
                 }
                 else if (!$this->emailAddressesMatch())
                 {
-                	$return[] = User_Email_Ext::E_EMAILADDRESSES_DIFFERENT;
+			$messages->addErrorForField('confirmEmailAddress', 'User', 'E_EmailAddressesDifferent', array($this->emailAddress, $this->confirmEmailAddress));
                 }
 
                 return $return;
@@ -341,44 +324,32 @@ class User_Name_Ext
         extends Obj_Mixin
         implements Model_Extension
 {
-        const E_NO_FIRSTNAME = 'E_NoFirstName';
-        const E_NO_LASTNAME  = 'E_NoLastName';
-
         static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('firstName');
                 $oDef->addField('lastName');
         }
 
-        public function validateRegistration()
+        public function validateRegistration(Messages $messages)
         {
-                return $this->validateName();
+                return $this->validateName($messages);
         }
 
-        public function validateName()
+        public function validateName(Messages $messages)
         {
-        	// we can return one or more error codes!
-                $return = array();
-
                 // do we have a first name?
                 if (!isset($this->firstName) || strlen(trim($this->firstName)) == 0)
                 {
-                	$return[] = User_Name_Ext::E_NO_FIRSTNAME;
+			$messages->addErrorForField('firstName', 'User', 'E_NoFirstName');
                 }
 
                 // do we have a last name?
                 if (!isset($this->lastName) || strlen(trim($this->lastName)) == 0)
                 {
-                	$return[] = User_Name_Ext::E_NO_LASTNAME;
+			$messages->addErrorForField('lastName', 'User', 'E_NoLastName');
                 }
 
                 return $return;
-        }
-
-        public function postAuth()
-        {
-                $this->firstName = 'Guest';
-                $this->lastName  = 'User';
         }
 }
 
@@ -386,37 +357,31 @@ class User_Password_Ext
         extends Obj_Mixin
         implements Model_Extension
 {
-        const E_BLANK_PASSWORD      = 'E_BlankPassword';
-        const E_WEAK_PASSWORD       = 'E_WeakPassword';
-        const E_PASSWORDS_DIFFERENT = 'E_PasswordsDifferent';
-
         static public function extendsModelDefinition(Model_Definition $oDef)
         {
                 $oDef->addField('password');
                 $oDef->addFakeField('confirmPassword');
         }
 
-        public function validateRegistration()
+        public function validateRegistration(Messages $messages)
         {
-                return $this->validatePassword();
+                return $this->validatePassword($messages);
         }
         
-        public function validatePassword()
+        public function validatePassword(Messages $messages)
         {
-                $aReturn = array();
-
                 if ($this->hasBlankPassword())
                 {
-                	$aReturn[] = User_Password_Ext::E_BLANK_PASSWORD;
+			$messages->addErrorForField('password', 'User', 'E_BlankPassword');
                 }
                 else if ($this->hasWeakPassword())
                 {
-                	$aReturn[] = User_Password_Ext::E_WEAK_PASSWORD;
+			$messages->addErrorForField('password', 'User', 'E_WeakPassword');
                 }
 
                 if (!$this->passwordsMatch())
                 {
-                	$aReturn[] = User_Password_Ext::E_PASSWORDS_DIFFERENT;
+			$messages->addErrorForField('confirmPassword', 'User', 'E_PasswordsDifferent');
                 }
 
                 return $aReturn;
