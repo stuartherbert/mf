@@ -27,6 +27,9 @@
 // 2009-04-15   SLH     Page and Page_Layout are no longer expected to be
 //                      able to render themselves
 // 2009-05-19   SLH     Fixes for Page_Layout to actually work
+// 2009-06-10   SLH     Blocks can now contain instances of Messages
+// 2009-06-10   SLH     Changes made to Page_Layout::outputBlock() to
+//                      reduce possibility of namespace clash
 // ========================================================================
 
 // ========================================================================
@@ -243,19 +246,25 @@ class Page
                 }
         }
 
-        protected function outputBlock(Page_Block $block)
+        protected function outputBlock(Page_Block $_block)
         {
                 // step 1: create the models in the current scope
-                foreach ($block->models as $name => $model)
+                foreach ($_block->models as $_name => $_model)
                 {
-                        $$name = $model;
+                        $$_name = $_model;
                 }
 
-                // step 2: load the correct snippet
-                $snippetFilename = App::$theme->snippetFile($block->snippet);
+                // step 2: create the messages in the current scope
+                foreach ($_block->messages as $_name => $_messages)
+                {
+                        $$_name = $_messages;
+                }
+
+                // step 3: load the correct snippet
+                $_snippetFilename = App::$theme->snippetFile($_block->snippet);
 
                 // step 3: execute the snippet
-                require($snippetFilename);
+                require($_snippetFilename);
         }
 }
 
@@ -341,6 +350,12 @@ class Page_Block extends Page_Component
         public $models = array();
 
         /**
+         * A list of the different Messages objects for this block
+         * @var array
+         */
+        public $messages = array();
+
+        /**
          * Name of the (probably) XHTML snippet to use to render this block
          *
          * @var string
@@ -359,6 +374,14 @@ class Page_Block extends Page_Component
         public function usingModel($name, Model $obj)
         {
                 $this->models[$name] = $obj;
+
+                // fluid interface
+                return $this;
+        }
+
+        public function usingMessages($name, Messages $messages)
+        {
+                $this->messages[$name] = $messages;
 
                 // fluid interface
                 return $this;

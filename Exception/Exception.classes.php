@@ -25,6 +25,8 @@
 // 2009-03-02   SLH     Added support for setting a unique ID for
 //                      Process exceptions
 // 2009-03-02   SLH     Improved the message output by the exception
+// 2009-06-10   SLH     Use the function provided by App for translating
+//                      messages
 // ========================================================================
 
 class Exception_Enterprise extends Exception
@@ -47,7 +49,7 @@ class Exception_Enterprise extends Exception
 
         public function __construct ($errorCode, $formatString, $aParams, Exception $oCause = null)
         {
-                $message = $this->formatMessage($formatString, $aParams);
+                $message = lf($formatString, $aParams);
 
                 parent::__construct($message, $errorCode);
 
@@ -100,17 +102,6 @@ class Exception_Enterprise extends Exception
         {
                 return $this->aParams;
         }
-
-        protected function formatMessage ($message, &$aParams)
-        {
-                return vsprintf(
-//                        get_class($this)
-//                        . ' : '
-                        $message,
-                        $aParams
-                );
-        }
-
 }
 
 class Exception_Iterator implements Iterator

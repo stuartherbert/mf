@@ -51,6 +51,8 @@
 // 2009-05-01   SLH     App_Conditions now does a convincing job of
 //                      pretending to be an array
 // 2009-05-20   SLH     Added currentRoute to App_Request
+// 2009-06-10   SLH     Removed messages from App_Response; they are now
+//                      provided on a per-block basis
 // ========================================================================
 
 class App
@@ -265,68 +267,13 @@ class App_Response
 
         /**
          *
-         * @var App_Messages
-         */
-        public $messages     = null;
-
-        /**
-         *
          * @var Page
          */
         public $page         = null;
 
         public function __construct()
         {
-        	$this->messages = new App_Messages();
         	$this->page     = new Page();
-        }
-}
-
-// ========================================================================
-
-class App_Messages
-{
-        public $messages     = array();
-        public $errors       = array();
-
-        public function addMessage($module, $message, $params = array())
-        {
-                // special case - do not add empty messages
-                if ($message === null || strlen($message) == 0)
-                        return;
-
-                $this->messages[] = array
-                (
-                        'module'    => $module,
-                        'message'   => $message,
-                        'params'    => $params,
-                );
-        }
-
-        public function getMessageCount()
-        {
-                return count($this->messages);
-        }
-
-        public function addError($module, $message, $params = array())
-        {
-                // special case - do not add empty messages
-                if ($message === null || strlen($message) == 0)
-                {
-                        return;
-                }
-
-                $this->errors[] = array
-                (
-                        'module'  => $module,
-                        'message' => $message,
-                        'params'  => $params,
-                );
-        }
-
-        public function getErrorCount()
-        {
-                return count($this->messages);
         }
 }
 

@@ -25,10 +25,12 @@
 //                      Now supports App_Language class
 // 2009-05-22   SLH     Added m() to assist with handling data validation
 //                      errors
+// 2009-06-10   SLH     Removed m()
+// 2009-06-10   SLH     Added ls() and lf()
 // ========================================================================
 
 /**
- * Short-cut to save on typing when working with translated strings
+ * Short-cut to save on typing when retrieving translated format strings
  *
  * @param string $module The name of the module which defines the translation
  * @param string $stringName The name of the translation to retrieve
@@ -39,24 +41,30 @@ function l($module, $stringName)
         return App::$languages->getTranslation($module, $stringName);
 }
 
-function m($module, $messages = array())
+/**
+ * Retrieve a fully-exploded translation
+ *
+ * @param string $module The name of the module which defines the translation
+ * @param string $stringName The name of the translation to retrieve
+ * @param array $params The parameters to plug into the translation
+ * @return string the translation with parameters plugged in
+ */
+function ls($module, $stringName, $params = array())
 {
-        if (count($messages) == 0)
-        {
-                return;
-        }
+        $formatString = App::$languages->getTranslation($module, $stringName);
+        return vsprintf($formatString, $params);
+}
 
-        foreach ($messages as $message)
-        {
-                if (strstr($message, 0, 2) == 'M_')
-                {
-                        App::$response->messages->addMessage(l($module, $message));
-                }
-                else
-                {
-                        App::$response->messages->addError(l($module, $error));
-                }
-        }
+/**
+ * Expand a translated format string previously retrived from l()
+ *
+ * @param string $formatString
+ * @param array $params
+ * @return string the translation with the parameters plugged in
+ */
+function lf($formatString, $params = array())
+{
+        return vsprintf($formatString, $params);
 }
 
 ?>
