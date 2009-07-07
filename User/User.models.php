@@ -45,6 +45,7 @@
 // 2009-05-20   SLH     Added User_VerifiedEmail_Ext
 // 2009-06-04   SLH     Updated to work with the generic mixin API
 // 2009-06-07   SLH     Validation now uses the Messages object
+// 2009-06-10   SLH     Verification errors now start with a 'V'
 // ========================================================================
 
 class User extends Model
@@ -187,25 +188,25 @@ class User_Address_Ext
                 // do we have the first line of the address?
                 if (!isset($this->address1) || strlen(trim($this->address1)) == 0)
                 {
-                        $messages->addErrorForField('address1', 'User', 'E_NoAddress1');
+                        $messages->addErrorForField('address1', 'User', 'V_NoAddress1');
                 }
 
                 // do we have the town/city?
                 if (!isset($this->addressCity) || strlen(trim($this->addressCity)) == 0)
                 {
-                	$messages->addErrorForField('addressCity', 'User', 'E_NoAddressCity');
+                	$messages->addErrorForField('addressCity', 'User', 'V_NoAddressCity');
                 }
 
                 // do we have the county / state?
                 if (!isset($this->addressState) || strlen(trim($this->addressState)) == 0)
                 {
-                        $messages->addErrorForField('addressState', 'User', 'E_NoAddressState');
+                        $messages->addErrorForField('addressState', 'User', 'V_NoAddressState');
                 }
 
                 // what about the postcode?
                 if (!isset($this->addressPostcode) || strlen(trim($this->addressPostcode)) == 0)
                 {
-                        $messages->addErrorForField('addressPostcode', 'User', 'E_NoAddressPostcode');
+                        $messages->addErrorForField('addressPostcode', 'User', 'V_NoAddressPostcode');
                 }
 
                 // and what about the country?
@@ -245,17 +246,17 @@ class User_Email_Ext
 
                 if (!$this->emailAddress)
                 {
-			$messages->addErrorForField('emailAddress', 'User', 'E_NoEmailAddress');
+			$messages->addErrorForField('emailAddress', 'User', 'V_NoEmailAddress');
                 }
                 else
                 {
                         if (!$this->hasValidEmailAddress($oDB))
                         {
-				$messages->addErrorForField('emailAddress', 'User', 'E_InvalidEmailAddress', array ($this->emailAddress));
+				$messages->addErrorForField('emailAddress', 'User', 'V_InvalidEmailAddress', array ($this->emailAddress));
                         }
                         else if (!$this->hasUniqueEmailAddress($oDB))
                         {
-				$messages->addErrorForField('emailAddress', 'User', 'E_EmailAddressInUse', array ($this->emailAddress));
+				$messages->addErrorForField('emailAddress', 'User', 'V_EmailAddressInUse', array ($this->emailAddress));
                         }
                 }
 
@@ -263,11 +264,11 @@ class User_Email_Ext
 
                 if (!$this->confirmEmailAddress)
                 {
-			$messages->addErrorForField('confirmEmailAddress', 'User', 'E_NoConfirmEmailAddress');
+			$messages->addErrorForField('confirmEmailAddress', 'User', 'V_NoConfirmEmailAddress');
                 }
                 else if (!$this->emailAddressesMatch())
                 {
-			$messages->addErrorForField('confirmEmailAddress', 'User', 'E_EmailAddressesDifferent', array($this->emailAddress, $this->confirmEmailAddress));
+			$messages->addErrorForField('confirmEmailAddress', 'User', 'V_EmailAddressesDifferent', array($this->emailAddress, $this->confirmEmailAddress));
                 }
 
                 return $return;
@@ -340,13 +341,13 @@ class User_Name_Ext
                 // do we have a first name?
                 if (!isset($this->firstName) || strlen(trim($this->firstName)) == 0)
                 {
-			$messages->addErrorForField('firstName', 'User', 'E_NoFirstName');
+			$messages->addErrorForField('firstName', 'User', 'V_NoFirstName');
                 }
 
                 // do we have a last name?
                 if (!isset($this->lastName) || strlen(trim($this->lastName)) == 0)
                 {
-			$messages->addErrorForField('lastName', 'User', 'E_NoLastName');
+			$messages->addErrorForField('lastName', 'User', 'V_NoLastName');
                 }
 
                 return $return;
@@ -372,16 +373,16 @@ class User_Password_Ext
         {
                 if ($this->hasBlankPassword())
                 {
-			$messages->addErrorForField('password', 'User', 'E_BlankPassword');
+			$messages->addErrorForField('password', 'User', 'V_BlankPassword');
                 }
                 else if ($this->hasWeakPassword())
                 {
-			$messages->addErrorForField('password', 'User', 'E_WeakPassword');
+			$messages->addErrorForField('password', 'User', 'V_WeakPassword');
                 }
 
                 if (!$this->passwordsMatch())
                 {
-			$messages->addErrorForField('confirmPassword', 'User', 'E_PasswordsDifferent');
+			$messages->addErrorForField('confirmPassword', 'User', 'V_PasswordsDifferent');
                 }
 
                 return $aReturn;
