@@ -20,21 +20,29 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2007-08-11   SLH     Consolidated from individual files
+// 2009-07-07   SLH     Added ArrayAccess support to PHP_Array
+// 2009-07-07   SLH     Added __get/__set support to PHP_Array
+// 2009-07-07   SLH     Added PHP_Array.append()
+// 2009-07-08   SLH     Split out basic object/array support into
+//                      PHP_ObjectArray
+// 2009-07-09   SLH     Changed name of PHP_ObjectArray's underlying
+//                      properties to avoid them clashing with likely keys
+//                      in the user's actual array data
 // ========================================================================
 
-class PHP_Array implements Iterator
+class PHP_ObjectArray implements ArrayAccess, Iterator
 {
-        private $aData = array();
-        private $aKeys = array();
+        protected $__data = array();
 
-        private $index = 0;
+        protected $__keys  = array();
+        protected $__index = 0;
 
-        public function __construct (&$aArray = null)
+        public function __construct (&$__data = null)
         {
-                if ($aArray != null)
+                if ($__data != null)
                 {
-                        constraint_mustBeArray($aArray);
-                        $this->aData =& $aArray;
+                        constraint_mustBeArray($__data);
+                        $this->__data =& $__data;
                         $this->rewind();
                 }
         }
@@ -45,16 +53,16 @@ class PHP_Array implements Iterator
 
         public function rewind()
         {
-                $this->index = 0;
-                $this->aKeys  = array_keys($this->aData);
+                $this->__index = 0;
+                $this->__keys  = array_keys($this->__data);
         }
 
         public function valid()
         {
-                if (!isset($this->aKeys[$this->index]))
+                if (!isset($this->__keys[$this->__index]))
                         return false;
 
-                if (!isset($this->aData[$this->aKeys[$this->index]]))
+                if (!isset($this->__data[$this->__keys[$this->__index]]))
                         return false;
 
                 return true;
@@ -62,22 +70,22 @@ class PHP_Array implements Iterator
 
         public function key()
         {
-                return $this->aKeys[$this->index];
+                return $this->__keys[$this->__index];
         }
 
         public function current()
         {
-                return $this->aData[$this->aKeys[$this->index]];
+                return $this->__data[$this->__keys[$this->__index]];
         }
 
         public function value()
         {
-                return $this->aData[$this->aKeys[$this->index]];
+                return $this->__data[$this->__keys[$this->__index]];
         }
 
         public function next()
         {
-                $this->index++;
+                $this->__index++;
 
                 return $this->valid();
         }
@@ -87,9 +95,9 @@ class PHP_Array implements Iterator
 
         public function previous()
         {
-                if ($this->index > 0)
+                if ($this->__index > 0)
                 {
-                        $this->index--;
+                        $this->__index--;
                 }
 
                 return $this->valid();
@@ -97,27 +105,116 @@ class PHP_Array implements Iterator
 
         public function index()
         {
-                return $this->index;
+                return $this->__index;
         }
+
+        // ================================================================
+        // Allow array contents to be accessed as if class properties
+        //
+        // Derived classes can override this behaviour with their own
+        // get/set methods (see App_Conditions for an example)
+        // ----------------------------------------------------------------
+
+        public function __get($name)
+        {
+                // step 1: do we have an override method?
+                $method = 'get' . ucfirst($name);
+                if (method_exists($this, $method))
+                {
+                        return $this->$method();
+                }
+
+                // step 2: return the data in the array
+                if (!isset($this->__data[$name]))
+                {
+                        return null;
+                }
+
+                return $this->__data[$name];
+        }
+
+        public function __set($name, $value)
+        {
+                // step 1: do we have an override method?
+                $method = 'set' . ucfirst($name);
+                if (method_exists($this, $method))
+                {
+                        return $this->$method($value);
+                }
+
+                // step 2: just store the data directly in the array
+                $this->__data[$name] = $value;
+        }
+
+        public function __isset($name)
+        {
+                // step 1: do we have an override method?
+                $method = 'isset' . ucfirst($name);
+                if (method_exists($this, $method))
+                {
+                        return $this->$method();
+                }
+
+                // step 2: just check on the data in the array
+                return isset($this->__data[$name]);
+        }
+
+        // ================================================================
+        // More voodoo ... array iterator support
+
+        public function getIterator()
+        {
+                return new PHP_Array($this->__data);
+        }
+
+        // ================================================================
+        // Just in case you've not had enough voodoo ...
+        // array [] operator support
+
+        public function offsetSet($name, $value)
+        {
+                return $this->__set($name, $value);
+        }
+
+        public function offsetExists($name)
+        {
+                return $this->__isset($name);
+        }
+
+        public function offsetUnset($name)
+        {
+                unset($this->__data[$name]);
+        }
+
+        public function offsetGet($name)
+        {
+                return $this->__get($name);
+        }
+}
+
+class PHP_Array extends PHP_ObjectArray
+{
+        // ================================================================
+        // Additional methods to make dealing with arrays more useful
 
         public function &to_array()
         {
-                return $this->aData;
+                return $this->__data;
         }
 
         public function &getData($key)
         {
-                if (!isset($this->aData[$key]))
+                if (!isset($this->__data[$key]))
                 {
                         throw new Exception();
                 }
 
-                return $this->aData[$key];
+                return $this->__data[$key];
         }
 
-        public function setData(&$aData)
+        public function setData(&$__data)
         {
-                $this->aData =& $aData;
+                $this->__data =& $__data;
                 $this->rewind();
         }
 
@@ -125,9 +222,9 @@ class PHP_Array implements Iterator
         // like setData(), except it doesn't break the connection to the
         // array that this object references.
 
-        public function replaceData(&$aData)
+        public function replaceData(&$__data)
         {
-                $this->aData = $aData;
+                $this->__data = $__data;
                 $this->rewind();
         }
 
@@ -141,7 +238,7 @@ class PHP_Array implements Iterator
 
         protected function resetKeys()
         {
-                $this->aKeys = array_keys($this->aData);
+                $this->__keys = array_keys($this->__data);
         }
 
         // ================================================================
@@ -149,23 +246,23 @@ class PHP_Array implements Iterator
 
         public function change_key_case($case = CASE_LOWER)
         {
-                $this->replaceData(array_change_key_case($this->aData, $case));
+                $this->replaceData(array_change_key_case($this->__data, $case));
 
                 return $this;
         }
 
         public function split_into_chunks($size, $preserveKeys = false)
         {
-                $oReturn = new PHP_Array(array_chunk($this->aData, $size, $preserveKeys));
+                $oReturn = new PHP_Array(array_chunk($this->__data, $size, $preserveKeys));
 
                 return $oReturn;
         }
 
-        public function combine_keys_and_values($aKeys, $aValues)
+        public function combine_keys_and_values($__keys, $aValues)
         {
-                if ($aKeys instanceof PHP_Array)
+                if ($__keys instanceof PHP_Array)
                 {
-                        $aKeys =& $aKeys->to_array();
+                        $__keys =& $__keys->to_array();
                 }
 
                 if ($aValues instanceof PHP_Array)
@@ -173,14 +270,14 @@ class PHP_Array implements Iterator
                         $aValues =& $aValues->to_array();
                 }
 
-                $this->replaceData(array_combine($aKeys, $aValues));
+                $this->replaceData(array_combine($__keys, $aValues));
 
                 return $this;
         }
 
         public function count_values()
         {
-                $oReturn = new PHP_Array(array_count_values($this->aData));
+                $oReturn = new PHP_Array(array_count_values($this->__data));
 
                 return $oReturn;
         }
@@ -192,7 +289,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_diff_assoc($this->aData, $aArray));
+                $oReturn = new PHP_Array(array_diff_assoc($this->__data, $aArray));
 
                 return $oReturn;
         }
@@ -204,7 +301,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_diff_key($this->aData, $aArray));
+                $oReturn = new PHP_Array(array_diff_key($this->__data, $aArray));
 
                 return $oReturn;
         }
@@ -216,7 +313,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_diff_uassoc($this->aData, $aArray, $callback));
+                $oReturn = new PHP_Array(array_diff_uassoc($this->__data, $aArray, $callback));
 
                 return $oReturn;
         }
@@ -228,7 +325,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_diff_ukey($this->aData, $aArray, $callback));
+                $oReturn = new PHP_Array(array_diff_ukey($this->__data, $aArray, $callback));
 
                 return $oReturn;
         }
@@ -240,7 +337,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_diff($this->aData, $aArray));
+                $oReturn = new PHP_Array(array_diff($this->__data, $aArray));
 
                 return $oReturn;
         }
@@ -267,14 +364,14 @@ class PHP_Array implements Iterator
 
         public function filter($callback)
         {
-                $this->replaceData(array_filter($this->aData, $callback));
+                $this->replaceData(array_filter($this->__data, $callback));
 
                 return $this;
         }
 
         public function flip()
         {
-                $this->replaceData(array_flip($this->aData));
+                $this->replaceData(array_flip($this->__data));
 
                 return $this;
         }
@@ -286,7 +383,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_intersect_assoc($this->aData, $aArray));
+                $oReturn = new PHP_Array(array_intersect_assoc($this->__data, $aArray));
 
                 return $oReturn;
         }
@@ -298,7 +395,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_intersect_key($this->aData, $aArray));
+                $oReturn = new PHP_Array(array_intersect_key($this->__data, $aArray));
 
                 return $oReturn;
         }
@@ -310,7 +407,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_intersect_uassoc($this->aData, $aArray, $callback));
+                $oReturn = new PHP_Array(array_intersect_uassoc($this->__data, $aArray, $callback));
 
                 return $oReturn;
         }
@@ -322,7 +419,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_intersect_ukey($this->aData, $aArray, $callback));
+                $oReturn = new PHP_Array(array_intersect_ukey($this->__data, $aArray, $callback));
 
                 return $oReturn;
         }
@@ -334,24 +431,24 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_intersect($this->aData, $aArray));
+                $oReturn = new PHP_Array(array_intersect($this->__data, $aArray));
 
                 return $oReturn;
         }
 
         public function key_exists($a_szKey)
         {
-                return array_key_exists($a_szKey, $this->aData);
+                return array_key_exists($a_szKey, $this->__data);
         }
 
         public function keys()
         {
-                return new PHP_Array(array_keys($this->aData));
+                return new PHP_Array(array_keys($this->__data));
         }
 
         public function map($callback)
         {
-                $this->setData($callback, $this->aData);
+                $this->setData($callback, $this->__data);
         }
 
         public function merge_recursive($aArray)
@@ -361,7 +458,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $this->setData(array_merge_recursive($this->aData, $aArray));
+                $this->setData(array_merge_recursive($this->__data, $aArray));
 
                 return $this;
         }
@@ -373,7 +470,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $this->setData(array_merge($this->aData, $aArray));
+                $this->setData(array_merge($this->__data, $aArray));
 
                 return $this;
         }
@@ -385,14 +482,14 @@ class PHP_Array implements Iterator
 
         public function pad($size, $value)
         {
-                $this->setData(array_pad($this->aData, $size, $value));
+                $this->setData(array_pad($this->__data, $size, $value));
 
                 return $this;
         }
 
         public function pop()
         {
-                $return = array_pop($this->aData);
+                $return = array_pop($this->__data);
                 $this->rewind();
 
                 return $return;
@@ -400,12 +497,12 @@ class PHP_Array implements Iterator
 
         public function product()
         {
-                return array_product($this->aData);
+                return array_product($this->__data);
         }
 
         public function push($value)
         {
-                array_push($this->aData, $value);
+                array_push($this->__data, $value);
                 $this->resetKeys();
 
                 return $this;
@@ -415,17 +512,17 @@ class PHP_Array implements Iterator
         {
                 if ($noRequired == 1)
                 {
-                        $aKeys = array(array_rand($this->aData, 1));
+                        $__keys = array(array_rand($this->__data, 1));
                 }
                 else
                 {
-                        $aKeys = array_rand($this->aData, $noRequired);
+                        $__keys = array_rand($this->__data, $noRequired);
                 }
 
                 $aReturn = array();
-                foreach ($aKeys as $key)
+                foreach ($__keys as $key)
                 {
-                        $aReturn[$key] = $this->aData[$key];
+                        $aReturn[$key] = $this->__data[$key];
                 }
 
                 $oReturn = new PHP_Array($aReturn);
@@ -436,14 +533,14 @@ class PHP_Array implements Iterator
         {
                 if ($noRequired == 1)
                 {
-                        $aKeys = array(array_rand($this->aData, 1));
+                        $__keys = array(array_rand($this->__data, 1));
                 }
                 else
                 {
-                        $aKeys = array_rand($this->aData, $noRequired);
+                        $__keys = array_rand($this->__data, $noRequired);
                 }
 
-                $oReturn = new PHP_Array($aKeys);
+                $oReturn = new PHP_Array($__keys);
                 return $oReturn;
         }
 
@@ -451,32 +548,32 @@ class PHP_Array implements Iterator
         {
                 if ($initial == null)
                 {
-                        return array_reduce($this->aData, $callback);
+                        return array_reduce($this->__data, $callback);
                 }
                 else
                 {
-                        return array_reduce($this->aData, $callback, $initial);
+                        return array_reduce($this->__data, $callback, $initial);
                 }
         }
 
         public function reverse($preserveKeys = true)
         {
-                $this->replaceData(array_reverse($this->aData, $preserveKeys));
+                $this->replaceData(array_reverse($this->__data, $preserveKeys));
 
                 return $this;
         }
 
         public function search($value, $strict = false)
         {
-                return array_search($value, $this->aData, $strict);
+                return array_search($value, $this->__data, $strict);
         }
 
         public function shift($count = 1)
         {
-                $toShift = count($this->aData) < $count ? count($this->aData) : $count;
+                $toShift = count($this->__data) < $count ? count($this->__data) : $count;
                 while ($toShift > 0)
                 {
-                        array_shift($this->aData);
+                        array_shift($this->__data);
                         $toShift--;
                 }
 
@@ -487,22 +584,22 @@ class PHP_Array implements Iterator
 
         public function slice($offset, $length = null, $preserveKeys = false)
         {
-                $oReturn = new PHP_Array(array_slice($this->aData, $offset, $length, $preserveKeys));
+                $oReturn = new PHP_Array(array_slice($this->__data, $offset, $length, $preserveKeys));
 
                 return $oReturn;
         }
 
         public function splice($offset, $aReplacement)
         {
-                //$this->replaceData(array_splice($this->aData, $a_iOffset, $a_iLength, $a_aReplacement));
-                array_splice($this->aData, $offset, count($aReplacement), $aReplacement);
+                //$this->replaceData(array_splice($this->__data, $a_iOffset, $a_iLength, $a_aReplacement));
+                array_splice($this->__data, $offset, count($aReplacement), $aReplacement);
 
                 return $this;
         }
 
         public function sum()
         {
-                return array_sum($this->aData);
+                return array_sum($this->__data);
         }
 
         public function udiff_assoc($aArray, $callback)
@@ -512,19 +609,19 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_udiff_assoc($this->aData, $aArray, $callback));
+                $oReturn = new PHP_Array(array_udiff_assoc($this->__data, $aArray, $callback));
 
                 return $oReturn;
         }
 
-        public function udiff_uassoc($aArray, $dataCallback, $keyCallback)
+        public function udiff_uassoc($aArray, $__dataCallback, $keyCallback)
         {
                 if ($aArray instanceof PHP_Array)
                 {
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_udiff_uassoc($this->aData, $aArray, $dataCallback, $keyCallback));
+                $oReturn = new PHP_Array(array_udiff_uassoc($this->__data, $aArray, $__dataCallback, $keyCallback));
 
                 return $oReturn;
         }
@@ -536,7 +633,7 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_udiff($this->aData, $aArray, $callback));
+                $oReturn = new PHP_Array(array_udiff($this->__data, $aArray, $callback));
 
                 return $oReturn;
         }
@@ -548,19 +645,19 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_uintersect_assoc($this->aData, $aArray, $callback));
+                $oReturn = new PHP_Array(array_uintersect_assoc($this->__data, $aArray, $callback));
 
                 return $oReturn;
         }
 
-        public function uintersect_uassoc($aArray, $dataCallback, $keyCallback)
+        public function uintersect_uassoc($aArray, $__dataCallback, $keyCallback)
         {
                 if ($aArray instanceof PHP_Array)
                 {
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_uintersect_uassoc($this->aData, $aArray, $dataCallback, $keyCallback));
+                $oReturn = new PHP_Array(array_uintersect_uassoc($this->__data, $aArray, $__dataCallback, $keyCallback));
 
                 return $oReturn;
         }
@@ -572,49 +669,49 @@ class PHP_Array implements Iterator
                         $aArray =& $aArray->to_array();
                 }
 
-                $oReturn = new PHP_Array(array_uintersect($this->aData, $aArray, $callback));
+                $oReturn = new PHP_Array(array_uintersect($this->__data, $aArray, $callback));
 
                 return $oReturn;
         }
 
         public function unique()
         {
-                $this->replaceData(array_unique($this->aData));
+                $this->replaceData(array_unique($this->__data));
 
                 return $this;
         }
 
         public function unshift($value)
         {
-                array_unshift($this->aData, $value);
+                array_unshift($this->__data, $value);
                 $this->reset();
                 return $this;
         }
 
         public function values()
         {
-                $oReturn = new PHP_Array(array_values($this->aData));
+                $oReturn = new PHP_Array(array_values($this->__data));
 
                 return $oReturn;
         }
 
-        public function walk_recursive($callback, $aData = null)
+        public function walk_recursive($callback, $__data = null)
         {
-                array_walk_recursive($this->aData, $callback, $aData);
+                array_walk_recursive($this->__data, $callback, $__data);
 
                 return $this;
         }
 
-        public function walk($callback, $aData = null)
+        public function walk($callback, $__data = null)
         {
-                array_walk($this->aData, $callback, $aData);
+                array_walk($this->__data, $callback, $__data);
 
                 return $this;
         }
 
         public function arsort($flags = SORT_REGULAR)
         {
-                arsort($this->aData, $flags);
+                arsort($this->__data, $flags);
                 $this->reset();
 
                 return $this;
@@ -622,7 +719,7 @@ class PHP_Array implements Iterator
 
         public function asort($flags = SORT_REGULAR)
         {
-                asort($this->aData, $flags);
+                asort($this->__data, $flags);
                 $this->reset();
 
                 return $this;
@@ -637,7 +734,7 @@ class PHP_Array implements Iterator
 
         public function count()
         {
-                return count($this->aData);
+                return count($this->__data);
         }
 
         public function each()
@@ -659,7 +756,7 @@ class PHP_Array implements Iterator
                 if ($this->count() == 0)
                         return false;
 
-                $this->index = count($this->aKeys) - 1;
+                $this->__index = count($this->__keys) - 1;
                 return $this->current();
         }
 
@@ -675,12 +772,12 @@ not supported because it is dangerous
 
         public function in_array($needle, $strict = false)
         {
-                return in_array($needle, $this->aData, $strict);
+                return in_array($needle, $this->__data, $strict);
         }
 
         public function implode($separator = ',')
         {
-                return implode($separator, $this->aData);
+                return implode($separator, $this->__data);
         }
 
         function implode_with_quotes($quote = "'", $separator = ',')
@@ -688,7 +785,7 @@ not supported because it is dangerous
                 $append = false;
                 $return = '';
 
-                foreach ($this->aData as $value)
+                foreach ($this->__data as $value)
                 {
                         if ($append)
                         {
@@ -704,7 +801,7 @@ not supported because it is dangerous
 
         public function krsort($flags = SORT_REGULAR)
         {
-                krsort($this->aData, $flags);
+                krsort($this->__data, $flags);
                 $this->rewind();
 
                 return $this;
@@ -712,7 +809,7 @@ not supported because it is dangerous
 
         public function ksort($flags = SORT_REGULAR)
         {
-                ksort($this->aData, $flags);
+                ksort($this->__data, $flags);
                 $this->rewind();
 
                 return $this;
@@ -720,7 +817,7 @@ not supported because it is dangerous
 
         public function natcasesort()
         {
-                natcasesort($this->aData);
+                natcasesort($this->__data);
                 $this->rewind();
 
                 return $this;
@@ -728,7 +825,7 @@ not supported because it is dangerous
 
         public function natsort()
         {
-                natsort($this->aData);
+                natsort($this->__data);
                 $this->rewind();
 
                 return $this;
@@ -746,7 +843,7 @@ not supported because it is dangerous
                         return false;
                 }
 
-                $this->index--;
+                $this->__index--;
 
                 return $this->current();
         }
@@ -760,7 +857,7 @@ not supported because it is dangerous
 
         public function rsort($flags = SORT_REGULAR)
         {
-                rsort($this->aData, $flags);
+                rsort($this->__data, $flags);
 
                 $this->reset();
                 return $this;
@@ -768,7 +865,7 @@ not supported because it is dangerous
 
         public function shuffle()
         {
-                shuffle($this->aData);
+                shuffle($this->__data);
 
                 $this->reset();
                 return $this;
@@ -776,12 +873,12 @@ not supported because it is dangerous
 
         public function sizeof()
         {
-                return count($this->aData);
+                return count($this->__data);
         }
 
         public function sort($flags = SORT_REGULAR)
         {
-                sort($this->aData, $flags);
+                sort($this->__data, $flags);
                 $this->reset();
 
                 return $this;
@@ -789,7 +886,7 @@ not supported because it is dangerous
 
         public function uasort($callback)
         {
-                uasort($this->aData, $callback);
+                uasort($this->__data, $callback);
                 $this->reset();
 
                 return $this;
@@ -797,7 +894,7 @@ not supported because it is dangerous
 
         public function uksort($callback)
         {
-                uksort($this->aData, $callback);
+                uksort($this->__data, $callback);
                 $this->reset();
 
                 return $this;
@@ -805,7 +902,7 @@ not supported because it is dangerous
 
         public function usort($callback)
         {
-                usort($this->aData, $callback);
+                usort($this->__data, $callback);
                 $this->reset();
 
                 return $this;
@@ -814,6 +911,22 @@ not supported because it is dangerous
         // ================================================================
         // Additional methods inspired by other languages
         // ================================================================
+
+        // ----------------------------------------------------------------
+        // appends an array to the current array
+        //
+        // if either of the arrays has non-numeric keys, then the resulting
+        // behaviour is undefined
+
+        public function append($secondArray)
+        {
+                constraint_mustBeArray($secondArray);
+
+                foreach ($secondArray as $secondArrayData)
+                {
+                        $this->__data[] = $secondArrayData;
+                }
+        }
 
         // ----------------------------------------------------------------
         // empties the current array
@@ -839,11 +952,11 @@ not supported because it is dangerous
 
         public function delete_if($callback)
         {
-                foreach ($this->aData as $key => $value)
+                foreach ($this->__data as $key => $value)
                 {
                         if ($callback($value))
                         {
-                                unset($this->aData[$key]);
+                                unset($this->__data[$key]);
                         }
                 }
 
@@ -871,12 +984,12 @@ not supported because it is dangerous
 
         public function fetch($key, $default = null)
         {
-                if (!isset($this->aData[$key]))
+                if (!isset($this->__data[$key]))
                 {
                         return $default;
                 }
 
-                return $this->aData[$key];
+                return $this->__data[$key];
         }
 
         // ----------------------------------------------------------------
@@ -887,7 +1000,7 @@ not supported because it is dangerous
                 // if they only want one element, return the value
                 if ($elements == 1)
                 {
-                        $return = array_slice($this->aData, 0, 1);
+                        $return = array_slice($this->__data, 0, 1);
                         reset($return);
                         return current($return);
                 }
@@ -917,7 +1030,7 @@ not supported because it is dangerous
                 }
 
                 // cannot return the last element of an empty array
-                if (count($this->aData) == 0)
+                if (count($this->__data) == 0)
                 {
                 	return null;
                 }
@@ -925,7 +1038,7 @@ not supported because it is dangerous
                 // only want one element?
                 if ($elements == 1)
                 {
-                	return end($this->aData);
+                	return end($this->__data);
                 }
 
                 $start = $this->count() - $elements;
@@ -944,7 +1057,7 @@ not supported because it is dangerous
 
         public function serialize()
         {
-                return serialize($this->aData);
+                return serialize($this->__data);
         }
 
         // ----------------------------------------------------------------
@@ -952,12 +1065,12 @@ not supported because it is dangerous
 
         public function get_element($key)
         {
-                if (!isset($this->aData[$key]))
+                if (!isset($this->__data[$key]))
                 {
                         return null;
                 }
 
-                return $this->aData[$key];
+                return $this->__data[$key];
         }
 
         // ----------------------------------------------------------------
@@ -965,7 +1078,7 @@ not supported because it is dangerous
 
         public function set_element($key, $value)
         {
-                $this->aData[$key] = $value;
+                $this->__data[$key] = $value;
         }
 
         // ----------------------------------------------------------------
@@ -975,7 +1088,7 @@ not supported because it is dangerous
         {
                 if ($this->key_exists($key))
                 {
-                        unset($this->aData[$key]);
+                        unset($this->__data[$key]);
                         $this->resetKeys();
                 }
 
@@ -1016,6 +1129,8 @@ class PHP_StringUtils
 
                 return substr($text, $start, $end - $start);
         }
+
+
 }
 
 ?>

@@ -30,6 +30,8 @@
 // 2009-03-24   SLH     Routes now go to modules and pages instead
 // 2009-03-31   SLH     Fixes for BC breakage in Routing classes
 // 2009-05-01   SLH     Conditions moved to App::
+// 2009-07-09   SLH     Fixes because users are now always logged in or
+//                      logged out
 // ========================================================================
 
 // bootstrap the framework
@@ -59,19 +61,15 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                         ->withUrl('/profile/:username')
                         ->withParams(array(':username'));
 
-                App::$routes->addRoute('indexLoggedIn')
+                App::$routes->addRoute('index')
                        ->withUrl('/')
                        ->withConditions(array('loggedIn' => true))
                        ->routeToModuleAndPage('Homepage', 'indexLoggedIn');
 
-                App::$routes->addRoute('indexLoggedOut')
+                App::$routes->addRoute('index')
                         ->withUrl('/')
                         ->withConditions(array('loggedIn' => false))
                         ->routeToModuleAndPage('Homepage', 'indexLoggedOut');
-
-                App::$routes->addRoute('index')
-                        ->withUrl('/')
-                        ->routeToModuleAndPage('Homepage', 'defaultHomepage');
 
                 App::$routes->addRoute('showPhoto')
                         ->withUrl('/photos/:username/:photoId/show')
@@ -128,9 +126,10 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
         public function testMatchesHomepageUrl()
         {
                 $route = App::$routes->findByUrl('/');
-                $this->assertEquals('Homepage', $route->routeToModule);
-                $this->assertEquals('index',    $route->routeName);
-                $this->assertEquals('defaultHomepage', $route->routeToPage);
+                
+                $this->assertEquals('Homepage',       $route->routeToModule);
+                $this->assertEquals('index',          $route->routeName);
+                $this->assertEquals('indexLoggedOut', $route->routeToPage);
         }
 
         public function testMatchesHomepageUrlWithConditions()
@@ -139,14 +138,14 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
                 $route = App::$routes->findByUrl('/');
                 $this->assertEquals('Homepage',      $route->routeToModule);
-                $this->assertEquals('indexLoggedIn', $route->routeName);
+                $this->assertEquals('index',         $route->routeName);
                 $this->assertEquals('indexLoggedIn', $route->routeToPage);
 
                 App::$conditions->loggedIn = false;
 
                 $route = App::$routes->findByUrl('/');
                 $this->assertEquals('Homepage',       $route->routeToModule);
-                $this->assertEquals('indexLoggedOut', $route->routeName);
+                $this->assertEquals('index',          $route->routeName);
                 $this->assertEquals('indexLoggedOut', $route->routeToPage);
         }
 

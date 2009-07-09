@@ -35,6 +35,8 @@
 // 2009-04-01   SLH     Now supports publishing absolute URLs
 // 2009-04-16   SLH     Promoted conditions up to be part of App
 // 2009-05-19   SLH     Added support for caching routes (experimental)
+// 2009-07-09   SLH     Added support for the same route going to different
+//                      modules and pages depending on conditions
 // ========================================================================
 
 class Routing_Manager implements DimensionCache_PublicCacheable
@@ -65,8 +67,14 @@ class Routing_Manager implements DimensionCache_PublicCacheable
 
         public function addRoute($name)
         {
-        	$this->routes[$name] = new Routing_Route($name, $this->defaultMainLoop);
-                return $this->routes[$name];
+                if (!isset($this->routes[$name]))
+                {
+                        $this->routes[$name] = array();
+                }
+                $route = new Routing_Route($name, $this->defaultMainLoop);
+                $this->routes[$name][] = $route;
+                
+                return $route;
         }
 
         /**
@@ -77,8 +85,7 @@ class Routing_Manager implements DimensionCache_PublicCacheable
         public function findByName($name)
         {
         	$this->requireValidRouteName($name);
-
-                return $this->routes[$name];
+                return $this->filterRoutesMatchingConditions($this->routes[$name]);
         }
 
         public function requireValidRouteName($name)

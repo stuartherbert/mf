@@ -843,6 +843,10 @@ class PHP_Array_Tests extends PHPUnit_Framework_TestCase
 
         function testCanGetLastElementInArray()
         {
+                // entry conditions
+                $this->assertEquals(10, $this->fixture->count());
+
+                // test conditions
                 $this->assertEquals(10, $this->fixture->end());
                 $this->assertEquals(10, $this->fixture->last());
         }

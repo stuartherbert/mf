@@ -24,6 +24,7 @@
 // 2009-03-18   SLH     Added support for loading mock objects for unit
 //                      testing
 // 2009-05-24   SLH     Added lcfirst() as a temporary workaround
+// 2009-07-09	SLH	Stage 4 is now the generic bootstrap stage
 // ========================================================================
 
 // ========================================================================
@@ -232,10 +233,11 @@ if (!function_exists('lcfirst'))
 
 // ========================================================================
 //
-// Step 4: initialise App, our global placeholder
+// Step 4: bootstrap the framework
 //
 // ------------------------------------------------------------------------
 
+__mf_require_once('Language');
 __mf_require_once('App');
 
 ?>
