@@ -34,6 +34,7 @@
 // 2009-05-26   SLH     Extensions now use the generic mixin / decorator
 //                      support
 // 2009-06-04   SLH     Updated to support latest mixin API
+// 2009-07-10	SLH	Updated to fix test case failures
 // ========================================================================
 
 // bootstrap the framework
@@ -102,10 +103,10 @@ class Test_Model_User_EmailAddress_Ext
                      ->setDefaultValue(false);
         }
 
-        public function setEmailAddress($model, $emailAddress)
+        public function setEmailAddress($emailAddress)
         {
-                $model->_setFieldInData('emailAddress', $emailAddress);
-                $model->hasEmailAddress = true;
+                $this->_setFieldInData('emailAddress', $emailAddress);
+                $this->hasEmailAddress = true;
         }
 }
 

@@ -37,6 +37,7 @@
 // 2009-05-19   SLH     Added support for caching routes (experimental)
 // 2009-07-09   SLH     Added support for the same route going to different
 //                      modules and pages depending on conditions
+// 2009-07-10	SLH	Added missing constraint to assist fault handling
 // ========================================================================
 
 class Routing_Manager implements DimensionCache_PublicCacheable
@@ -235,6 +236,8 @@ class Routing_Manager implements DimensionCache_PublicCacheable
 
         private function filterRoutesMatchingConditions($routes)
         {
+                constraint_mustBeArray($routes);
+                
                 // the first match wins
                 foreach ($routes as $route)
                 {
