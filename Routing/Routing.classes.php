@@ -38,6 +38,7 @@
 // 2009-07-09   SLH     Added support for the same route going to different
 //                      modules and pages depending on conditions
 // 2009-07-10	SLH	Added missing constraint to assist fault handling
+// 2009-07-13   SLH     Added support for routing to external URLs
 // ========================================================================
 
 class Routing_Manager implements DimensionCache_PublicCacheable
@@ -312,6 +313,7 @@ class Routing_Route
 {
         public $routeToModule = null;
         public $routeToPage   = null;
+        public $isInternal    = false;
         public $mainLoop      = null;
         public $matchedParams = array();
         public $routeName     = null;
@@ -327,6 +329,7 @@ class Routing_Route
                 $this->routeName   = $name;
                 $this->mainLoop    = $mainLoop;
                 $this->routeToPage = $name;
+                $this->isInternal  = true;
         }
 
         // ================================================================
@@ -358,6 +361,7 @@ class Routing_Route
                 }
 
                 // if we get here, then we are setting instead of getting
+                $this->isInternal    = true;
         	$this->routeToModule = $module;
 
                 if ($page != null)
@@ -428,7 +432,22 @@ class Routing_Route
         {
                 constraint_mustBeString($mainLoop);
 
-                $this->mainLoop = $mainLoop;
+                $this->isInternal = true;
+                $this->mainLoop   = $mainLoop;
+
+                return $this;
+        }
+
+        public function routeToUrl($url)
+        {
+                constraint_mustBeString($url);
+
+                $this->rawUrl        = $url;
+                $this->isInternal    = false;
+                $this->routeToModule = null;
+                $this->routeToPage   = null;
+
+                return $this;
         }
 
         protected function analyseUrl()
@@ -441,20 +460,24 @@ class Routing_Route
 
                 // step 1: break the module up using the path separator
 
-        	$parts = explode('/', $this->rawUrl);
-                if (empty($parts[0]))
+                if (substr($this->rawUrl, 0, 1) == '/')
                 {
-                        // the URL started with a '/'
-                	array_shift($parts);
-                }
+                        $this->isInternal = true;
+                        $parts = explode('/', $this->rawUrl);
+                        if (empty($parts[0]))
+                        {
+                                // the URL started with a '/'
+                                array_shift($parts);
+                        }
 
                 // step 2: by default, the module to handle this URL
                 //         is the first part of the path
                 //
                 // this can be overridden using the routeToModule() method
 
-                if ($this->routeToModule == null)
-                        $this->routeToModule = $parts[0];
+                        if ($this->routeToModule == null)
+                                $this->routeToModule = $parts[0];
+                }
 
                 // step 3: does this URL have any parameters, and if so,
                 //         what are they?

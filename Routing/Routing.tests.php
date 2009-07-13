@@ -32,6 +32,7 @@
 // 2009-05-01   SLH     Conditions moved to App::
 // 2009-07-09   SLH     Fixes because users are now always logged in or
 //                      logged out
+// 2009-07-13   SLH     Added tests for routing to an external URL
 // ========================================================================
 
 // bootstrap the framework
@@ -90,6 +91,13 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 App::$routes->addRoute('api2')
                         ->withUrl('/api2/milestone/:id.:format')
                         ->withParams(array(':id', ':format' => '(xml|php|json)'));
+
+                App::$routes->addRoute('externalPage')
+                            ->routeToUrl('http://www.example.com/externalPage');
+
+                App::$routes->addRoute('externalPage2')
+                            ->routeToUrl('http://www.example.com/externalPage/:year/:month/:day')
+                            ->withParams(array(':year' => '[0-9]{4}', ':month' => '[0-9]{2}', ':day' => '[0-9]{2}'));
         }
 
         public function testCanCreateBasicNamedRoute()
@@ -226,6 +234,30 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
         	$route = App::$routes->findByUrl('/api2/milestone/fred.xml');
                 $this->assertEquals('fred', $route->matchedParams[':id']);
                 $this->assertEquals('xml',  $route->matchedParams[':format']);
+        }
+
+        public function testCanRouteToExternalPage()
+        {
+                $route = App::$routes->findByName('externalPage');
+
+                $this->assertFalse($route->isInternal);
+                $this->assertEquals(null, $route->routeToModule);
+                $this->assertEquals(null, $route->routeToPage);
+
+                $url = $route->toUrl();
+                $this->assertEquals('http://www.example.com/externalPage', $url);
+        }
+
+        public function testCanRouteToExternalPageWithParams()
+        {
+                $route = App::$routes->findByName('externalPage2');
+
+                $url = $route->toUrl(array(
+                        ':year'  => 2009,
+                        ':month' => '07',
+                        ':day'   => '02'
+                ));
+                $this->assertEquals('http://www.example.com/externalPage/2009/07/02', $url);
         }
 }
 
