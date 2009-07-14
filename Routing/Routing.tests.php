@@ -259,6 +259,12 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 ));
                 $this->assertEquals('http://www.example.com/externalPage/2009/07/02', $url);
         }
+
+        public function testCanUseShortcutFunction()
+        {
+                $profileUrl = routeUrl('userProfile', array(':username' => 'stuartherbert'));
+                $this->assertEquals('/profile/stuartherbert', $profileUrl);
+        }
 }
 
 ?>

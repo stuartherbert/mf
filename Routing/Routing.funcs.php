@@ -19,6 +19,7 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2009-05-19   SLH     Created
+// 2009-07-13   SLH     Added routeUrl()
 // ========================================================================
 
 function require_app_routes($appModule)
@@ -29,4 +30,9 @@ function require_app_routes($appModule)
         // require_once($routeFile);
 }
 
+function routeUrl($name, $params = array())
+{
+        $route = App::$routes->findByName($name);
+        return $route->toUrl($params);
+}
 ?>
