@@ -20,6 +20,7 @@
 // ------------------------------------------------------------------------
 // 2009-05-19   SLH     Created
 // 2009-07-13   SLH     Added routeUrl()
+// 2009-07-15	SLH	Fixed routeUrl() to include hostname
 // ========================================================================
 
 function require_app_routes($appModule)
@@ -32,7 +33,7 @@ function require_app_routes($appModule)
 
 function routeUrl($name, $params = array())
 {
-        $route = App::$routes->findByName($name);
-        return $route->toUrl($params);
+        return App::$routes->toUrl($name, $params);
 }
+
 ?>
