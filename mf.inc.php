@@ -25,6 +25,7 @@
 //                      testing
 // 2009-05-24   SLH     Added lcfirst() as a temporary workaround
 // 2009-07-09	SLH	Stage 4 is now the generic bootstrap stage
+// 2009-07-15	SLH	Added Firebug support to bootstrap stage
 // ========================================================================
 
 // ========================================================================
@@ -237,6 +238,7 @@ if (!function_exists('lcfirst'))
 //
 // ------------------------------------------------------------------------
 
+__mf_require_once('FirePHP');
 __mf_require_once('Language');
 __mf_require_once('App');
 

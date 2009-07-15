@@ -57,6 +57,7 @@
 //                      instead of implementing everything itself
 // 2009-07-08	SLH	App_Languages has been moved out into Language
 //			module
+// 2009-07-14   SLH     Added a general debugging capability
 // ========================================================================
 
 class App
@@ -136,6 +137,12 @@ class App
          */
         public static $conditions        = array();
 
+        /**
+         * @var FirePHP
+         */
+
+        public static $debug             = array();
+
         // cannot be instantiated
 	private function __construct()
         {
@@ -167,6 +174,7 @@ class App
                 self::$routes     = new Routing_Manager();
                 self::$pages      = new Page_Manager();
                 self::$themes     = new Theme_Manager();
+                self::$debug      = FirePHP::getInstance(true);
 
 		// with the general environment loaded, we can now load
 		// the modules that are app-specific
