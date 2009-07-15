@@ -21,6 +21,7 @@
 // ------------------------------------------------------------------------
 // 2009-07-08   SLH     Broken out from App component
 // 2009-07-08	SLH	Added Language_Translations
+// 2009-07-15	SLH	Fixes for Language_Translations
 // ========================================================================
 
 class Language_Manager
@@ -126,6 +127,7 @@ class Language_Manager
 		{
 			$this->languages[$language] = new Language_Translations($language);
 		}
+
                 $this->languages[$language]->addTranslations($module, $translations);
         }
 
@@ -185,23 +187,28 @@ class Language_Translations extends Obj
 
 	public function setPathToTranslations($module, $filename)
 	{
-		$this->translations[$model] = $filename;
+		$this->translations[$module] = $filename;
 	}
 
-	public function addTranslations($model, $name, $translations)
+	public function addTranslations($module, $translations)
 	{
-		if (!is_array($this->translations[$model]))
+                constraint_mustBeArray($translations);
+                
+		if (!is_array($this->translations[$module]))
 		{
-			$this->translations[$model] = array();
+			$this->translations[$module] = array();
 		}
-		$this->translations[$model] = array_merge($translations, $this->translations);
+		$this->translations[$module] = array_merge($translations, $this->translations[$module]);
 	}
 
 	public function getTranslation($module, $name)
 	{
+                App::$debug->info("Looking for translation for $module::$name");
+                
 		// do we know anything about this module?
 		if (!isset($this->translations[$module]))
 		{
+                        App::$debug->warn("Unknown translation $module");
 			// no we do not, so bail
 			return false;
 		}
@@ -210,6 +217,7 @@ class Language_Translations extends Obj
 		// this language?
 		if (is_string($this->translations[$module]))
 		{
+                        App::$debug->info("Loading translations for $module");
 			// no we have not ... time to do so
 			@require_once($this->translations[$module]);
 		}
@@ -217,9 +225,12 @@ class Language_Translations extends Obj
 		// do we have a translation?
 		if (isset($this->translations[$module][$name]))
 		{
+                        App::$debug->info("Found translation for $module::$name");
 			// yes we do :)
 			return $this->translations[$module][$name];
 		}
+
+                App::$debug->error("Exhausted possibilities for $module::$name");
 
 		// no, we have no translation
 		return false;
