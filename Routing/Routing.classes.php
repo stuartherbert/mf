@@ -39,6 +39,8 @@
 //                      modules and pages depending on conditions
 // 2009-07-10	SLH	Added missing constraint to assist fault handling
 // 2009-07-13   SLH     Added support for routing to external URLs
+// 2009-07-16   SLH     Added support for a default translation for a route
+// 2009-07-24   SLH     Fix for correctly expanding an external URL
 // ========================================================================
 
 class Routing_Manager implements DimensionCache_PublicCacheable
@@ -311,12 +313,14 @@ class Routing_Manager implements DimensionCache_PublicCacheable
 
 class Routing_Route
 {
-        public $routeToModule = null;
-        public $routeToPage   = null;
-        public $isInternal    = false;
-        public $mainLoop      = null;
-        public $matchedParams = array();
-        public $routeName     = null;
+        public $routeToModule   = null;
+        public $routeToPage     = null;
+        public $isInternal      = false;
+        public $mainLoop        = null;
+        public $matchedParams   = array();
+        public $routeName       = null;
+        public $routeLangModule = null;
+        public $routeLangName   = null;
         
         protected $rawUrl        = null;
         protected $paramRegexs   = array();
@@ -336,6 +340,17 @@ class Routing_Route
         // Methods to define a route in the first place
         // ----------------------------------------------------------------
 
+        public function withDefaultTranslation($module, $name)
+        {
+                constraint_mustBeString($module);
+                constraint_mustBeString($name);
+
+                $this->routeLangModule = $module;
+                $this->routeLangName   = $name;
+
+                return $this;
+        }
+        
         /**
          * set the URL that this route applies to
          */
@@ -501,7 +516,7 @@ class Routing_Route
         // Methods to generate a URL for this route
         // ----------------------------------------------------------------
 
-        public function toUrl($aParams = array())
+        public function expandUrl($aParams = array())
         {
                 if ($this->urlRegex == null)
                 {
@@ -511,6 +526,20 @@ class Routing_Route
                 $this->requireValidParams($aParams);
 
                 return str_replace(array_keys($aParams), array_values($aParams), $this->rawUrl);
+        }
+
+        public function toUrl($params = array())
+        {
+                if ($this->isInternal)
+                {
+                        // we need the base URL for the app
+                        return App::$request->baseUrl . $this->expandUrl($params);
+                }
+                else
+                {
+                        // we expect to be expanding a full URL
+                        return $this->expandUrl($params);
+                }
         }
 
         public function requireValidParams($aParams)
@@ -534,6 +563,19 @@ class Routing_Route
                 throw new Routing_E_MissingParameters(count($missingParams), implode(',', $missingParams));
         }
 
+        // ================================================================
+        // Methods to expand the default translated name for this route
+
+        public function expandLinkText()
+        {
+                if (!isset($this->routeLangModule))
+                {
+                        throw new Routing_E_NoLinkText($this->routeName);
+                }
+
+                return app_translation($this->routeLangModule, $this->routeLangName);
+        }
+        
         // ================================================================
         // Methods to match this route to a URL
 

@@ -49,7 +49,7 @@ class Exception_Enterprise extends Exception
 
         public function __construct ($errorCode, $formatString, $aParams, Exception $oCause = null)
         {
-                $message = lf($formatString, $aParams);
+                $message = app_expandFormatString($formatString, $aParams);
 
                 parent::__construct($message, $errorCode);
 

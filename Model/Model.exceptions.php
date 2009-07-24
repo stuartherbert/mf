@@ -35,7 +35,7 @@ class Model_E_ExpectedFieldValue extends Model_E_Exception_Technical
         function __construct ($fieldName, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Model', 'LANG_MODEL_E_EXPECTEDFIELDVALUE'),
+                        app_l('Model', 'E_ExpectedFieldValue'),
                         array ($fieldName),
                         $oCause
                 );
@@ -49,7 +49,7 @@ class Model_E_ForeignKeyNotDefined extends Model_E_Exception_Technical
         function __construct ($myDefinition, $theirDefinition, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Model', 'LANG_MODEL_E_FOREIGNKEYNOTDEFINED'),
+                        app_l('Model', 'E_ForeignKeyNotDefined'),
                         array ($myDefinition, $theirDefinition),
                         $oCause
                 );
@@ -61,7 +61,7 @@ class Model_E_IncompatibleDefinition extends Model_E_Exception_Technical
         function __construct($recordName, $actualDefinition, $expectedDefinition, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Model', 'LANG_MODEL_E_INCOMPATIBLEDEFINITION'),
+                        app_l('Model', 'E_IncompatibleDefinition'),
                         array
                         (
                                 $recordName,
@@ -80,7 +80,7 @@ class Model_E_IsReadOnly extends Model_E_Exception_Technical
         function __construct($oObject, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Model', 'LANG_MODEL_E_ISREADONLY'),
+                        app_l('Model', 'E_IsReadOnly'),
                         array (get_class($oObject)),
                         $oCause
                 );
@@ -94,7 +94,7 @@ class Model_E_NoSuchConvertor extends Model_E_Exception_Technical
         function __construct($class, $convertor, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Model', 'E_NoSuchConvertor'),
+                        app_l('Model', 'E_NoSuchConvertor'),
                         array ($class, $convertor),
                         $oCause
                 );
@@ -108,7 +108,7 @@ class Model_E_NoSuchDefinition extends Model_E_Exception_Technical
         function __construct ($definitionName, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Model', 'LANG_MODEL_E_NOSUCHDEFINITION'),
+                        app_l('Model', 'E_NoSuchDefinition'),
                         array ($definitionName),
                         $oCause
                 );
@@ -120,7 +120,7 @@ class Model_E_NoSuchField extends Model_E_Exception_Technical
         function __construct ($field, $definition, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Model', 'LANG_MODEL_E_NOSUCHFIELD'),
+                        app_l('Model', 'E_NoSuchField'),
                         array ($field, $definition),
                         $oCause
                 );
@@ -135,7 +135,7 @@ class Model_E_NoSuchRecordClass extends Model_E_Exception_Technical
                 if ($maybeClassName !== $className && class_exists($maybeClassName))
                 {
                         parent::__construct (
-                                l('Model', 'LANG_MODEL_E_NOSUCHRECORDCLASS_1'),
+                                app_l('Model', 'E_NoSuchRecordClass_1'),
                                 array
                                 (
                                         $className,
@@ -147,7 +147,7 @@ class Model_E_NoSuchRecordClass extends Model_E_Exception_Technical
                 else
                 {
                         parent::__construct (
-                                l('Model', 'LANG_MODEL_E_NOSUCHRECORDCLASS_2'),
+                                app_l('Model', 'E_NoSuchRecordClass_2'),
                                 array
                                 (
                                         $className,
@@ -163,7 +163,7 @@ class Model_E_NoSuchView extends Model_E_Exception_Technical
         function __construct ($modelName, $view, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Model', 'LANG_MODEL_E_NOSUCHVIEW'),
+                        app_l('Model', 'E_NoSuchView'),
                         array ($view, $modelName),
                         $oCause
                 );

@@ -33,6 +33,9 @@
 // 2009-07-09   SLH     Fixes because users are now always logged in or
 //                      logged out
 // 2009-07-13   SLH     Added tests for routing to an external URL
+// 2009-07-24   SLH     Removed tests for shortcut function (which is now
+//                      in the XHTML module)
+// 2009-07-24   SLH     Routing_Route::toUrl() renamed to expandUrl()
 // ========================================================================
 
 // bootstrap the framework
@@ -102,7 +105,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanCreateBasicNamedRoute()
         {
-                $indexUrl = App::$routes->findByName('index')->toUrl();
+                $indexUrl = App::$routes->findByName('index')->expandUrl();
 
                 $this->assertEquals($indexUrl, '/');
         }
@@ -111,7 +114,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
         {
                 $route = App::$routes->findByName('userProfile');
 
-                $profileUrl = $route->toUrl(array(':username' => 'stuartherbert'));
+                $profileUrl = $route->expandUrl(array(':username' => 'stuartherbert'));
                 $module     = $route->routeToModule();
 
                 $this->assertEquals('/profile/stuartherbert', $profileUrl);
@@ -123,7 +126,7 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                 try
                 {
                 	$url = App::$routes->findByName('showPhoto')
-                                       ->toUrl(array(':username' => 'stuartherbert'));
+                                       ->expandUrl(array(':username' => 'stuartherbert'));
                 }
                 catch (Routing_E_MissingParameters $e)
                 {
@@ -258,12 +261,6 @@ class Routing_Tests extends PHPUnit_Framework_TestCase
                         ':day'   => '02'
                 ));
                 $this->assertEquals('http://www.example.com/externalPage/2009/07/02', $url);
-        }
-
-        public function testCanUseShortcutFunction()
-        {
-                $profileUrl = routeUrl('userProfile', array(':username' => 'stuartherbert'));
-                $this->assertEquals('/profile/stuartherbert', $profileUrl);
         }
 }
 

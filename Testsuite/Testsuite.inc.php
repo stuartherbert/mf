@@ -21,6 +21,8 @@
 // ------------------------------------------------------------------------
 // 2008-07-19   SLH     Created
 // 2009-03-18   SLH     Now load in the required functions too
+// 2009-07-24   SLH     Automatically disable debugging output to avoid
+//                      FirePHP triggering false errors
 // ========================================================================
 
 require_once ('PHPUnit/Framework/TestSuite.php');
@@ -32,5 +34,7 @@ $componentName = 'Testsuite';
 
 require_once($componentDir . $componentName . '.classes.php');
 require_once($componentDir . $componentName . '.funcs.php');
+
+App::$debug->setEnabled(false);
 
 ?>

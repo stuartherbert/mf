@@ -27,7 +27,7 @@ class Menu_E_NoSuchOption extends Exception_Technical
         {
                 parent::__construct
                 (
-                        l('Menu', 'E_NoSuchOption'),
+                        app_l('Menu', 'E_NoSuchOption'),
                         array ($optionName),
                         $oCause
                 );

@@ -28,7 +28,7 @@ class Theme_E_NoLayoutSet extends Exception_Technical
         {
                 parent::__construct
                 (
-                        l('Theme', 'E_NO_LAYOUT_SET'),
+                        app_l('Theme', 'E_NoLayoutSet'),
                         array(),
                         $oCause
                 );
@@ -40,7 +40,7 @@ class Theme_E_NoSuchLayout extends Exception_Technical
         {
                 parent::__construct
                 (
-                        l('Theme', 'E_NO_SUCH_LAYOUT'),
+                        app_l('Theme', 'E_NoSuchLayout'),
                         array($layout),
                         $oCause
                 );

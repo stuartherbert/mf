@@ -24,8 +24,8 @@
 
 App::$languages->addTranslationsForModule('Theme', 'en-us', array
 (
-        'E_NO_LAYOUT_SET'       => 'App has not set a layout; needs to call App::$response->page->setLayout() in the controller script',
-        'E_NO_SUCH_LAYOUT'      => 'Layout "%s" not found',
+        'E_NoLayoutSet'         => 'App has not set a layout; needs to call App::$response->page->setLayout() in the controller script',
+        'E_NoSuchLayout'        => 'Layout "%s" not found',
 ));
 
 ?>

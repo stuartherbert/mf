@@ -58,6 +58,8 @@
 // 2009-07-08	SLH	App_Languages has been moved out into Language
 //			module
 // 2009-07-14   SLH     Added a general debugging capability
+// 2009-07-24   SLH     Disable debugging during unit testing to avoid
+//                      errors about FirePHP
 // ========================================================================
 
 class App
@@ -175,6 +177,12 @@ class App
                 self::$pages      = new Page_Manager();
                 self::$themes     = new Theme_Manager();
                 self::$debug      = FirePHP::getInstance(true);
+
+                // disable debugging if we are unit testing
+                if (defined('UNIT_TEST') && UNIT_TEST)
+                {
+                        self::$debug->setEnabled(false);
+                }
 
 		// with the general environment loaded, we can now load
 		// the modules that are app-specific

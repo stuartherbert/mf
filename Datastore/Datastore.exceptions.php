@@ -41,7 +41,7 @@ class Datastore_E_AdapterNotSupported extends Datastore_E_Exception_Technical
         function __construct($adapterName, $datastoreName, Exception $oCause = null)
         {
                 parent::__construct(
-                        l('Datastore', 'LANG_DATASTORE_E_ADAPTERNOTSUPPORTED'),
+                        app_l('Datastore', 'E_AdapterNotSupported'),
                         array ($adapterName, $datastoreName),
                         $oCause
                 );
@@ -55,7 +55,7 @@ class Datastore_E_ConnectFailed extends Datastore_E_Exception_Technical
         function __construct($msg, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_CONNECTFAILED'),
+                        app_l('Datastore', 'E_ConnectFailed'),
                         array ($msg),
                         $oCause
                 );
@@ -69,7 +69,7 @@ class Datastore_E_DeleteFailed extends Datastore_E_Exception_Technical
         function __construct($msg, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_DELETEFAILED'),
+                        app_l('Datastore', 'E_DeleteFailed'),
                         array ($msg),
                         $oCause
                 );
@@ -83,7 +83,7 @@ class Datastore_E_DeleteWithoutPrimary extends Datastore_E_Exception_Technical
         function __construct(Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_E_DATASTORE_E_DELETEWITHOUTPRIMARY'),
+                        app_l('Datastore', 'E_DeleteWithoutPrimary'),
                         array(),
                         $oCause
                 );
@@ -97,7 +97,7 @@ class Datastore_E_ExpectedDatastore extends Datastore_E_Exception_Technical
         function __construct ($paramNo, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_EXPECTEDDATASTORE'),
+                        app_l('Datastore', 'E_ExpectedDatastore'),
                         array ($paramNo),
                         $oCause
                 );
@@ -111,7 +111,7 @@ class Datastore_E_IncompatibleAdapter extends Datastore_E_Exception_Technical
         function __construct($adapterName, $type, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_INCOMPATIBLEADAPTER'),
+                        app_l('Datastore', 'E_IncompatibleAdapter'),
                         array ($adapterName, $type),
                         $oCause
                 );
@@ -125,7 +125,7 @@ class Datastore_E_InsertFailed extends Datastore_E_Exception_Technical
         function __construct($msg, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_INSERTFAILED'),
+                        app_l('Datastore', 'E_InsertFailed'),
                         array ($msg),
                         $oCause
                 );
@@ -139,7 +139,7 @@ class Datastore_E_NoRowsFound extends Datastore_E_Exception_Technical
 	function __construct($sql, Exception $oCause = null)
         {
         	parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_NOROWSFOUND'),
+                        app_l('Datastore', 'E_NoRowsFound'),
                         array ($sql),
                         $oCause
                 );
@@ -154,7 +154,7 @@ class Datastore_E_OperationNotSupported extends Datastore_E_Exception_Technical
                 // TODO: localise this!!
 
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_OPERATIONNOTSUPPORTED'),
+                        app_l('Datastore', 'E_OperationNotSupported'),
                         array ($operation),
                         $oCause
                 );
@@ -167,7 +167,7 @@ class Datastore_E_NeedDatastore extends Datastore_E_Exception_Technical
         function __construct($className, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_NEEDDATASTORE'),
+                        app_l('Datastore', 'E_NeedDatastore'),
                         array ($className),
                         $oCause
                 );
@@ -181,7 +181,7 @@ class Datastore_E_NeedFields extends Datastore_E_Exception_Technical
         function __construct (Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_NEEDFIELDS'),
+                        app_l('Datastore', 'E_NeedFields'),
                         array(),
                         $oCause
                 );
@@ -195,7 +195,7 @@ class Datastore_E_NoSuchAdapter extends Datastore_E_Exception_Technical
         function __construct($adapterName, Exception $oCause = null)
         {
                parent::__construct(
-                       l('Datastore', 'LANG_DATASTORE_E_NOSUCHADAPTER'),
+                       app_l('Datastore', 'E_NoSuchAdapter'),
                        array ($adapterName),
                        $oCause
                );
@@ -209,7 +209,7 @@ class Datastore_E_NotConnected extends Datastore_E_Exception_Technical
         function __construct($className, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_NOTCONNECTED'),
+                        app_l('Datastore', 'E_NotConnected'),
                         array ($className),
                         $oCause
                 );
@@ -223,7 +223,7 @@ class Datastore_E_NoValueForPrimaryKey extends Datastore_E_Exception_Technical
         function __construct($primaryKey, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_NOVALUEFORPRIMARYKEY'),
+                        app_l('Datastore', 'E_NoValueForPrimaryKey'),
                         array ($primaryKey),
                         $oCause
                 );
@@ -237,7 +237,7 @@ class Datastore_E_QueryFailed extends Datastore_E_Exception_Technical
         function __construct($query, $msg, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_QUERYFAILED'),
+                        app_l('Datastore', 'E_QueryFailed'),
                         array ($query, $msg),
                         $oCause
                 );
@@ -258,7 +258,7 @@ class Datastore_E_RelatedDataNotFound extends Datastore_E_Exception_Technical
                 }
 
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_RELATEDDATANOTFOUND'),
+                        app_l('Datastore', 'E_RelatedDataNotFound'),
                         array ($type, $conditions),
                         $oCause
                 );
@@ -272,7 +272,7 @@ class Datastore_E_RetrieveFailed extends Datastore_E_Exception_Technical
         function __construct($msg, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_RETRIEVEFAILED'),
+                        app_l('Datastore', 'E_RetrieveFailed'),
                         array ($msg),
                         $oCause
                 );
@@ -286,7 +286,7 @@ class Datastore_E_StorageUnknown extends Datastore_E_Exception_Technical
 	function __construct($modelName, Exception $oCause = null)
         {
         	parent::__construct (
-        		l('Datastore', 'LANG_DATASTORE_E_STORAGEUNKNOWN'),
+        		app_l('Datastore', 'E_StorageUnknown'),
                         array ($modelName),
                         $oCause
         	);
@@ -300,7 +300,7 @@ class Datastore_E_TruncateFailed extends Datastore_E_Exception_Technical
         function __construct($msg, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('Datastore', 'LANG_DATASTORE_E_TRUNCATEFAILED'),
+                        app_l('Datastore', 'E_TruncateFailed'),
                         array ($msg),
                         $oCause
                 );
@@ -314,7 +314,7 @@ class Datastore_E_UpdateFailed extends Datastore_E_Exception_Technical
         function __construct($msg, Exception $oCause = null)
         {
                 parent::__construct (
-                        'Unable to update datastore; error message is %s',
+                        app_l('Datastore', 'E_UpdateFailed'),
                         array ($msg),
                         $oCause
                 );

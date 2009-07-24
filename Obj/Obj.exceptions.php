@@ -27,7 +27,7 @@
 // NOTE:
 //
 //      Obj cannot use translations in exceptions, to avoid a circular
-//      dependency between Obj and App modules
+//      dependency between Obj, Language and App modules
 //
 // ========================================================================
 

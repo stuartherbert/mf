@@ -31,7 +31,7 @@ class App_E_InternalServerError extends Exception_Process
                 (
                         500,
                         1,
-                        l('App', 'E_INTERNAL_SERVER_ERROR'),
+                        app_l('App', 'E_INTERNAL_SERVER_ERROR'),
                         array(),
                         $oCause
                 );

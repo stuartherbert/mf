@@ -27,6 +27,9 @@
 //                      errors
 // 2009-06-10   SLH     Removed m()
 // 2009-06-10   SLH     Added ls() and lf()
+// 2009-07-17   SLH     Renamed ls() to app_translation()
+// 2009-07-17   SLH     Renamed lf() to app_translateFormatString()
+// 2009-07-24   SLH     Renamed l() to app_l()
 // ========================================================================
 
 /**
@@ -36,7 +39,7 @@
  * @param string $stringName The name of the translation to retrieve
  * @return string the transation, or $stringName if no translation found
  */
-function l($module, $stringName)
+function app_l($module, $stringName)
 {
         return App::$languages->getTranslation($module, $stringName);
 }
@@ -49,7 +52,7 @@ function l($module, $stringName)
  * @param array $params The parameters to plug into the translation
  * @return string the translation with parameters plugged in
  */
-function ls($module, $stringName, $params = array())
+function app_translation($module, $stringName, $params = array())
 {
         $formatString = App::$languages->getTranslation($module, $stringName);
         return vsprintf($formatString, $params);
@@ -62,7 +65,7 @@ function ls($module, $stringName, $params = array())
  * @param array $params
  * @return string the translation with the parameters plugged in
  */
-function lf($formatString, $params = array())
+function app_expandFormatString($formatString, $params = array())
 {
         return vsprintf($formatString, $params);
 }

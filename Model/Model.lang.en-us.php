@@ -27,16 +27,16 @@
 
 App::$languages->addTranslationsForModule('Model', 'en-us', array
 (
-        'LANG_MODEL_E_EXPECTEDFIELDVALUE'       => "Expected a value for field '%s', but didn't get one",
-        'LANG_MODEL_E_FOREIGNKEYNOTDEFINED'     => "Foreign key on '%s' for '%s' not defined",
-        'LANG_MODEL_E_INCOMPATIBLEDEFINITION'   => 'Expected %s to use definition %s; it actually uses definition %s',
-        'LANG_MODEL_E_ISREADONLY'               => "Record of type '%s' is readonly",
-        'E_NoSuchConvertor'                     => "Class '%s' does not have a '%s' convertor method",
-        'LANG_MODEL_E_NOSUCHDEFINITION'         => "No model definition exists for '%s'",
-        'LANG_MODEL_E_NOSUCHFIELD'              => "Field '%s' is not supported for records of type '%s'",
-        'LANG_MODEL_E_NOSUCHRECORDCLASS_1'      => "No such class '%s'; rename your existing class '%s' to have _Record on the end of the name",
-        'LANG_MODEL_E_NOSUCHRECORDCLASS_2'      => "No such class %s; cannot create record",
-        'LANG_MODEL_E_NOSUCHVIEW'               => "View '%s' is not defined for records of type '%s'",
+        'E_ExpectFieldValue'         => "Expected a value for field '%s', but didn't get one",
+        'E_ForeignKeyNotDefined'     => "Foreign key on '%s' for '%s' not defined",
+        'E_IncompatibleDefinition'   => 'Expected %s to use definition %s; it actually uses definition %s',
+        'E_IsReadOnly'               => "Record of type '%s' is readonly",
+        'E_NoSuchConvertor'          => "Class '%s' does not have a '%s' convertor method",
+        'E_NoSuchDefinition'         => "No model definition exists for '%s'",
+        'E_NoSuchField'              => "Field '%s' is not supported for records of type '%s'",
+        'E_NoSuchRecordClass_1'      => "No such class '%s'; rename your existing class '%s' to have _Record on the end of the name",
+        'E_NoSuchRecordClass_2'      => "No such class %s; cannot create record",
+        'E_NoSuchView'               => "View '%s' is not defined for records of type '%s'",
 ));
 
 ?>

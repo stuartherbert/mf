@@ -28,7 +28,7 @@ class PHP_E_NoSuchClass extends Exception_Technical
         function __construct ($className, Exception $oCause = null)
         {
                 parent::__construct (
-                        l('PHP', 'LANG_PHP_E_NOSUCHCLASS'),
+                        app_l('PHP', 'E_NoSuchClass'),
                         array ($className),
                         $oCause
                 );
@@ -45,7 +45,7 @@ class PHP_E_NoSuchMethod extends Exception_Technical
                 }
 
                 parent::__construct (
-                        l('PHP', 'LANG_PHP_E_NOSUCHMETHOD'),
+                        app_l('PHP', 'E_NoSuchMethod'),
                         array ($methodName, $className),
                         $oCause
                 );
@@ -57,7 +57,7 @@ class PHP_E_ConstraintFailed extends Exception_Technical
 	function __construct ($functionName, Exception $oCause = null)
         {
         	parent::__construct (
-                        l('PHP', 'LANG_PHP_E_CONSTRAINTFAILED'),
+                        app_l('PHP', 'E_ConstraintFailed'),
                         array ($functionName),
                         $oCause
                 );

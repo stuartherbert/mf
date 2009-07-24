@@ -27,7 +27,7 @@ class Page_E_NoLayout extends Exception_Technical
         public function __construct (Exception $oCause = null)
         {
                 parent::__construct(
-                        l('Page', 'E_NOLAYOUT'),
+                        app_l('Page', 'E_NoLayout'),
                         array(),
                         $oCause
                 );
@@ -39,7 +39,7 @@ class Page_E_OutputFormatNotSupported extends Exception_Technical
         public function __construct (Page_Component $origin, $outputFormat, Exception $oCause = null)
         {
                 parent::__construct(
-                        l('Page', 'E_OutputFormatNotSupported'),
+                        app_l('Page', 'E_OutputFormatNotSupported'),
                         array (get_class($origin), $outputFormat),
                         $oCause
                 );

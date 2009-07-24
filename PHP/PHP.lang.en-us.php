@@ -27,9 +27,9 @@
 
 App::$languages->addTranslationsForModule('PHP', 'en-us', array
 (
-        'LANG_PHP_E_NOSUCHCLASS'        => "Class '%s' is not defined",
-        'LANG_PHP_E_NOSUCHMETHOD'       => "Class '%2\$s' does not have a method called '%1\$s'",
-        'LANG_PHP_E_CONSTRAINTFAILED'   => "Constraint '%s' failed",
+        'E_ConstraintFailed'   => "Constraint '%s' failed",
+        'E_NoSuchClass'        => "Class '%s' is not defined",
+        'E_NoSuchMethod'       => "Class '%2\$s' does not have a method called '%1\$s'",
 ));
 
 ?>
