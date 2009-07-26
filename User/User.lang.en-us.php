@@ -42,6 +42,9 @@ App::$languages->addTranslationsForModule('User', 'en-us', array
         'F_AddressPostcode'             => 'Post code',
         'F_AddressCountry'              => 'Country',
 
+        // Submit button labels
+        'F_Register'                    => 'Register Now',
+
         // errors, for use in forms
         'V_NoAddress1'                  => 'You must enter the first line of your address',
         'V_NoAddressCity'               => 'You must enter the city',
