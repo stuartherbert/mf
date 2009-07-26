@@ -20,6 +20,10 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2009-07-26   SLH     Created, replaces XHTML.funcs.php
+// 2009-07-26   SLH     Added XHTML::tag_p()
+// 2009-07-26   SLH     Added XHTML::expandAttributes()
+// 2009-07-26   SLH     Added XHTML::tag_routeLinkWithText()
+// 2009-07-26   SLH     Added XHTML::tag_open() and XHTML::tag_close()
 // ========================================================================
 
 class XHTML
@@ -54,6 +58,34 @@ class XHTML
                 return $return;
         }
 
+        /**
+         * Convert a list of XHTML attributes into something that can be
+         * easily published in an XHTML tag
+         * 
+         * @param array $attr a list of the attributes to expand
+         * @return string the expanded attributes ready to publish in a tag
+         */
+        static public function expandAttributes($attr)
+        {
+                $attrs  = '';
+
+                foreach ($attr as $attrName => $value)
+                {
+                        $attrs .= '  ' . $attrName . '="' . $value . '"';
+                }
+
+                return $attrs;
+        }
+
+        /**
+         * Create the DOCTYPE instruction to tell the browser what type
+         * of content this XHTML page contains
+         *
+         * @see XHTML::DOCTYPE_STRICT
+         *
+         * @param string $doctype the doctype to use
+         * @return string the DOCTYPE instruction to publish
+         */
         static public function tag_doctype($doctype = XHTML::DOCTYPE_STRICT)
         {
                 return '<!DOCTYPE html PUBLIC ' . $doctype . '>';
@@ -81,29 +113,57 @@ class XHTML
                        . '<input type="text" name="' . $name . '" value="' . $value . '" width="' . $width . '"/>';
         }
 
+        static public function tag_p($module, $name, $params = array(), $attr = array())
+        {
+                $attrs = self::expandAttributes($attr);
+                return '<p' . $attrs . '>' . XHTML::translation($module, $name, $params) . '</p>';
+        }
+
+        static public function tag_open($tag, $attr = array())
+        {
+                $attrs = self::expandAttributes($attr);
+                return '<' . $tag . $attrs . '>';
+        }
+
+        static public function tag_close($tag)
+        {
+                return '</' . $tag . '>';
+        }
+        
         /**
-         * Create a xhtml hyperlink using our table of routes
+         * Create a xhtml a tag using our table of routes
          *
-         * @param string $name
-         * @param array $params
-         * @param string $cssClass
+         * @param string $name the name of the route to link to
+         * @param array $params any parameters required by the route
+         * @param array $attr any additional attributes to add to the tag
          * @return string
          */
 
-        static public function tag_routeLink ($name, $params = array(), $cssClass=null)
+        static public function tag_routeLink ($name, $params = array(), $attr = array())
         {
+                $attrs = self::expandAttributes($attr);
                 $route = App::$routes->findByName($name);
 
                 $return = '<a href="'
                         . $route->toUrl($params)
-                        . '"';
+                        . '"'
+                        . $attrs
+                        . ">" . XHTML::escapeOutput($route->expandLinkText()) . "</a>";
 
-                if ($cssClass != null)
-                {
-                        $return .= ' class="' . $cssClass . '"';
-                }
+                return $return;
+        }
 
-                $return .= ">" . $route->expandLinkText() . "</a>";
+        static public function tag_routeLinkWithText ($module, $message, $messageParams, $routeName, $params = array(), $attr = array())
+        {
+                $attrs = self::expandAttributes($attr);
+                $route = App::$routes->findByName($routeName);
+                $text  = XHTML::escapeOutput(XHTML::translation($module, $message, $messageParams));
+
+                $return = '<a href="'
+                        . $route->toUrl($params)
+                        . '"'
+                        . $attrs
+                        . ">" . $text . "</a>";
 
                 return $return;
         }
