@@ -22,9 +22,10 @@
 // 2009-07-08   SLH     Broken out from App component
 // 2009-07-08	SLH	Added Language_Translations
 // 2009-07-15	SLH	Fixes for Language_Translations
+// 2009-07-26   SLH     Added Language_Manager::getCurrentLanguageName()
 // ========================================================================
 
-class Language_Manager
+class Language_Manager extends Obj
 {
         /**
 	 * The current language for this app ... this will be the same as
@@ -163,6 +164,11 @@ class Language_Manager
                 // step 3 - still no translation? return the token then
                 $return = $module . '::' . $stringName;
                 return $return;
+        }
+
+        public function getCurrentLanguageName()
+        {
+                return $this->currentLanguage->lang;
         }
 }
 
