@@ -22,7 +22,14 @@
 // 2009-06-10   SLH     Added xhtml_errorMessagesForField()
 // 2009-07-24   SLH     All functions now require language strings to
 //                      ensure multilingual support
+// 2009-07-26   SLH     Added xhtml_doctype() and XHTML_STRICT constant
 // ========================================================================
+
+define('XHTML_STRICT', 1);
+function xhtml_doctype($doctype = XHTML_STRICT)
+{
+        return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3c.org/TR/xhtml1/DTD/xhtml1-strict.dtd">';
+}
 
 function xhtml_errorMessagesForField(Messages $messages, $field)
 {
