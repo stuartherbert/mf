@@ -22,7 +22,10 @@
 // 2009-03-31   SLH     Moved User creation into here
 // 2009-05-19   SLH     Use browser type to determine which page to load
 // 2009-05-20   SLH     The requested route is now stored in App_Request
+// 2009-07-26   SLH     Added debug timing information
 // ========================================================================
+
+App::$debug->timer->startEvent('mf.mainLoop', 'mainloop');
 
 // step 1: add support for multiple websites here
 // TODO: add support for multiple virtual hosts at some point
@@ -34,13 +37,17 @@
 // b) the loggedin & anonymousUser conditions will be set as appropriate
 //    within the Routing_Engine
 
+App::$debug->timer->startEvent('Authenticate user', 'mainloop');
 App::$users->authenticateUser();
+App::$debug->timer->endEvent();
 
 // step 3: what type of browser is the user poking us with?
 //
 // aka what type of content does the user want us to return?
 
+App::$debug->timer->startEvent('Determine browser', 'mainloop');
 App::$browser = App::$browsers->determineBrowser();
+App::$debug->timer->endEvent();
 
 // step 3: what page are we trying to look at?
 try
@@ -63,6 +70,8 @@ catch (Routing_E_NoMatchingRoute $e)
 {
         header('Status: 404');
 
+        App::$debug->timer->endEvent();
+
         // for now, throw the exception
         throw $e;
 }
@@ -75,6 +84,14 @@ catch (Routing_E_NoMatchingRoute $e)
 //
 // TODO: this switch statement goes away when PHP 5.3 comes out
 
+$mainLoop = App::$request->currentRoute->mainLoop;
+App::$debug->timer->startEvent($mainLoop . '::preMainLoop(' . App::$request->currentRoute->routeName . ')', $mainLoop);
+
+// call_user_func_array(array(App::$request->currentRoute->mainLoop, 'installExceptionHandler'), array());
+call_user_func_array(array($mainLoop, 'preMainLoop'), array(App::$request->currentRoute));
+App::$debug->timer->endEvent();
+
+/*
 switch (App::$request->currentRoute->mainLoop)
 {
         case 'AnonApi':
@@ -93,6 +110,7 @@ switch (App::$request->currentRoute->mainLoop)
                 WebApp::preMainLoop(App::$request->currentRoute);
                 break;
 }
+*/
 
 // pass control to the controller
 try
@@ -101,10 +119,15 @@ try
                 . '/' . App::$browser->platform . '-pages/'
                 . App::$request->currentRoute->routeToPage . '.page.php';
 
+        App::$debug->timer->startEvent($page, 'page');
         require_once($page);
+        App::$debug->timer->endEvent();
 }
 catch (Exception_Process $e)
 {
+        // end the page event, and also end the mainloop event
+        App::$debug->timer->endEvent();
+        App::$debug->timer->endEvent();
         // we pass the exception on
         throw $e;
 }
@@ -115,14 +138,27 @@ catch (Exception $e)
         // at this point
 
         var_dump($e);
+
+        // end the page event, and also end the mainloop event
+        App::$debug->timer->endEvent();
+        App::$debug->timer->endEvent();
+
         throw new App_E_InternalServerError($e);
 }
 
 // prepare the data for publishing
+App::$debug->timer->startEvent(get_class(App::$theme) . '::processResponse()', 'render');
 App::$theme->processResponse();
+App::$debug->timer->endEvent();
 
 // give the different managers an opportunity to do anything to the
 // data before it is published
+$mainLoop = App::$request->currentRoute->mainLoop;
+App::$debug->timer->startEvent($mainLoop . '::postMainLoop()', $mainLoop);
+call_user_func_array(array($mainLoop, 'postMainLoop'), array(App::$request->currentRoute));
+App::$debug->timer->endEvent();
+
+/*
 switch ($route->mainLoop)
 {
         case 'AnonApi':
@@ -138,8 +174,13 @@ switch ($route->mainLoop)
                 WebApp::postMainLoop($route);
                 break;
 }
+*/
 
 // render the final work
+App::$debug->timer->startEvent(get_class(App::$theme) . '::render()', 'render');
 App::$theme->render();
+App::$debug->timer->endEvent();
 
+// final debugging summary
+App::$debug->timer->summary();
 ?>

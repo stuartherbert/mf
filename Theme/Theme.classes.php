@@ -101,13 +101,13 @@ class Theme_BaseTheme
 
                 // now, execute the layout, and buffer its output
                 // to help with caching in future
-                ob_start();
+                // ob_start();
                 require_once($layoutFile);
         }
 
         public function render()
         {
-                ob_end_flush();
+                // ob_end_flush();
         }
 
         public function possiblePartialFilenames($name, $suffix)

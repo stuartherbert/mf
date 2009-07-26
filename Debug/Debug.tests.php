@@ -48,7 +48,8 @@ class Debug_Timer_Tests extends PHPUnit_Framework_TestCase
 
                 // make sure we're formatting millisecs correctly
                 $this->assertEquals('01.002', $this->fixture->formatDuration(1.002, 2, 3));
-
+                $this->assertEquals('54.3', $this->fixture->formatDuration(54.320), 2, 1);
+                
                 // this is more of a note for future users of the class ...
                 //
                 // floating point numbers are not precise, therefore some

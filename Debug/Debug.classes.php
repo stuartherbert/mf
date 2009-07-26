@@ -19,6 +19,8 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2009-07-26   SLH     Created
+// 2009-07-26   SLH     Fixes and improvement to debugging time output
+// 2009-07-26   SLH     Added setEnabled() to Debug_Timer
 // ========================================================================
 
 class Debug_Manager
@@ -111,17 +113,17 @@ class Debug_Manager
 
         public function info($message)
         {
-                return $this->log->info($message);
+                return $this->log->info($this->timer->getTimingPrefix(). $message);
         }
 
         public function warn($message)
         {
-                return $this->log->warn($message);
+                return $this->log->warn($this->timer->getTimingPrefix() . $message);
         }
 
         public function error($message)
         {
-                return $this->log->error($message);
+                return $this->log->error($this->timer->getTimingPrefix() . $message);
         }
 }
 
@@ -135,6 +137,13 @@ interface Debug_Logger
 
 class Debug_Timer extends Obj
 {
+        /**
+         * Is debugging enabled or not?
+         * 
+         * @var boolean
+         */
+        protected $enabled = true;
+
         /**
          *
          * @var array a stack of events we are currently interested in
@@ -153,15 +162,28 @@ class Debug_Timer extends Obj
          * @var float
          */
         protected $startTime = 0.0;
+        protected $activeDuration = 0.0;
 
         protected $thresholds = array();
 
         public function __construct($slow = 0.1, $tooSlow = 0.2)
         {
-                $this->startTime = microtime(true);
+                if (defined('START_TIME'))
+                {
+                        $this->startTime = START_TIME;
+                }
+                else
+                {
+                        $this->startTime = microtime(true);
+                }
                 $this->setThresholds ($slow, $tooSlow);
         }
-        
+
+        public function setEnabled($enabled = true)
+        {
+                $this->enabled = $enabled;
+        }
+
         public function setThresholds($slow = 0.1, $tooSlow = 0.2)
         {
                 $this->thresholds['error'] = $tooSlow;
@@ -180,13 +202,16 @@ class Debug_Timer extends Obj
          */
         public function formatDuration($duration, $secDigits = 2, $millisecDigits = 3)
         {
-                $secs      = (int)($duration);
-                $millisecs = (int)($duration * 1000 % 1000);
+                $secs         = (int)($duration);
+                $millisecs    = (int)($duration * 1000 % 1000);
+                $millisecs    = substr($millisecs, 0, $millisecDigits);
+                
+                $formatString = "%{$secDigits}.{$secDigits}d.%0{$millisecDigits}.{$millisecDigits}d";
 
-                return sprintf('%0'. $secDigits . '.' . $secDigits . 'd.%0' . $millisecDigits . '.' . $millisecDigits . 'd', $secs, $millisecs);
+                return sprintf($formatString, $secs, $millisecs);
         }
 
-        public function log($message, $duration)
+        protected function log($message, $duration = 0)
         {
                 foreach ($this->thresholds as $func => $threshold)
                 {
@@ -201,16 +226,45 @@ class Debug_Timer extends Obj
                 App::$debug->$func($message);
         }
 
+        public function markEvent($name)
+        {
+                if (!$this->enabled)
+                        return;
+
+                $this->log('MARK ' . $name);
+        }
+        
         public function startEvent($name, $type)
         {
-                $this->pauseStackedEvent();
+                if (!$this->enabled)
+                        return;
 
-                $event = new Debug_TimerEvent($name, $type);
-                array_push($event, $this->eventStack);
+                $now = microtime(true);
+
+                // do we have an event on the stack?
+                // if not, we add an event to track the bootstrap time
+                if (count($this->eventStack) == 0)
+                {
+                        $event = new Debug_TimerEvent('bootstrap', 'bootstrap', $this->startTime);
+                        array_push($this->eventStack, $event);
+                }
+
+                // pause the currently active event
+                $this->pauseStackedEvent($now);
+
+                $event = new Debug_TimerEvent($name, $type, $now);
+                $this->outputStartTimings($event);
+                
+                array_push($this->eventStack, $event);
         }
 
         public function endEvent()
         {
+                if (!$this->enabled)
+                        return;
+
+                $now = microtime(true);
+
                 // do we have an event currently in progress?
                 if (count($this->eventStack) == 0)
                 {
@@ -220,16 +274,19 @@ class Debug_Timer extends Obj
 
                 // handle the event in progress
                 $event = array_pop($this->eventStack);
-                $event->pause();
+                $event->pause($now);
                 $this->updateTypeTimings($event);
-                $this->outputTimings($event);
+                $this->outputEndTimings($event);
 
                 // restart the next event
-                $this->resumeStackedEvent();
+                $this->resumeStackedEvent($now);
         }
 
         public function endAllEvents()
         {
+                if (!$this->enabled)
+                        return;
+
                 while (count($this->eventStack) > 0)
                 {
                         $this->endEvent();
@@ -238,23 +295,27 @@ class Debug_Timer extends Obj
 
         public function summary()
         {
+                if (!$this->enabled)
+                        return;
+
                 $this->endAllEvents();
 
                 // work out how long we have spent doing things
                 $totalDuration = microtime(true) - $this->startTime;
+                $activePercentage = $this->activeDuration / $totalDuration * 100;
 
-                $this->log('FINAL SUMMARY :: Total Time: ' . $this->formatDuration($totalDuration));
+                $this->log('FINAL SUMMARY :: Total Time: ' . $this->formatDuration($totalDuration) . '; Active Time: ' . $this->formatDuration($this->activeDuration) . ' (' . $this->formatDuration($activePercentage, 2, 1) . '%)');
 
                 foreach ($this->eventTypes as $eventType)
                 {
-                        list($duration, $percentage) = $eventType->getDuration();
-                        $this->log('PERCENTAGE: ' . $this->formatDuration($percentage, 2, 1) . '; TIME TAKEN: ' . $this->formatDuration($duration));
+                        list($duration, $percentage) = $eventType->getDuration($totalDuration);
+                        $this->log('-- TIME TAKEN: ' . $this->formatDuration($duration) . ' (' . $this->formatDuration($percentage, 2, 1) . '%); TYPE ' . $eventType->type);
                 }
 
-                $this->log('FINAL SUMMARY :: Total Time: ' . $this->formatDuration($totalDuration));
+                $this->log('FINAL SUMMARY :: Total Time: ' . $this->formatDuration($totalDuration) . '; Active Time: ' . $this->formatDuration($this->activeDuration) . ' (' . $this->formatDuration($activePercentage, 2, 1) . '%)');
         }
 
-        public function pauseStackedEvent()
+        protected function pauseStackedEvent($now)
         {
                 if (count($this->eventStack) == 0)
                 {
@@ -262,11 +323,11 @@ class Debug_Timer extends Obj
                 }
 
                 $event = array_pop($this->eventStack);
-                $event->pause();
-                array_push($event, $this->eventStack);
+                $event->pause($now);
+                array_push($this->eventStack, $event);
         }
 
-        public function resumeStackedEvent()
+        protected function resumeStackedEvent($now)
         {
                 if (count($this->eventStack) == 0)
                 {
@@ -274,11 +335,11 @@ class Debug_Timer extends Obj
                 }
 
                 $event = array_pop($this->eventStack);
-                $event->resume();
-                array_push($event, $this->eventStack);
+                $event->resume($now);
+                array_push($this->eventStack, $event);
         }
 
-        public function updateTypeTimings(Debug_TimerEvent $event)
+        protected function updateTypeTimings(Debug_TimerEvent $event)
         {
                 $type = $event->type;
                 if (!isset($this->eventTypes[$type]))
@@ -286,18 +347,38 @@ class Debug_Timer extends Obj
                         $this->eventTypes[$type] = new Debug_TimerType($type);
                 }
 
-                $this->eventsType[$type]->addDuration($event);
+                $this->eventTypes[$type]->addDuration($event);
+                
+                //list($totalDuration, $percentage) = $this->eventTypes[$type]->getDuration(microtime(true));
+                //$this->log('Event ' . $type . ' now has duration ' . $totalDuration);
         }
 
-        public function outputTimings(Debug_TimerEvent $event)
+        public function getTimingPrefix()
+        {
+                $timeSoFar = microtime(true) - $this->startTime;
+                $out  = 'TIME SO FAR: ' . $this->formatDuration($timeSoFar) . '; '
+                      . str_repeat('--', count($this->eventStack)) . ' ';
+
+                return $out;
+        }
+
+        protected function outputStartTimings(Debug_TimerEvent $event)
+        {
+                $out = 'START ' . $event->name;
+                $this->log($out, $event->name);
+        }
+
+        protected function outputEndTimings(Debug_TimerEvent $event)
         {
                 list($totalDuration, $activeDuration) = $event->getDuration();
 
-                $timeSoFar = microtime(true) - $this->startTime;
-                $out  = 'TIME SO FAR: ' . $this->formatDuration($timeSoFar) . '; ';
-                $out .= 'DURATION: ' . $this->formatDuration($duration) . '; ';
+                $out  = 'END ' . $event->name . '; ';
+                $out .= 'DURATION: ' . $this->formatDuration($totalDuration) . '; ';
+                $out .= 'ACTIVE: ' . $this->formatDuration($activeDuration);
 
-                $this->log($out . $event->name, $totalDuration);
+                $this->activeDuration += $activeDuration;
+
+                $this->log($out, $totalDuration);
         }
 }
 
@@ -315,25 +396,34 @@ class Debug_TimerEvent
         /**
          * Create a new event
          */
-        public function __construct($name, $type)
+        public function __construct($name, $type, $startTime)
         {
-                $this->startTime  = microtime(true);
-                $this->resumeTime = $this->startTime;
+                $this->setStartTime($startTime);
 
                 $this->name = $name;
                 $this->type = $type;
         }
 
-        public function pause()
+        public function setStartTime($startTime)
         {
-                $this->duration += (microtime(true) - $this->resumeTime);
+                $this->startTime  = $startTime;
+                $this->resumeTime = $startTime;
+        }
+        
+        public function pause($now)
+        {
+                $this->duration += ($now - $this->resumeTime);
                 $this->paused = true;
+
+//                App::$debug->info ('Pausing ' . $this->name . ' with duration ' . $this->duration);
         }
 
-        public function resume()
+        public function resume($now)
         {
                 $this->paused     = false;
-                $this->resumeTime = microtime(true);
+                $this->resumeTime = $now;
+
+//                App::$debug->info('Resuming ' . $this->name);
         }
 
         public function getDuration()
@@ -364,16 +454,15 @@ class Debug_TimerType
 
         public function addDuration(Debug_TimerEvent $event)
         {
-                list($totalDuration, $activeDuration) = $event->duration();
-                $this->duration .= $activeDuration;
+                list($totalDuration, $activeDuration) = $event->getDuration();
+                $this->duration += $activeDuration;
         }
         
         public function getDuration($totalDuration)
         {
-                $percentage = round($totalDuration / $this->duration * 100, 2);
+                $percentage = round(($this->duration / $totalDuration) * 100, 2);
                 return array($this->duration, $percentage);
         }
-
-
 }
+
 ?>
