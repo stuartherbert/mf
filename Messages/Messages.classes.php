@@ -24,7 +24,8 @@
 // 2009-06-07   SLH     Moved Messages class into own component
 // 2009-06-10   SLH     Added Messages::addErrorForField()
 // 2009-06-10   SLH     Added Messages::addMessageForField()
-// 2009-06-10   SLH     Fixxed Messages::getErrorCount()
+// 2009-06-10   SLH     Fixed Messages::getErrorCount()
+// 2009-07-26   SLH     Added Messages::getHasErrors()
 // ========================================================================
 
 class Messages extends Obj
@@ -80,6 +81,14 @@ class Messages extends Obj
         public function getErrorCount()
         {
                 return count($this->errors);
+        }
+
+        public function getHasErrors()
+        {
+                if (count($this->errors) > 0)
+                {
+                        return true;
+                }
         }
 
         public function getErrorsForField($field)
