@@ -20,11 +20,13 @@
 // When         Who     What
 // ------------------------------------------------------------------------
 // 2009-05-22   SLH     Created
+// 2009-07-26   SLH     Replaced XHTML functions with XHTML class, for
+//                      better auto-completion support in Netbeans
 // ========================================================================
 
 $componentDir  = dirname(__FILE__) . DIRECTORY_SEPARATOR;
 $componentName = 'XHTML';
 
-require_once($componentDir . $componentName . '.funcs.php');
+require_once($componentDir . $componentName . '.classes.php');
 
 ?>
