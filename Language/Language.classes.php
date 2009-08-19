@@ -23,6 +23,8 @@
 // 2009-07-08	SLH	Added Language_Translations
 // 2009-07-15	SLH	Fixes for Language_Translations
 // 2009-07-26   SLH     Added Language_Manager::getCurrentLanguageName()
+// 2009-08-19   SLH     Added ability to load language files without
+//                      having first loaded the module's inc file
 // ========================================================================
 
 class Language_Manager extends Obj
@@ -121,6 +123,75 @@ class Language_Manager extends Obj
 		$this->languages[$language]->setPathToTranslations($module, $includeFile);
 	}
 
+        protected function autoloadTranslationsForModule($module)
+        {
+                // we try to load translations from the app first
+                // and then look in mf/ if we've had no luck
+                if (!$this->findTranslationsForModule($module, APP_LIBDIR . '/' . $module))
+                {
+                        $this->findTranslationsForModule($module, MF_LIBDIR . '/' . $module);
+                }
+        }
+
+        protected function findTranslationsForModule($module, $pathToDir)
+        {
+                App::$debug->info(__METHOD__ . ':: looking in ' . $pathToDir . ' for translations');
+
+                // how many language files can we find?
+                $dh = @dir($pathToDir);
+                if (!$dh)
+                {
+                        return false;
+                }
+
+                // have we found any translations?
+                $found = false;
+
+                while ($file = $dh->read())
+                {
+                        // App::$debug->info('Looking at file ' . $file);
+
+                        $fileParts = explode('.', $file);
+                        if ($fileParts[0] != $module)
+                        {
+                                // App::$debug->info('Rejected file ' . $file . '; first part not module name');
+                                continue;
+                        }
+                        if ($fileParts[1] != 'lang')
+                        {
+                                // App::$debug->info('Reject file ' . $file . '; second part not "lang"');
+                                continue;
+                        }
+                        if ($fileParts[3] != 'php')
+                        {
+                                // App::$debug->info('Reject file ' . $file . '; fourth part not "php"');
+                                continue;
+                        }
+                        if (isset($fileParts[4]))
+                        {
+                                // App::$debug->info('Reject file ' . $file . '; filename does not end in .php');
+                                continue;
+                        }
+
+                        // make sure we are loading an actual file
+                        if (!is_file($pathToDir . '/' . $file))
+                        {
+                                // App::$debug->info('Reject file ' . $file . '; not an actual file');
+                                continue;
+                        }
+
+                        // we have found a language file ...
+                        // make a note of it
+                        $this->moduleSpeaks($module, $pathToDir, $fileParts[2]);
+
+                        $found = true;
+                }
+
+                $dh->close();
+
+                return $found;
+        }
+
         public function addTranslationsForModule($module, $language, $translations)
         {
                 constraint_mustBeArray($translations);
@@ -144,15 +215,22 @@ class Language_Manager extends Obj
          */
         public function getTranslation($module, $stringName)
         {
-                // step 1 - get the translation from the app's current
+                // step 1 - do we have a translation for this string?
+                if (!$this->currentLanguage->hasTranslationsForModule($module))
+                {
+                        // we need to autoload the translations
+                        $this->autoloadTranslationsForModule($module);
+                }
+
+                // step 2 - get the translation from the app's current
                 //          language
                 $return = $this->currentLanguage->getTranslation($module, $stringName);
                 if ($return)
                 {
                         return $return;
                 }
-                
-                // step 2 - check the default language strings if the string
+
+                // step 3 - check the default language strings if the string
                 //          we seek hasn't been translated for the app's
                 //          current language
                 $return = $this->defaultLanguage->getTranslation($module, $stringName);
@@ -207,15 +285,27 @@ class Language_Translations extends Obj
 		$this->translations[$module] = array_merge($translations, $this->translations[$module]);
 	}
 
+        public function hasTranslationsForModule($module)
+        {
+                if (!isset($this->translations[$module]))
+                {
+                        return false;
+                }
+
+                return true;
+        }
+
 	public function getTranslation($module, $name)
 	{
                 App::$debug->info("Looking for translation for $module::$name");
                 
 		// do we know anything about this module?
-		if (!isset($this->translations[$module]))
+		if (!$this->hasTranslationsForModule($module))
 		{
                         App::$debug->warn("Unknown translation $module");
-			// no we do not, so bail
+			// no we do not
+                        // bail out
+
 			return false;
 		}
 
