@@ -27,6 +27,7 @@
 // 2009-07-26   SLH     Added XHTML::tag() and removed XHTML::tag_p()
 // 2009-07-26   SLH     XHTML::tag_*() now re-use underlying tag();
 //                      added $attr parameters for increased flexibility
+// 2009-08-19   SLH     Added XHTML::tag_routeLinkWithRawText()
 // ========================================================================
 
 class XHTML
@@ -281,8 +282,27 @@ class XHTML
         }
 
         /**
+         * Create a xhtml a tag using our table of routes
+         *
+         * @param string $text the already-translated text to use
+         * @param string $name the name of the route to link to
+         * @param array $params any parameters required by the route
+         * @param array $attr any additional attributes to add to the tag
+         * @return string the XHTML to send to the browser
+         */
+        static public function tag_routeLinkWithRawText ($text, $name, $params = array(), $attr = array())
+        {
+                $route = App::$routes->findByName($name);
+                $text  = XHTML::escapeOutput($text);
+
+                $attr['href'] = $route->toUrl($params);
+
+                return self::tag('a', $attr, $text);
+        }
+
+        /**
          * Create the XHTML to link to a named route, but using text that
-         * we choose instead of the route's default text
+         * has already been translated
          *
          * @param string $module which module has the translation for this link?
          * @param string $message the name of the translation for this link
@@ -292,7 +312,7 @@ class XHTML
          * @param array  $attr any additional attributes for the XHTML <a> tag
          * @return string the XHTML to send to the browser
          */
-        static public function tag_routeLinkWithText ($module, $message, $messageParams, $routeName, $params = array(), $attr = array())
+        static public function tag_routeLinkWithText ($text, $routeName, $params = array(), $attr = array())
         {
                 $route = App::$routes->findByName($routeName);
                 $text  = XHTML::escapeOutput(XHTML::translation($module, $message, $messageParams));
