@@ -68,6 +68,7 @@
 // 2009-05-20   SLH     Updated to work with latest changes to Model
 // 2009-05-23   SLH     No longer needs Core to help w/ calling methods
 // 2009-05-23   SLH     Fix for missing storageMap member of Datastore
+// 2009-09-15	SLH	Model renamed to DataModel
 // ========================================================================
 
 // ========================================================================
@@ -176,7 +177,7 @@ class Datastore extends Obj
         // Support for associating a model with a datastore
         // ----------------------------------------------------------------
 
-        public function getNewDatastoreProxy(Model $oModel)
+        public function getNewDatastoreProxy(DataModel $oModel)
         {
                 return $this->oConnector->getNewDatastoreProxy($oModel);
         }
@@ -483,22 +484,22 @@ class Datastore_BaseStatement
                 $this->oConnector = $oConnector;
         }
 
-        public function beCreateStatement(Model_Definition $oDef, Datastore_StorageMap $oMap)
+        public function beCreateStatement(DataModel_Definition $oDef, Datastore_StorageMap $oMap)
         {
         	throw new Datastore_E_OperationNotSupported('create');
         }
 
-        public function beRetrieveStatement(Model_Definition $oDef, Datastore_StorageMap $oMap, $retrieveField, $view)
+        public function beRetrieveStatement(DataModel_Definition $oDef, Datastore_StorageMap $oMap, $retrieveField, $view)
         {
         	throw new Datastore_E_OperationNotSupported('retrieve');
         }
 
-        public function beUpdateStatement(Model_Definition $oDef, Datastore_StorageMap $oMap)
+        public function beUpdateStatement(DataModel_Definition $oDef, Datastore_StorageMap $oMap)
         {
         	throw new Datastore_E_OperationNotSupported('update');
         }
 
-        public function beDeleteStatement(Model_Definition $oDef, Datastore_StorageMap $oMap)
+        public function beDeleteStatement(DataModel_Definition $oDef, Datastore_StorageMap $oMap)
         {
         	throw new Datastore_E_OperationNotSupported('delete');
         }
@@ -529,7 +530,7 @@ class Datastore_Passthru_Statement extends Datastore_BaseStatement
         protected $operation    = array();
         protected $returnRows   = false;
 
-        public function beCreateStatement(Model_Definition $oDef)
+        public function beCreateStatement(DataModel_Definition $oDef)
         {
                 $this->operation['type']  = Datastore_Passthru_Statement::CREATE;
                 $this->operation['model'] = $oDef;
@@ -537,7 +538,7 @@ class Datastore_Passthru_Statement extends Datastore_BaseStatement
                 $this->returnRows         = false;
         }
 
-        public function beRetrieveStatement(Model_Definition $oDef, $retrieveField, $view)
+        public function beRetrieveStatement(DataModel_Definition $oDef, $retrieveField, $view)
         {
                 $this->operation['type']          = Datastore_Passthru_Statement::RETRIEVE;
                 $this->operation['model']         = $oDef;
@@ -547,7 +548,7 @@ class Datastore_Passthru_Statement extends Datastore_BaseStatement
                 $this->returnRows                 = true;
         }
 
-        public function beUpdateStatement(Model_Definition $oDef)
+        public function beUpdateStatement(DataModel_Definition $oDef)
         {
                 $this->operation['type']  = Datastore_Passthru_Statement::UPDATE;
                 $this->operation['model'] = $oDef;
@@ -555,7 +556,7 @@ class Datastore_Passthru_Statement extends Datastore_BaseStatement
                 $this->returnRows         = false;
         }
 
-        public function beDeleteStatement(Model_Definition $oDef)
+        public function beDeleteStatement(DataModel_Definition $oDef)
         {
                 $this->operation['type']  = Datastore_Passthru_Statement::DELETE;
                 $this->operation['model'] = $oDef;
@@ -692,7 +693,7 @@ class Datastore_BaseConnector
                 return $this->aDetails;
         }
 
-        public function getNewDatastoreProxy(Model $oModel)
+        public function getNewDatastoreProxy(DataModel $oModel)
         {
                 $proxyClass = $this->proxyClass;
                 return new $proxyClass($oModel);
@@ -730,10 +731,10 @@ class Datastore_Record extends Obj
         protected $storageHint                  = Datastore::HINT_UNKNOWN;
 
         // ================================================================
-        // All the functionality aggregated from the Model that we are
+        // All the functionality aggregated from the DataModel that we are
         // encapsulating
 
-        public function __construct(Model $oModel)
+        public function __construct(DataModel $oModel)
         {
                 $this->oModel = $oModel;
         }
@@ -1456,7 +1457,7 @@ class Datastore_Query
                 {
                 	$model = $record->oModel;
                 }
-                else if ($record instanceof Model)
+                else if ($record instanceof DataModel)
                 {
                 	$model = $record;
                 }
@@ -1468,7 +1469,7 @@ class Datastore_Query
                 $oRelationship     = $model->getDefinition()->getRelationship($alias);
                 $modelNameToFind   = $oRelationship->getTheirModelName();
 
-                $this->currentView = Model_Definitions::get($modelNameToFind)->getView($view);
+                $this->currentView = DataModel_Definitions::get($modelNameToFind)->getView($view);
 
                 if ($oRelationship->hasOne())
                 {
@@ -1539,17 +1540,17 @@ class Datastore_Query
                 // we want to store the view
                 if (is_string($model))
                 {
-                        $this->currentView = Model_Definitions::get($model)->getView($view);
+                        $this->currentView = DataModel_Definitions::get($model)->getView($view);
                 }
                 else if ($model instanceof Datastore_Record)
                 {
                 	$this->currentView = $model->getDefinition()->getView($view);
                 }
-                else if ($model instanceof Model)
+                else if ($model instanceof DataModel)
                 {
                         $this->currentView = $model->getDefinition()->getView($view);
                 }
-                else if ($model instanceof Model_View)
+                else if ($model instanceof DataModel_View)
                 {
                         $this->currentView = $model;
                 }
@@ -1618,7 +1619,7 @@ class Datastore_Query
         {
         	$oRelationship = $this->currentView->oDef->getRelationship($alias);
                 $theirModelName = $oRelationship->getTheirModelName();
-                $theirModelDef  = Model_Definitions::get($theirModelName);
+                $theirModelDef  = DataModel_Definitions::get($theirModelName);
 
                 $this->searchTerms[] = array
                 (
@@ -1647,7 +1648,7 @@ class Datastore_Query
         {
         	$oRelationship = $this->currentView->oDef->getRelationship($alias);
                 $theirModelName = $oRelationship->getTheirModelName();
-                $theirModelDef  = Model_Definitions::get($theirModelName);
+                $theirModelDef  = DataModel_Definitions::get($theirModelName);
 
                 $this->searchTerms[] = array
                 (
@@ -1693,13 +1694,13 @@ class Datastore_Query
         {
         	if (is_string($model))
                 {
-                	$oDef = Model_Definitions::get($model);
+                	$oDef = DataModel_Definitions::get($model);
                 }
                 else if ($model instanceof Datastore_Record)
                 {
                 	$oDef = $model->getDefinition();
                 }
-                else if ($model instanceof Model)
+                else if ($model instanceof DataModel)
                 {
                 	$oDef = $model->getDefinition();
                 }

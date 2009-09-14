@@ -2,7 +2,7 @@
 
 // ========================================================================
 //
-// Model/Model.classes.php
+// DataModel/DataModel.classes.php
 //              Classes for defining data models
 //
 //              Part of the Methodosity Framework for PHP applications
@@ -67,9 +67,10 @@
 //                      added to Obj
 // 2009-06-03   SLH     Added Model_View::getName()
 // 2009-06-04   SLH     Updated to support latest mixin API
+// 2009-09-15	SLH	Renamed Model to DataModel
 // ========================================================================
 
-class Model extends Obj
+class DataModel extends Obj
 implements Iterator
 {
         protected $aData                = array();
@@ -86,7 +87,7 @@ implements Iterator
         const     MERGE_DATA            = 2;
         const     DATA_END              = 3;
 
-        public function __construct ($modelName = null, $aData = null, $dataAction = Model::REPLACE_DATA)
+        public function __construct ($modelName = null, $aData = null, $dataAction = DataModel::REPLACE_DATA)
         {
                 if ($modelName == null)
                 {
@@ -129,8 +130,8 @@ implements Iterator
                 }
                 if ($oDef === null)
                 {
-              	        $oDef = Model_Definitions::get($modelName);
-                        Model_Definitions::registerCache($this, $modelName);
+              	        $oDef = DataModel_Definitions::get($modelName);
+                        DataModel_Definitions::registerCache($this, $modelName);
                 }
 
                 return $oDef;
@@ -221,11 +222,11 @@ implements Iterator
          * set all the fields of this record in one go
          */
 
-        public function setFields ($mData, $dataAction = Model::REPLACE_DATA)
+        public function setFields ($mData, $dataAction = DataModel::REPLACE_DATA)
         {
                 $this->requireWriteable();
 
-                if ($mData instanceof Model)
+                if ($mData instanceof DataModel)
                 {
                 	$aData = $mData->getData();
                 }
@@ -234,16 +235,16 @@ implements Iterator
                 	$aData =& $mData;
                 }
                 constraint_mustBeArray($aData);
-                constraint_mustBeGreaterThan($dataAction, Model::DATA_START);
-                constraint_mustBeLessThan($dataAction, Model::DATA_END);
+                constraint_mustBeGreaterThan($dataAction, DataModel::DATA_START);
+                constraint_mustBeLessThan($dataAction, DataModel::DATA_END);
 
                 switch ($dataAction)
                 {
-                        case Model::REPLACE_DATA:
+                        case DataModel::REPLACE_DATA:
                                 $this->replaceDataWithArray($aData);
                                 break;
 
-                        case Model::MERGE_DATA:
+                        case DataModel::MERGE_DATA:
                                 $this->mergeDataFromArray($aData);
                                 break;
 
@@ -369,7 +370,7 @@ implements Iterator
                 $parts = explode('_', $fieldName);
                 if (count($parts) == 1)
                 {
-                        throw new Model_E_NoSuchField($fieldName, $oDef->getModelName());
+                        throw new DataModel_E_NoSuchField($fieldName, $oDef->getModelName());
                 }
 
                 $lastPart = count($parts) - 1;
@@ -472,7 +473,7 @@ implements Iterator
         }
 
         /**
-         * This method should only be called by Model, its subclasses and
+         * This method should only be called by DataModel, its subclasses and
          * any model extensions
          *
          * @param string $fieldName
@@ -490,7 +491,7 @@ implements Iterator
         }
 
         /**
-         * This method should only be called by Model, its subclasses and
+         * This method should only be called by DataModel, its subclasses and
          * any model extensions
          *
          * @param string $fieldName
@@ -509,7 +510,7 @@ implements Iterator
         }
 
         /**
-         * This method should only be called by Model, its subclasses and
+         * This method should only be called by DataModel, its subclasses and
          * any model extensions
          *
          * @param string $fieldName
@@ -813,7 +814,7 @@ implements Iterator
         {
                 if ($this->readOnly === true)
                 {
-                        throw new Model_E_IsReadOnly($this);
+                        throw new DataModel_E_IsReadOnly($this);
                 }
         }
 
@@ -875,7 +876,7 @@ implements Iterator
                 // the conditions
                 if ($aConditions[$aMap['theirField']] === null)
                 {
-                        throw new Model_E_ExpectedFieldValue($aMap['ourField']);
+                        throw new DataModel_E_ExpectedFieldValue($aMap['ourField']);
                 }
 
                 return $aConditions;
@@ -896,7 +897,7 @@ implements Iterator
                 // the conditions
                 if ($aConditions[$aMap['ourField']] === null)
                 {
-                        throw new Model_E_ExpectedFieldValue($aMap['theirField']);
+                        throw new DataModel_E_ExpectedFieldValue($aMap['theirField']);
                 }
 
                 return $aConditions;
@@ -932,19 +933,19 @@ implements Iterator
         }
 }
 
-final class Model_Definitions implements Events_Listener
+final class DataModel_Definitions implements Events_Listener
 {
         static private $aInstances = array();
         static private $aCaches    = array();
 
         static public function get($name)
         {
-                // echo " Model_Definitions::get($name) ... ";
+                // echo " DataModel_Definitions::get($name) ... ";
 
                 if (!isset(self::$aInstances[$name]))
                 {
                         // echo " returning new definition\n";
-                        self::$aInstances[$name] = new Model_Definition($name);
+                        self::$aInstances[$name] = new DataModel_Definition($name);
                 }
                 else
                 // {
@@ -963,7 +964,7 @@ final class Model_Definitions implements Events_Listener
 
                 if (!isset(self::$aInstances[$name]))
                 {
-                        throw new Model_E_NoSuchDefinition($name);
+                        throw new DataModel_E_NoSuchDefinition($name);
                 }
 
                 return self::$aInstances[$name];
@@ -980,7 +981,7 @@ final class Model_Definitions implements Events_Listener
 
         static public function destroy($name = null)
         {
-                // echo " Model_Definitions::destroy($name) \n";
+                // echo " DataModel_Definitions::destroy($name) \n";
                 // are we resetting all definitions?
                 if ($name === null)
                 {
@@ -1022,7 +1023,7 @@ final class Model_Definitions implements Events_Listener
 
         static public function listenToModelExtended($extensionClass, $modelName)
         {
-                // var_dump('Model_Definitions::listenToModelExtended() called');
+                // var_dump('DataModel_Definitions::listenToModelExtended() called');
                 // a model has just been extended
 
                 // now, give the extension a chance to add new fields to
@@ -1034,12 +1035,12 @@ final class Model_Definitions implements Events_Listener
 }
 
 // tell the Events mechanism that we need to be kept in the loop ..
-Events_Manager::listensToEvents('Model_Definitions');
+Events_Manager::listensToEvents('DataModel_Definitions');
 
 // ========================================================================
 // ------------------------------------------------------------------------
 
-class Model_Definition
+class DataModel_Definition
 {
         protected $primaryKeys          = null;
         protected $autoPrimaryKey       = true;
@@ -1123,7 +1124,7 @@ class Model_Definition
                 {
                         if (!$this->isValidFieldName($field))
                         {
-                                throw new Model_E_NoSuchField($field, $this->getModelName());
+                                throw new DataModel_E_NoSuchField($field, $this->getModelName());
                         }
                         $this->primaryKeys[$field] = $field;
                 }
@@ -1140,13 +1141,13 @@ class Model_Definition
 
         public function addField ($name)
         {
-                return $this->addFieldFromSource($name, Model_Definition::SOURCE_DB);
+                return $this->addFieldFromSource($name, DataModel_Definition::SOURCE_DB);
         }
 
         public function addFieldFromSource($name, $source)
         {
 	        // create the field
-                $oField = new Model_FieldDefinition($this, $name);
+                $oField = new DataModel_FieldDefinition($this, $name);
                 $oField->fromSource($source);
 
                 // add it to our list
@@ -1162,7 +1163,7 @@ class Model_Definition
 
         public function addFakeField($fieldName)
         {
-                return $this->addFieldFromSource($fieldName, Model_Definition::SOURCE_NON_DB);
+                return $this->addFieldFromSource($fieldName, DataModel_Definition::SOURCE_NON_DB);
         }
 
         public function getField ($name)
@@ -1188,9 +1189,9 @@ class Model_Definition
         }
 
         // ----------------------------------------------------------------
-        // this should only be called from Model_FieldDefinition
+        // this should only be called from DataModel_FieldDefinition
 
-        public function setFieldSource (Model_FieldDefinition $oField, $source)
+        public function setFieldSource (DataModel_FieldDefinition $oField, $source)
         {
                 // add the required data to the definition
                 $name = $oField->getName();
@@ -1199,8 +1200,8 @@ class Model_Definition
 
         public function getFieldsBySource($source)
         {
-                constraint_mustBeGreaterThan($source, Model_Definition::SOURCE_START);
-                constraint_mustBeLessThan($source, Model_Definition::SOURCE_END);
+                constraint_mustBeGreaterThan($source, DataModel_Definition::SOURCE_START);
+                constraint_mustBeLessThan($source, DataModel_Definition::SOURCE_END);
 
                 return $this->aFieldsBySource[$source];
         }
@@ -1242,7 +1243,7 @@ class Model_Definition
                 return $this->aMandatoryFields;
         }
 
-        public function setMandatoryField(Model_FieldDefinition $oField)
+        public function setMandatoryField(DataModel_FieldDefinition $oField)
         {
                 $this->aMandatoryFields[$oField->getName()] = $oField;
         }
@@ -1273,7 +1274,7 @@ class Model_Definition
 
                 if (!isset($this->aFields[$field]))
                 {
-                        throw new Model_E_NoSuchField($field, $this->getModelName());
+                        throw new DataModel_E_NoSuchField($field, $this->getModelName());
                 }
         }
 
@@ -1291,7 +1292,7 @@ class Model_Definition
                 }
                 catch (Exception $e)
                 {
-                        throw new Model_E_ForeignKeyNotDefined($this->getModelName(), $alias);
+                        throw new DataModel_E_ForeignKeyNotDefined($this->getModelName(), $alias);
                 }
 
                 $map['ourFields']   = $oRelationship->getOurFields();
@@ -1355,7 +1356,7 @@ class Model_Definition
                         // var_dump($this);
                         // var_dump($oDef);
 
-                        throw new Model_E_IncompatibleDefinition
+                        throw new DataModel_E_IncompatibleDefinition
                         (
                                 $this->modelClassName,
                                 $oDef->getModelName(),
@@ -1405,7 +1406,7 @@ class Model_Definition
         {
                 constraint_mustBeString($view);
 
-                $oView = new Model_View($this, $view);
+                $oView = new DataModel_View($this, $view);
                 $this->aViews[$view] = $oView;
 
                 return $oView;
@@ -1421,7 +1422,7 @@ class Model_Definition
         {
                 if (!isset($this->aViews[$view]))
                 {
-                        throw new Model_E_NoSuchView($this->getModelName(), $view);
+                        throw new DataModel_E_NoSuchView($this->getModelName(), $view);
                 }
         }
 
@@ -1443,7 +1444,7 @@ class Model_Definition
         {
                 constraint_mustBeString($alias);
 
-                $oRelationship = new Model_Relationship($this);
+                $oRelationship = new DataModel_Relationship($this);
                 $oRelationship->hasOne($alias);
 
                 $this->addRelationship($oRelationship, $alias);
@@ -1452,11 +1453,11 @@ class Model_Definition
 
         public function doesHaveOne($oRecordB)
         {
-                if ($oRecordB instanceof Model_Base)
+                if ($oRecordB instanceof DataModel_Base)
                 {
                         $theirRecord = $oRecordB->oDef->getModelName();
                 }
-                else if ($oRecordB instanceof Model_Definition)
+                else if ($oRecordB instanceof DataModel_Definition)
                 {
                         $theirRecord = $a_oRecordB->getModelName();
                 }
@@ -1493,7 +1494,7 @@ class Model_Definition
         {
                 constraint_mustBeString($alias);
 
-                $oRelationship = new Model_Relationship($this);
+                $oRelationship = new DataModel_Relationship($this);
                 $oRelationship->hasMany($alias);
 
                 $this->addRelationship($oRelationship, $alias);
@@ -1503,11 +1504,11 @@ class Model_Definition
 
         public function doesHaveMany($oRecordB)
         {
-                if ($oRecordB instanceof Model_Base)
+                if ($oRecordB instanceof DataModel_Base)
                 {
                         $theirRecord = $oRecordB->oDef->getModelName();
                 }
-                else if ($oRecordB instanceof Model_Definition)
+                else if ($oRecordB instanceof DataModel_Definition)
                 {
                         $theirRecord = $a_oRecordB->getModelName();
                 }
@@ -1531,7 +1532,7 @@ class Model_Definition
         }
 
         // ----------------------------------------------------------------
-        // this method should only be called by the Model_Relationship
+        // this method should only be called by the DataModel_Relationship
         // class
 
         protected function addRelationship($oRelationship, $alias)
@@ -1577,18 +1578,18 @@ class Model_Definition
 // ========================================================================
 // ------------------------------------------------------------------------
 
-class Model_FieldDefinition
+class DataModel_FieldDefinition
 {
         protected $name                 = null;
         protected $oType                = null;
-        protected $source               = Model_Definition::SOURCE_DB;
+        protected $source               = DataModel_Definition::SOURCE_DB;
         protected $mandatory            = false;
         protected $validateMethod       = false;
         protected $defaultValue         = null;
 
         protected $modelName            = null;
 
-        public function __construct(Model_Definition $oDef, $fieldName)
+        public function __construct(DataModel_Definition $oDef, $fieldName)
         {
                 constraint_mustBeString($fieldName);
                 $this->name = $fieldName;
@@ -1597,7 +1598,7 @@ class Model_FieldDefinition
 
                 // we must always have a type
                 // users can override this if they wish
-                $this->oType = new Model_Type_Generic();
+                $this->oType = new DataModel_Type_Generic();
         }
 
         // ================================================================
@@ -1616,7 +1617,7 @@ class Model_FieldDefinition
 
         // ----------------------------------------------------------------
 
-        public function asType(Model_Type $oType)
+        public function asType(DataModel_Type $oType)
         {
                 $this->oType = $oType;
                 $oDef->updateDispatchMapFromType($this->name, $this->oType);
@@ -1628,13 +1629,13 @@ class Model_FieldDefinition
 
         public function fromSource($source)
         {
-                constraint_mustBeGreaterThan($source, Model_Definition::SOURCE_START);
-                constraint_mustBeLessThan($source, Model_Definition::SOURCE_END);
+                constraint_mustBeGreaterThan($source, DataModel_Definition::SOURCE_START);
+                constraint_mustBeLessThan($source, DataModel_Definition::SOURCE_END);
 
                 $this->source = $source;
 
                 // update the cache that Datastore_MetaRecord holds
-                $oDef = Model_Definitions::getIfExists($this->modelName);
+                $oDef = DataModel_Definitions::getIfExists($this->modelName);
                 $oDef->setFieldSource($this, $source);
         }
 
@@ -1647,7 +1648,7 @@ class Model_FieldDefinition
                 $this->mandatory = true;
 
                 // update the cache that Datastore_MetaRecord holds
-                $oDef = Model_Definitions::getIfExists($this->modelName);
+                $oDef = DataModel_Definitions::getIfExists($this->modelName);
                 $oDef->setMandatoryField($this);
         }
 
@@ -1726,7 +1727,7 @@ class Model_FieldDefinition
         {
                 if (!$this->hasEscaper($escaper))
                 {
-                        throw new Model_E_NoSuchEscaper(get_class($this->oType), $escaper);
+                        throw new DataModel_E_NoSuchEscaper(get_class($this->oType), $escaper);
                 }
         }
 
@@ -1740,7 +1741,7 @@ class Model_FieldDefinition
 // ========================================================================
 // ------------------------------------------------------------------------
 
-class Model_Relationship
+class DataModel_Relationship
 {
         // ================================================================
         // HAS_* CONSTANTS
@@ -1824,7 +1825,7 @@ class Model_Relationship
         // Constructor
         // ================================================================
 
-        public function __construct(Model_Definition $ourModelDef)
+        public function __construct(DataModel_Definition $ourModelDef)
         {
                 $this->ourModelDef = $ourModelDef;
         }
@@ -1845,12 +1846,12 @@ class Model_Relationship
         {
                 if ($this->relationship === null)
                 {
-                        $this->relationship = Model_Relationship::HAS_ONE;
+                        $this->relationship = DataModel_Relationship::HAS_ONE;
                         return $this;
                 }
                 else
                 {
-                	return $this->relationship & Model_Relationship::HAS_ONE;
+                	return $this->relationship & DataModel_Relationship::HAS_ONE;
                 }
         }
 
@@ -1866,12 +1867,12 @@ class Model_Relationship
         {
                 if ($this->relationship === null)
                 {
-                        $this->relationship = Model_Relationship::HAS_MANY;
+                        $this->relationship = DataModel_Relationship::HAS_MANY;
                         return $this;
                 }
                 else
                 {
-                	return $this->relationship & Model_Relationship::HAS_MANY;
+                	return $this->relationship & DataModel_Relationship::HAS_MANY;
                 }
         }
 
@@ -1879,11 +1880,11 @@ class Model_Relationship
         {
                 if ($this->relationship === null)
                 {
-                        $this->relationship = Model_Relationship::MANY_TO_MANY;
+                        $this->relationship = DataModel_Relationship::MANY_TO_MANY;
                         return false;
                 }
 
-                return $this->relationship & Model_Relationship::MANY_TO_MANY;
+                return $this->relationship & DataModel_Relationship::MANY_TO_MANY;
         }
         
         // ================================================================
@@ -1966,7 +1967,7 @@ class Model_Relationship
 
                 $this->findViaModelName  = $modelName;
                 $this->findViaModelAlias = $modelAlias;
-                $this->relationship      = Model_Relationship::MANY_TO_MANY;
+                $this->relationship      = DataModel_Relationship::MANY_TO_MANY;
 
                 return $this;
         }
@@ -2049,21 +2050,21 @@ class Model_Relationship
                         return;
                 }
 
-                $this->theirModelDef = Model_Definitions::get($this->theirModelName);
+                $this->theirModelDef = DataModel_Definitions::get($this->theirModelName);
         }
 }
 
 // ========================================================================
 // ------------------------------------------------------------------------
 
-class Model_View
+class DataModel_View
 {
         protected $name         = null;
         protected $aFields      = array();
 
         public $oDef = null;
 
-        function __construct(Model_Definition $oDef, $viewName)
+        function __construct(DataModel_Definition $oDef, $viewName)
         {
                 constraint_mustBeString($viewName);
 
@@ -2074,7 +2075,7 @@ class Model_View
         public function withField($fieldName)
         {
                 // the field must be a valid field
-                // Model_Definition::getField() will do the check
+                // DataModel_Definition::getField() will do the check
                 $this->aFields[$fieldName] = $this->oDef->getField($fieldName);
 
                 return $this;
@@ -2107,15 +2108,15 @@ class Model_View
 // ========================================================================
 // ------------------------------------------------------------------------
 
-interface Model_Type
+interface DataModel_Type
 {
         public function getDefaultValue();
         public function filterInput($data);
         public function validateData(&$data);
 }
 
-class Model_Type_Generic extends Obj
-        implements Model_Type
+class DataModel_Type_Generic extends Obj
+        implements DataModel_Type
 {
         public function getDefaultValue()
         {
@@ -2152,9 +2153,9 @@ class Model_Type_Generic extends Obj
 // ========================================================================
 // ------------------------------------------------------------------------
 
-interface Model_Extension
+interface DataModel_Extension
 {
-        static public function extendsModelDefinition(Model_Definition $oDef);
+        static public function extendsModelDefinition(DataModel_Definition $oDef);
 }
 
 ?>

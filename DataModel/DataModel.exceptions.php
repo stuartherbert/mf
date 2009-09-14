@@ -2,8 +2,8 @@
 
 // ========================================================================
 //
-// Model/Model.exceptions.php
-//              Exceptions thrown by the Model component
+// DataModel/DataModel.exceptions.php
+//              Exceptions thrown by the DataModel component
 //
 //              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
@@ -22,20 +22,21 @@
 // 2007-08-11   SLH     Consolidated from separate files
 // 2008-01-06   SLH     Stopped using constants for language strings
 // 2009-05-20   SLH     Added Model_E_NoSuchConvertor
+// 2009-09-15	SLH	Renamed from Model to DataModel
 // ========================================================================
 
-class Model_E_Exception_Technical extends Exception_Technical
+class DataModel_E_Exception_Technical extends Exception_Technical
 {
 }
 
 // ========================================================================
 
-class Model_E_ExpectedFieldValue extends Model_E_Exception_Technical
+class DataModel_E_ExpectedFieldValue extends DataModel_E_Exception_Technical
 {
         function __construct ($fieldName, Exception $oCause = null)
         {
                 parent::__construct (
-                        app_l('Model', 'E_ExpectedFieldValue'),
+                        app_l('DataModel', 'E_ExpectedFieldValue'),
                         array ($fieldName),
                         $oCause
                 );
@@ -44,24 +45,24 @@ class Model_E_ExpectedFieldValue extends Model_E_Exception_Technical
 
 // ========================================================================
 
-class Model_E_ForeignKeyNotDefined extends Model_E_Exception_Technical
+class DataModel_E_ForeignKeyNotDefined extends DataModel_E_Exception_Technical
 {
         function __construct ($myDefinition, $theirDefinition, Exception $oCause = null)
         {
                 parent::__construct (
-                        app_l('Model', 'E_ForeignKeyNotDefined'),
+                        app_l('DataModel', 'E_ForeignKeyNotDefined'),
                         array ($myDefinition, $theirDefinition),
                         $oCause
                 );
         }
 }
 
-class Model_E_IncompatibleDefinition extends Model_E_Exception_Technical
+class DataModel_E_IncompatibleDefinition extends DataModel_E_Exception_Technical
 {
         function __construct($recordName, $actualDefinition, $expectedDefinition, Exception $oCause = null)
         {
                 parent::__construct (
-                        app_l('Model', 'E_IncompatibleDefinition'),
+                        app_l('DataModel', 'E_IncompatibleDefinition'),
                         array
                         (
                                 $recordName,
@@ -75,12 +76,12 @@ class Model_E_IncompatibleDefinition extends Model_E_Exception_Technical
 
 // ========================================================================
 
-class Model_E_IsReadOnly extends Model_E_Exception_Technical
+class DataModel_E_IsReadOnly extends DataModel_E_Exception_Technical
 {
         function __construct($oObject, Exception $oCause = null)
         {
                 parent::__construct (
-                        app_l('Model', 'E_IsReadOnly'),
+                        app_l('DataModel', 'E_IsReadOnly'),
                         array (get_class($oObject)),
                         $oCause
                 );
@@ -89,12 +90,12 @@ class Model_E_IsReadOnly extends Model_E_Exception_Technical
 
 // ========================================================================
 
-class Model_E_NoSuchConvertor extends Model_E_Exception_Technical
+class DataModel_E_NoSuchConvertor extends DataModel_E_Exception_Technical
 {
         function __construct($class, $convertor, Exception $oCause = null)
         {
                 parent::__construct (
-                        app_l('Model', 'E_NoSuchConvertor'),
+                        app_l('DataModel', 'E_NoSuchConvertor'),
                         array ($class, $convertor),
                         $oCause
                 );
@@ -103,31 +104,31 @@ class Model_E_NoSuchConvertor extends Model_E_Exception_Technical
 
 // ========================================================================
 
-class Model_E_NoSuchDefinition extends Model_E_Exception_Technical
+class DataModel_E_NoSuchDefinition extends DataModel_E_Exception_Technical
 {
         function __construct ($definitionName, Exception $oCause = null)
         {
                 parent::__construct (
-                        app_l('Model', 'E_NoSuchDefinition'),
+                        app_l('DataModel', 'E_NoSuchDefinition'),
                         array ($definitionName),
                         $oCause
                 );
         }
 }
 
-class Model_E_NoSuchField extends Model_E_Exception_Technical
+class DataModel_E_NoSuchField extends DataModel_E_Exception_Technical
 {
         function __construct ($field, $definition, Exception $oCause = null)
         {
                 parent::__construct (
-                        app_l('Model', 'E_NoSuchField'),
+                        app_l('DataModel', 'E_NoSuchField'),
                         array ($field, $definition),
                         $oCause
                 );
         }
 }
 
-class Model_E_NoSuchRecordClass extends Model_E_Exception_Technical
+class DataModel_E_NoSuchRecordClass extends DataModel_E_Exception_Technical
 {
         function __construct($className, Exception $oCause = null)
         {
@@ -135,7 +136,7 @@ class Model_E_NoSuchRecordClass extends Model_E_Exception_Technical
                 if ($maybeClassName !== $className && class_exists($maybeClassName))
                 {
                         parent::__construct (
-                                app_l('Model', 'E_NoSuchRecordClass_1'),
+                                app_l('DataModel', 'E_NoSuchRecordClass_1'),
                                 array
                                 (
                                         $className,
@@ -147,7 +148,7 @@ class Model_E_NoSuchRecordClass extends Model_E_Exception_Technical
                 else
                 {
                         parent::__construct (
-                                app_l('Model', 'E_NoSuchRecordClass_2'),
+                                app_l('DataModel', 'E_NoSuchRecordClass_2'),
                                 array
                                 (
                                         $className,
@@ -158,12 +159,12 @@ class Model_E_NoSuchRecordClass extends Model_E_Exception_Technical
         }
 }
 
-class Model_E_NoSuchView extends Model_E_Exception_Technical
+class DataModel_E_NoSuchView extends DataModel_E_Exception_Technical
 {
         function __construct ($modelName, $view, Exception $oCause = null)
         {
                 parent::__construct (
-                        app_l('Model', 'E_NoSuchView'),
+                        app_l('DataModel', 'E_NoSuchView'),
                         array ($view, $modelName),
                         $oCause
                 );

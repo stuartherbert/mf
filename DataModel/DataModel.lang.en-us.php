@@ -2,8 +2,8 @@
 
 // ========================================================================
 //
-// Model/Model.lang.en-us.php
-//              US English language strings for the Model component
+// DataModel/DataModel.lang.en-us.php
+//              US English language strings for the DataModel component
 //
 //              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
@@ -23,9 +23,10 @@
 // 2008-01-06   SLH     Stopped using constants for language strings
 // 2008-02-11   SLH     Foreign language strings now go in APP_CONFIG
 // 2009-03-01   SLH     Foreign language strings now go in Language_Manager
+// 2009-09-15	SLH	Renamed Model to DataModel
 // ========================================================================
 
-App::$languages->addTranslationsForModule('Model', 'en-us', array
+App::$languages->addTranslationsForModule('DataModel', 'en-us', array
 (
         'E_ExpectFieldValue'         => "Expected a value for field '%s', but didn't get one",
         'E_ForeignKeyNotDefined'     => "Foreign key on '%s' for '%s' not defined",

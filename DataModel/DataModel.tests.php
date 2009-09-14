@@ -2,8 +2,8 @@
 
 // ========================================================================
 //
-// Model/Model.tests.php
-//              Tests for the Model component
+// DataModel/DataModel.tests.php
+//              Tests for the DataModel component
 //
 //              Part of the Methodosity Framework for PHP Applications
 //              http://blog.stuartherbert.com/php/mf/
@@ -35,6 +35,7 @@
 //                      support
 // 2009-06-04   SLH     Updated to support latest mixin API
 // 2009-07-10	SLH	Updated to fix test case failures
+// 2009-09-15	SLH	Renamed from Model to DataModel
 // ========================================================================
 
 // bootstrap the framework
@@ -45,58 +46,58 @@ require_once(APP_TOPDIR . '/mf/mf.inc.php');
 // load additional files we explicitly require
 __mf_require_once('Testsuite');
 
-class Test_Model_Requirement extends Model
+class Test_DataModel_Requirement extends DataModel
 {
 
 }
 
-class Test_Model_Project extends Model
+class Test_DataModel_Project extends DataModel
 {
 
 }
 
-class Test_Model_Proposal extends Model
+class Test_DataModel_Proposal extends DataModel
 {
 
 }
 
-class Test_Model_Note extends Model
+class Test_DataModel_Note extends DataModel
 {
 
 }
 
-class Test_Model_Author extends Model
+class Test_DataModel_Author extends DataModel
 {
 
 }
 
-class Test_Model_Note_Author extends Model
+class Test_DataModel_Note_Author extends DataModel
 {
 
 }
 
-class Test_Model_Tag extends Model
+class Test_DataModel_Tag extends DataModel
 {
 
 }
 
-class Test_Model_Note_Tag extends Model
+class Test_DataModel_Note_Tag extends DataModel
 {
 
 }
 
-class Test_Model_User extends Model
+class Test_DataModel_User extends DataModel
 {
 
 }
 
-class Test_Model_User_EmailAddress_Ext
+class Test_DataModel_User_EmailAddress_Ext
         extends Obj_Mixin
-        implements Model_Extension
+        implements DataModel_Extension
 {
-        static public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(DataModel_Definition $oDef)
         {
-                // var_dump('Test_Model_User_EmailAddress_Ext::extendsModelDefinition() called');
+                // var_dump('Test_DataModel_User_EmailAddress_Ext::extendsModelDefinition() called');
                 
                 $oDef->addField('emailAddress');
                 $oDef->addFakeField('hasEmailAddress')
@@ -110,24 +111,24 @@ class Test_Model_User_EmailAddress_Ext
         }
 }
 
-Testsuite_registerTests('Model_Definitions_Tests');
-class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
+Testsuite_registerTests('DataModel_Definitions_Tests');
+class DataModel_Definitions_Tests extends PHPUnit_Framework_TestCase
 {
 	public function setup()
         {
-        	Model_Definitions::destroy();
+        	DataModel_Definitions::destroy();
         }
 
         public function setupDefineModels()
         {
-        	$oDef = Model_Definitions::get('Test_Model_Requirement');
+        	$oDef = DataModel_Definitions::get('Test_DataModel_Requirement');
                 $oDef->addField('requirementsUid');
                 $oDef->addField('title');
                 $oDef->addField('summary');
                 $oDef->addField('description');
                 $oDef->setPrimaryKey('requirementsUid');
 
-                $oDef = Model_Definitions::get('Test_Model_Note');
+                $oDef = DataModel_Definitions::get('Test_DataModel_Note');
                 $oDef->addField('name');
                 $oDef->addField('version');
                 $oDef->addField('value');
@@ -135,64 +136,64 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
                 $oDef->setPrimaryKey(array('name', 'version'));
                 $oDef->hasOne('author')
                      ->ourFieldIs('authorName')
-                     ->theirModelIs('Test_Model_Author')
+                     ->theirModelIs('Test_DataModel_Author')
                      ->theirFieldIs('name');
                 /*
                 $oDef->hasMany('tags')
                      ->ourFieldsAre(array('name', 'version'))
-                     ->theirModelIs('Test_Model_Tag')
+                     ->theirModelIs('Test_DataModel_Tag')
                      ->theirFieldsAre(array('noteName', 'noteVersion'))
-                     ->joinUsing('Test_Model_Note_Tag', 'tag');
+                     ->joinUsing('Test_DataModel_Note_Tag', 'tag');
                  */
                 
-                $oDef = Model_Definitions::get('Test_Model_Author');
+                $oDef = DataModel_Definitions::get('Test_DataModel_Author');
                 $oDef->addField('id');
                 $oDef->addField('name');
                 $oDef->setPrimaryKey('id');
                 $oDef->hasMany('notes')
                      ->ourFieldIs('name')
-                     ->theirModelIs('Test_Model_Note')
+                     ->theirModelIs('Test_DataModel_Note')
                      ->theirFieldIs('authorName');
 
-                $oDef = Model_Definitions::get('Test_Model_Note_Author');
+                $oDef = DataModel_Definitions::get('Test_DataModel_Note_Author');
                 $oDef->addField('authorName');
                 $oDef->addField('noteName');
                 $oDef->addField('noteVersion');
                 $oDef->setPrimaryKey(array('authorName', 'noteName', 'noteVersion'));
                 $oDef->hasOne('note')
                      ->ourFieldsAre(array('noteName', 'noteVersion'))
-                     ->theirModelIs('Test_Model_Note')
+                     ->theirModelIs('Test_DataModel_Note')
                      ->theirFieldsAre(array('name', 'version'));
                 $oDef->hasOne('author')
                       ->ourFieldIs('authorName')
-                      ->theirModelIs('Test_Model_Note_Author')
+                      ->theirModelIs('Test_DataModel_Note_Author')
                       ->theirFieldIs('name');
 
-                $oDef = Model_Definitions::get('Test_Model_Tag');
+                $oDef = DataModel_Definitions::get('Test_DataModel_Tag');
                 $oDef->addField('name');
                 $oDef->setPrimaryKey('name');
                 /*
                 $oDef->hasMany('notes')
                      ->ourFieldIs('name')
-                     ->theirModelIs('Test_Model_Note')
+                     ->theirModelIs('Test_DataModel_Note')
                      ->theirFieldIs('tagName')
-                     ->joinUsing('Test_Model_Note_Tag', 'note');
+                     ->joinUsing('Test_DataModel_Note_Tag', 'note');
                  */
-                $oDef = Model_Definitions::get('Test_Model_Note_Tag');
+                $oDef = DataModel_Definitions::get('Test_DataModel_Note_Tag');
                 $oDef->addField('noteName');
                 $oDef->addField('noteVersion');
                 $oDef->addField('tagName');
                 $oDef->setPrimaryKey(array('noteName', 'noteVersion', 'tagName'));
                 $oDef->hasOne('note')
                      ->ourFieldsAre(array('noteName', 'noteVersion'))
-                     ->theirModelIs('Test_Model_Note')
+                     ->theirModelIs('Test_DataModel_Note')
                      ->theirFieldsAre(array('name', 'version'));
                 $oDef->hasOne('tag')
                      ->ourFieldIs('tagName')
-                     ->theirModelIs('Test_Model_Tag')
+                     ->theirModelIs('Test_DataModel_Tag')
                      ->theirFieldIs('name');
 
-                $oDef = Model_Definitions::get('Test_Model_User');
+                $oDef = DataModel_Definitions::get('Test_DataModel_User');
                 $oDef->addField('id');
                 $oDef->addField('username');
                 $oDef->addField('password');
@@ -202,17 +203,17 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
         {
         	$this->setupDefineModels();
 
-                $oDef = Model_Definitions::get('Test_Model_Requirement');
-                $this->assertTrue($oDef instanceof Model_Definition);
-                $this->assertTrue($oDef->getModelName() == 'Test_Model_Requirement');
+                $oDef = DataModel_Definitions::get('Test_DataModel_Requirement');
+                $this->assertTrue($oDef instanceof DataModel_Definition);
+                $this->assertTrue($oDef->getModelName() == 'Test_DataModel_Requirement');
         }
 
         public function testAlwaysReceiveTheSameModel()
         {
         	$this->setupDefineModels();
 
-                $oDef1 = Model_Definitions::get('Test_Model_Requirement');
-                $oDef2 = Model_Definitions::get('Test_Model_Requirement');
+                $oDef1 = DataModel_Definitions::get('Test_DataModel_Requirement');
+                $oDef2 = DataModel_Definitions::get('Test_DataModel_Requirement');
 
                 $this->assertSame($oDef1, $oDef2);
         }
@@ -223,9 +224,9 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 
         	try
                 {
-                	$oDef = Model_Definitions::getIfExists('Test_Model_FooBar');
+                	$oDef = DataModel_Definitions::getIfExists('Test_DataModel_FooBar');
                 }
-                catch (Model_E_NoSuchDefinition $e)
+                catch (DataModel_E_NoSuchDefinition $e)
                 {
                 	$thrown = true;
                 }
@@ -239,7 +240,7 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 
                 try
                 {
-                	$oDef = Model_Definitions::get('Test_Model_FooBar');
+                	$oDef = DataModel_Definitions::get('Test_DataModel_FooBar');
                 }
                 catch (PHP_E_NoSuchClass $e)
                 {
@@ -255,20 +256,20 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
         	$this->setupDefineModels();
 
                 // step 1: prove that we have models for this test
-                $oDef1 = Model_Definitions::get('Test_Model_Requirement');
-                $this->assertTrue($oDef1 instanceof Model_Definition);
+                $oDef1 = DataModel_Definitions::get('Test_DataModel_Requirement');
+                $this->assertTrue($oDef1 instanceof DataModel_Definition);
 
                 // step 2: get rid of one of the models
-                Model_Definitions::destroy('Test_Model_Requirement');
+                DataModel_Definitions::destroy('Test_DataModel_Requirement');
 
                 // step 3: prove that the model definition no longer
                 //         exists
                 $thrown = false;
                 try
                 {
-                	$oDef2 = Model_Definitions::getIfExists('Test_Model_Requirement');
+                	$oDef2 = DataModel_Definitions::getIfExists('Test_DataModel_Requirement');
                 }
-                catch (Model_E_NoSuchDefinition $e)
+                catch (DataModel_E_NoSuchDefinition $e)
                 {
                 	$thrown = true;
                 }
@@ -276,12 +277,12 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 
                 // step 4: when we re-create the model, prove that we
                 // get a different object to work with
-                $oDef3 = Model_Definitions::get('Test_Model_Requirement');
+                $oDef3 = DataModel_Definitions::get('Test_DataModel_Requirement');
                 $this->assertNotSame($oDef1, $oDef3);
 
                 // step 5: prove that we do get the same object if we
                 // ask for the definition a second time
-                $oDef4 = Model_Definitions::get('Test_Model_Requirement');
+                $oDef4 = DataModel_Definitions::get('Test_DataModel_Requirement');
                 $this->assertSame($oDef3, $oDef4);
         }
 
@@ -290,14 +291,14 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
                 // step 1: prove that we don't have an emailAddress
                 //         field
 
-                $user            = new Test_Model_User;
+                $user            = new Test_DataModel_User;
                 $extensionThrown = false;
 
                 try
                 {
                         $emailAddress = $user->emailAddress;
                 }
-                catch (Model_E_NoSuchField $e)
+                catch (DataModel_E_NoSuchField $e)
                 {
                         $exceptionThrown = true;
                 }
@@ -306,7 +307,7 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
 
                 // step 2: now, extend the model to add the emailAddress
                 //         field
-                __mf_extend_model('Test_Model_User', 'Test_Model_User_EmailAddress_Ext');
+                __mf_extend_model('Test_DataModel_User', 'Test_DataModel_User_EmailAddress_Ext');
 
                 // now, see if the extension works
                 //
@@ -320,18 +321,18 @@ class Model_Definitions_Tests extends PHPUnit_Framework_TestCase
         }
 }
 
-Testsuite_registerTests('Model_Tests');
-class Model_Tests extends PHPUnit_Framework_TestCase
+Testsuite_registerTests('DataModel_Tests');
+class DataModel_Tests extends PHPUnit_Framework_TestCase
 {
         public function setup()
         {
-                Model_Definitions::destroy();
+                DataModel_Definitions::destroy();
                 $this->setupDefineModels();
         }
 
         public function setupDefineModels()
         {
-                $oDef = Model_Definitions::get('Test_Model_Requirement');
+                $oDef = DataModel_Definitions::get('Test_DataModel_Requirement');
                 $oDef->addField('requirementsUid');
                 $oDef->addField('title');
                 $oDef->addField('summary');
@@ -346,12 +347,12 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testGetCorrectDefinitionAfterDefinitionDeleted()
         {
-                $req   = new Test_Model_Requirement();
+                $req   = new Test_DataModel_Requirement();
                 $oDef1 = $req->getDefinition();
 
-                Model_Definitions::destroy();
+                DataModel_Definitions::destroy();
 
-                $req2  = new Test_Model_Requirement();
+                $req2  = new Test_DataModel_Requirement();
                 $oDef2 = $req2->getDefinition();
 
                 $this->assertNotSame($oDef1, $oDef2);
@@ -359,7 +360,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testNewModelsStartWithDefaultValues()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 $this->assertFalse(isset($req->requirementsUid));
                 $this->assertFalse(isset($req->title));
@@ -375,7 +376,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanGetSetFieldValues()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 // all new models start off empty
                 $this->assertFalse(isset($req->title));
@@ -395,7 +396,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanReplaceADefaultValue()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 $this->assertEquals('MF Testing', $req->project);
                 $newProject = 'More MF Testing';
@@ -405,7 +406,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanUnsetAField()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 // entry conditions
                 $this->assertEquals('MF Testing', $req->project);
@@ -419,7 +420,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanEmptyAField()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 // entry conditions
                 $this->assertEquals('MF Testing', $req->project);
@@ -437,14 +438,14 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCannotAccessFieldsThatDoNotExist()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 $pass = false;
                 try
                 {
                         $dummy = $req->nonExistantField;
                 }
-                catch (Model_E_NoSuchField $e)
+                catch (DataModel_E_NoSuchField $e)
                 {
                         $pass = true;
                 }
@@ -453,7 +454,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanResetAFieldToDefaultValue()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 unset($req->project);
 
                 // entry conditions
@@ -472,7 +473,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanConvertFieldToHtml()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->title = 'serve & protect';
 
                 // make sure the original title is preserved
@@ -484,7 +485,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanConvertFieldToXml()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->title = 'serve & protect';
 
                 // make sure the original title is preserved
@@ -496,14 +497,14 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanConvertModelToXml()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->title = 'serve & protect';
 
                 // make sure the original title is preserved
                 $this->assertEquals('serve & protect', $req->title);
 
                 // convert the object to xml
-                $this->assertEquals('<Test_Model_Requirement><project>MF Testing</project><title>serve &amp; protect</title></Test_Model_Requirement>', $req->toXml());
+                $this->assertEquals('<Test_DataModel_Requirement><project>MF Testing</project><title>serve &amp; protect</title></Test_DataModel_Requirement>', $req->toXml());
         }
 
         // ================================================================
@@ -514,7 +515,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
         {
                 $expected = array('title' => 'fred', 'project' => 'MF Testing');
 
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->title = 'fred';
 
                 // make sure only expected fields are seen
@@ -534,7 +535,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanGetFieldsAsAReferencedArray()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $data =& $req->getData();
 
                 // entry conditions
@@ -551,7 +552,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanGetFieldsAsACopiedArray()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $data =& $req->getFields();
 
                 // entry conditions
@@ -568,7 +569,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanResetAllFieldsAtOnce()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->title = 'fred';
 
                 // entry conditions
@@ -589,7 +590,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanSetAllFieldsAtOnce()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 $newData = array (
                         'requirementsUid'       => 1,
@@ -615,7 +616,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanMergeFieldsFromLargerArray()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 $newData = array (
                         'requirementsUid'       => 1,
@@ -633,7 +634,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
                 );
 
                 // change the state
-                $req->setFields($newData, Model::MERGE_DATA);
+                $req->setFields($newData, DataModel::MERGE_DATA);
 
                 // have we changed everything?
                 foreach ($req as $field => $value)
@@ -648,7 +649,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanSetAllFieldsToDefaultsAtOnce()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 // entry conditions
                 $newData = array (
@@ -683,13 +684,13 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testNewModelsNeedSaving()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $this->assertTrue($req->getNeedsSaving());
         }
 
         public function testCanExplicitlyMarkAModelAsNotNeedsSaving()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 // entry conditions
                 $this->assertTrue($req->getNeedsSaving());
@@ -703,7 +704,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
         
         public function testChangingAFieldMarksModelAsNeedsSaving()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->resetNeedsSaving();
                 
                 // entry conditions
@@ -720,7 +721,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanExplicitlyMarkAModelAsNeedsSaving()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->resetNeedsSaving();
 
                 // entry conditions
@@ -740,14 +741,14 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testModelIsWriteableByDefault()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $this->assertFalse($req->isReadOnly());
                 $this->assertTrue($req->isWriteable());
         }
 
         public function testCanSetAFieldOnAWriteableModel()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 // entry conditions
                 $this->assertTrue($req->isWriteable());
@@ -763,7 +764,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCannotSetAFieldOnAReadOnlyModel()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->setReadOnly();
 
                 // entry conditions
@@ -776,7 +777,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
                 {
                         $req->title = 'fred';
                 }
-                catch (Model_E_IsReadOnly $e)
+                catch (DataModel_E_IsReadOnly $e)
                 {
                         $pass = true;
                 }
@@ -787,7 +788,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCannotResetAReadOnlyModel()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 // we set a title in case resetData() attempts to restore
                 // the default values for the model
                 $req->title = 'fred';
@@ -805,7 +806,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
                 {
                         $req->resetData();
                 }
-                catch (Model_E_IsReadOnly $e)
+                catch (DataModel_E_IsReadOnly $e)
                 {
                         $pass = true;
                 }
@@ -818,7 +819,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanMakeAModelWriteable()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->setReadOnly();
 
                 // entry conditions
@@ -830,7 +831,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
                 {
                         $req->title = 'fred';
                 }
-                catch (Model_E_IsReadOnly $e)
+                catch (DataModel_E_IsReadOnly $e)
                 {
                         $pass = true;
                 }
@@ -849,7 +850,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCanRequireAWriteableModel()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
 
                 // entry conditions
                 $this->assertTrue($req->isWriteable());
@@ -864,7 +865,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
                 {
                         $req->requireWriteable();
                 }
-                catch (Model_E_IsReadOnly $e)
+                catch (DataModel_E_IsReadOnly $e)
                 {
                         $pass = true;
                 }
@@ -873,7 +874,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
 
         public function testCannotMarkAReadOnlyModelAsNeedsSaving()
         {
-                $req = new Test_Model_Requirement();
+                $req = new Test_DataModel_Requirement();
                 $req->resetNeedsSaving();
                 $req->setReadOnly();
 
@@ -887,7 +888,7 @@ class Model_Tests extends PHPUnit_Framework_TestCase
                 {
                         $req->setNeedsSaving();
                 }
-                catch (Model_E_IsReadOnly $e)
+                catch (DataModel_E_IsReadOnly $e)
                 {
                         $pass = true;
                 }

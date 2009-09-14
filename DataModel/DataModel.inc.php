@@ -2,8 +2,8 @@
 
 // ========================================================================
 //
-// Model/Model.inc.php
-//              Include file for the Model component
+// DataModel/DataModel.inc.php
+//              Include file for the DataModel component
 //
 //              Part of the Methodosity Framework for PHP applications
 //              http://blog.stuartherbert.com/php/mf/
@@ -21,6 +21,7 @@
 // ------------------------------------------------------------------------
 // 2007-08-11   SLH     Created
 // 2008-07-28   SLH     Added Model.funcs.php
+// 2009-09-15	SLH	Renamed from Model to DataModel
 // ========================================================================
 
 // load our dependencies
@@ -28,7 +29,7 @@ __mf_require_once('PHP');
 
 // where are we?
 $componentDir  = dirname(__FILE__) . DIRECTORY_SEPARATOR;
-$componentName = 'Model';
+$componentName = 'DataModel';
 
 // pull in our files
 require_once($componentDir . $componentName . '.exceptions.php');

@@ -2,8 +2,8 @@
 
 // ========================================================================
 //
-// Model/Model.funcs.php
-//              Functions defined by the Model component
+// DataModel/DataModel.funcs.php
+//              Functions defined by the DataModel component
 //
 //              Part of the Methodosity Framework for PHP appliations
 //              http://blog.stuartherbert.com/php/mf/
@@ -23,13 +23,14 @@
 // 2008-08-11   SLH     Added constraint_mustBeValidModel()
 // 2009-05-26   SLH     Added __mf_extend_model()
 // 2009-06-01   SLH     Updated __mf_extend_model() to use new API
+// 2009-09-15	SLH	Renamed from Model to DataModel
 // ========================================================================
 
 function constraint_modelMustBeCalled($oDef, $name)
 {
 	if ($oDef->getModelName() != $name)
         {
-        	throw new Model_E_IncompatibleDefinition
+        	throw new DataModel_E_IncompatibleDefinition
                 (
                         'model',
                         $oDef->getModelName(),
@@ -40,7 +41,7 @@ function constraint_modelMustBeCalled($oDef, $name)
 
 function constraint_mustBeValidModel($model)
 {
-	$oDef = Model_Definitions::getIfExists($model);
+	$oDef = DataModel_Definitions::getIfExists($model);
 }
 
 function __mf_extend_model($modelName, $extensionClass)

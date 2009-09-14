@@ -48,7 +48,7 @@
 // 2009-06-10   SLH     Verification errors now start with a 'V'
 // ========================================================================
 
-class User extends Model
+class User extends DataModel
 {
         // ----------------------------------------------------------------
         // constants for how the user has been authenticated
@@ -144,7 +144,7 @@ class User extends Model
 }
 
 // define the minimum fields for a user
-$oDef = Model_Definitions::get('User');
+$oDef = DataModel_Definitions::get('User');
 $oDef->addField('uid');
 $oDef->addField('username');
 $oDef->addFakeField('authType')
@@ -170,9 +170,9 @@ $oDef->addFakeField('supportsThemePref')
 
 class User_Address_Ext 
         extends Obj_Mixin
-        implements Model_Extension
+        implements DataModel_Extension
 {
-        static public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(DataModel_Definition $oDef)
         {
                 $oDef->addField('address1');
                 $oDef->addField('address2');
@@ -220,9 +220,9 @@ class User_Address_Ext
 
 class User_Email_Ext
         extends Obj_Mixin
-        implements Model_Extension
+        implements DataModel_Extension
 {
-        static public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(DataModel_Definition $oDef)
         {
                 $oDef->addField('emailAddress');
                 $oDef->addFakeField('confirmEmailAddress');
@@ -323,9 +323,9 @@ class User_Email_Ext
 
 class User_Name_Ext
         extends Obj_Mixin
-        implements Model_Extension
+        implements DataModel_Extension
 {
-        static public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(DataModel_Definition $oDef)
         {
                 $oDef->addField('firstName');
                 $oDef->addField('lastName');
@@ -356,9 +356,9 @@ class User_Name_Ext
 
 class User_Password_Ext
         extends Obj_Mixin
-        implements Model_Extension
+        implements DataModel_Extension
 {
-        static public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(DataModel_Definition $oDef)
         {
                 $oDef->addField('password');
                 $oDef->addFakeField('confirmPassword');
@@ -421,9 +421,9 @@ class User_Password_Ext
 
 class User_Theme_Ext 
         extends Obj_Mixin
-        implements Model_Extension
+        implements DataModel_Extension
 {
-        static public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(DataModel_Definition $oDef)
         {
                 $oDef->addField('theme');
                 $oDef->getField('supportsThemePref')
@@ -433,9 +433,9 @@ class User_Theme_Ext
 
 class User_VerifiedEmail_Ext 
         extends Obj_Mixin
-        implements Model_Extension
+        implements DataModel_Extension
 {
-        static public function extendsModelDefinition(Model_Definition $oDef)
+        static public function extendsModelDefinition(DataModel_Definition $oDef)
         {
                 $oDef->addField('verified')
                      ->setDefaultValue(0);

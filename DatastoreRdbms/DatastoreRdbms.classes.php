@@ -57,13 +57,13 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
         // Tell this statement what to be
         // ----------------------------------------------------------------
 
-        public function beCreateStatement(Model_Definition $oDef, Datastore_Storage $oMap)
+        public function beCreateStatement(DataModel_Definition $oDef, Datastore_Storage $oMap)
         {
                 $this->fieldsToBind = array();
 
                 $table          =  $oMap->getTable();
                 $primaryKey     =  $oDef->getPrimaryKey();
-                $aFields        =  $oDef->getFieldsBySource(Model_Definition::SOURCE_DB);
+                $aFields        =  $oDef->getFieldsBySource(DataModel_Definition::SOURCE_DB);
 
                 $keys   = "";
                 $values = "";
@@ -88,13 +88,13 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
                 $this->returnRows = false;
         }
 
-        public function beRetrieveStatement(Model_Definition $oDef, Datastore_Storage $oMap, $retrieveField, $view)
+        public function beRetrieveStatement(DataModel_Definition $oDef, Datastore_Storage $oMap, $retrieveField, $view)
         {
                 $this->fieldsToBind = array();
 
                 $table          =  $oMap->getTable();
                 $primaryKey     =  $oDef->getPrimaryKey();
-                $aFields        =  $oDef->getFieldsBySourceAndView(Model_Definition::SOURCE_DB, $view);
+                $aFields        =  $oDef->getFieldsBySourceAndView(DataModel_Definition::SOURCE_DB, $view);
 
                 $sql            = 'select ';
                 $append         = false;
@@ -139,13 +139,13 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
                 $this->primaryKey = $primaryKey;
         }
 
-        public function beUpdateStatement(Model_Definition $oDef, Datastore_Storage $oMap)
+        public function beUpdateStatement(DataModel_Definition $oDef, Datastore_Storage $oMap)
         {
                 $this->fieldsToBind = array();
 
                 $table          =  $oMap->getTable();
                 $primaryKey     =  $oDef->getPrimaryKey();
-                $aFields        =  $oDef->getFieldsBySource(Model_Definition::SOURCE_DB);
+                $aFields        =  $oDef->getFieldsBySource(DataModel_Definition::SOURCE_DB);
 
                 $sql    = "update $table set ";
                 $append = false;
@@ -185,7 +185,7 @@ class DatastoreRdbms_Statement extends Datastore_BaseStatement
                 $this->returnRows = false;
         }
 
-        public function beDeleteStatement(Model_Definition $oDef, Datastore_Storage $oMap)
+        public function beDeleteStatement(DataModel_Definition $oDef, Datastore_Storage $oMap)
         {
                 $table          =  $oMap->getTable();
                 $primaryKey     =  $oDef->getPrimaryKey();
@@ -444,7 +444,7 @@ class DatastoreRdbms_Query extends Datastore_Query
         {
                 $oMap   = $this->oDB->getStorageForModel($searchTerm['view']->oDef->getModelName());
                 $table  = $oMap->getTable();
-        	$fields = $searchTerm['view']->oDef->getFieldsBySourceAndView(Model_Definition::SOURCE_DB, $searchTerm['view']->getName());
+        	$fields = $searchTerm['view']->oDef->getFieldsBySourceAndView(DataModel_Definition::SOURCE_DB, $searchTerm['view']->getName());
                 foreach ($fields as $field)
                 {
                 	$queryBuilder['fieldsToSelect'][] = $table . '.' . $field->getName();

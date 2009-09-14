@@ -41,51 +41,52 @@
 // 2009-03-25   SLH     Updated tests for many:many relationships
 // 2009-05-20   SLH     Fixes for latest changes to Model
 // 2009-06-03   SLH     Added tests for fake field bug in queries
+// 2009-09-15	SLH	Renamed Model to DataModel
 // ========================================================================
 
 // ========================================================================
 // Test models for use in the test scripts
 // ------------------------------------------------------------------------
 
-class Test_Customer extends Model
+class Test_Customer extends DataModel
 {
 }
 
-class Test_Order extends Model
+class Test_Order extends DataModel
 {
 }
 
 
-class Test_OrderContent extends Model
-{
-
-}
-
-class Test_Product extends Model
+class Test_OrderContent extends DataModel
 {
 
 }
 
-class Test_RelatedProducts extends Model
+class Test_Product extends DataModel
 {
 
 }
 
-class Test_Product_Tag extends Model
+class Test_RelatedProducts extends DataModel
 {
 
 }
 
-class Test_Product_Annotated_Tag extends Model
+class Test_Product_Tag extends DataModel
+{
+
+}
+
+class Test_Product_Annotated_Tag extends DataModel
 {
 
 }
 
 function defineDatastoreTestModels()
 {
-        Model_Definitions::destroy();
+        DataModel_Definitions::destroy();
 
-        $oMeta = Model_Definitions::get('Test_Customer');
+        $oMeta = DataModel_Definitions::get('Test_Customer');
         $oMeta->addField('customerId')
               ->asMandatory();
         $oMeta->addField('customerFirstName');
@@ -106,12 +107,12 @@ function defineDatastoreTestModels()
 
 
 /*
-        $oMeta = Model_Definitions::get('Test_PremiumCustomer');
+        $oMeta = DataModel_Definitions::get('Test_PremiumCustomer');
         $oMeta->inheritsFrom('customer');
         $oMeta->addField('customerTerms');
 */
 
-        $oMeta = Model_Definitions::get('Test_Order');
+        $oMeta = DataModel_Definitions::get('Test_Order');
         $oMeta->addField('masterCustomerId');
         $oMeta->addField('giftCustomerId');
         $oMeta->addField('orderId');
@@ -138,7 +139,7 @@ function defineDatastoreTestModels()
               ->theirFieldIs('masterOrderId');
 
 
-        $oMeta = Model_Definitions::get('Test_OrderContent');
+        $oMeta = DataModel_Definitions::get('Test_OrderContent');
         $oMeta->addField('uid');
         $oMeta->addField('masterOrderId');
         $oMeta->addField('pid');
@@ -155,7 +156,7 @@ function defineDatastoreTestModels()
               ->theirFieldIs('pid');
 
 
-        $oMeta = Model_Definitions::get('Test_Product');
+        $oMeta = DataModel_Definitions::get('Test_Product');
         $oMeta->addField('pid');
         $oMeta->addField('productName');
         $oMeta->addField('productSummary');
@@ -175,7 +176,7 @@ function defineDatastoreTestModels()
               ->ourFieldIs('pid')
               ->theirFieldIs('productId1');
 
-        $oDef = Model_Definitions::get('Test_RelatedProducts');
+        $oDef = DataModel_Definitions::get('Test_RelatedProducts');
         $oDef->addField('productId1');
         $oDef->addField('productId2');
         $oDef->addField('uid');
@@ -185,12 +186,12 @@ function defineDatastoreTestModels()
              ->theirModelIs('Test_Product')
              ->theirFieldIs('pid');
 
-        $oDef = Model_Definitions::get('Test_Product_Tag');
+        $oDef = DataModel_Definitions::get('Test_Product_Tag');
         $oDef->addField('productId');
         $oDef->addField('tagName');
         $oDef->setPrimaryKey(array('productId', 'tagName'));
 
-        $oDef = Model_Definitions::get('Test_Product_Annotated_Tag');
+        $oDef = DataModel_Definitions::get('Test_Product_Annotated_Tag');
         $oDef->inherits('Test_Product_Tag');
         $oDef->addField('tagAnnotation');
 }
@@ -281,7 +282,7 @@ class DatastoreXXX_Record_Tests extends PHPUnit_Framework_TestCase
                 // customer
 
                 $oRelationship = $order->getDefinition()->getRelationship('customer');
-                $this->assertTrue ($oRelationship instanceof Model_Relationship);
+                $this->assertTrue ($oRelationship instanceof DataModel_Relationship);
 
                 // make sure the relationship tells us what we expect
                 $this->assertEquals ($oRelationship->getOurFields(), array('masterCustomerId'));
@@ -929,7 +930,7 @@ class DatastoreXXX_Query_Tests extends PHPUnit_Framework_TestCase
         {
 //                $this->setup();
 
-                $oDef = Model_Definitions::get('Test_Customer');
+                $oDef = DataModel_Definitions::get('Test_Customer');
                 $oDef->addFakeField('trouble');
 
                 $custQ = $this->db->newQuery()
