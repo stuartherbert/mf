@@ -30,6 +30,8 @@
 // 2009-06-10   SLH     Blocks can now contain instances of Messages
 // 2009-06-10   SLH     Changes made to Page_Layout::outputBlock() to
 //                      reduce possibility of namespace clash
+// 2009-08-24   SLH     Blocks can now contain arbitrary objects, rather
+//                      than just models
 // ========================================================================
 
 // ========================================================================
@@ -248,10 +250,10 @@ class Page
 
         protected function outputBlock(Page_Block $_block)
         {
-                // step 1: create the models in the current scope
-                foreach ($_block->models as $_name => $_model)
+                // step 1: create the objects in the current scope
+                foreach ($_block->objects as $_name => $_object)
                 {
-                        $$_name = $_model;
+                        $$_name = $_object;
                 }
 
                 // step 2: create the messages in the current scope
@@ -347,7 +349,7 @@ class Page_Block extends Page_Component
          * A list of the different content held within this block
          * @var array
          */
-        public $models = array();
+        public $objects = array();
 
         /**
          * A list of the different Messages objects for this block
@@ -371,9 +373,16 @@ class Page_Block extends Page_Component
                 return $this;
         }
 
+        // alias for backwards-compatibility
         public function usingModel($name, Model $obj)
         {
-                $this->models[$name] = $obj;
+                return $this->usingObject($name, $obj);
+        }
+
+        public function usingObject($name, $obj)
+        {
+                constraint_mustBeObject($obj);
+                $this->objects[$name] = $obj;
 
                 // fluid interface
                 return $this;
