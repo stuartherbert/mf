@@ -32,7 +32,7 @@ if (!isset($argv[2]) || strlen(trim($argv[2])) == 0)
 
 if (!is_dir(APP_TOPDIR . '/' . $argv[2]))
 {
-        echo "*** error: module " . $argv[2] . "does not exist\n";
+        echo "*** error: module " . $argv[2] . " does not exist\n";
         exit(255);
 }
 
