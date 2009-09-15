@@ -32,6 +32,7 @@
 //                      reduce possibility of namespace clash
 // 2009-08-24   SLH     Blocks can now contain arbitrary objects, rather
 //                      than just models
+// 2009-09-15   SLH     Model renamed to DataModel
 // ========================================================================
 
 // ========================================================================
@@ -374,7 +375,7 @@ class Page_Block extends Page_Component
         }
 
         // alias for backwards-compatibility
-        public function usingModel($name, Model $obj)
+        public function usingModel($name, DataModel $obj)
         {
                 return $this->usingObject($name, $obj);
         }
