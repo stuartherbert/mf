@@ -26,6 +26,7 @@
 // 2009-06-10   SLH     Added Messages::addMessageForField()
 // 2009-06-10   SLH     Fixed Messages::getErrorCount()
 // 2009-07-26   SLH     Added Messages::getHasErrors()
+// 2009-09-16   SLH     Added Messages::hasErrorsForField()
 // ========================================================================
 
 class Messages extends Obj
@@ -89,6 +90,20 @@ class Messages extends Obj
                 {
                         return true;
                 }
+        }
+
+        public function hasErrorsForField($field)
+        {
+                if (!isset($this->errors[$field]))
+                {
+                        return false;
+                }
+                if (count($this->errors[$field]) == 0)
+                {
+                        return false;
+                }
+
+                return true;
         }
 
         public function getErrorsForField($field)
