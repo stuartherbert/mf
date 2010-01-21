@@ -10,7 +10,7 @@
 // Author       Stuart Herbert
 //              (stuart@stuartherbert.com)
 //
-// Copyright    (c) 2007-2009 Stuart Herbert
+// Copyright    (c) 2007-2010 Stuart Herbert
 //              Released under v3 of the GNU Affero Public License
 //
 // ========================================================================

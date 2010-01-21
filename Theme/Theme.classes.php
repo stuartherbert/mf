@@ -10,7 +10,7 @@
 // Author       Stuart Herbert
 //              (stuart@stuartherbert.com)
 //
-// Copyright    (c) 2008-2009 Stuart Herbert
+// Copyright    (c) 2008-2010 Stuart Herbert
 //              All rights reserved
 //
 // ========================================================================
