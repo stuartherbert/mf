@@ -127,7 +127,7 @@ class User extends DataModel
 
         public function validateRegistration(Messages $messages, Datastore $oDB)
         {
-                $objs   = $this->findObjsForMethod('validateRegistration');
+                $objs = $this->findObjsForMethod('validateRegistration');
 
                 foreach ($objs as $obj)
                 {
@@ -404,6 +404,8 @@ class User_Password_Ext
                 {
                 	return true;
                 }
+
+                // TODO: use cracklib or something to help here
 
                 return false;
         }

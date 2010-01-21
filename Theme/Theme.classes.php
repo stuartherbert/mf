@@ -21,6 +21,8 @@
 // 2008-08-13   SLH     Created
 // 2009-03-30   SLH     Substantial improvements
 // 2009-04-15   SLH     Added support for Page_Layouts
+// 2009-09-23   SLH     Added support for themeUrl
+// 2009-08-24   SLH     Added support for Javascript includes
 // ========================================================================
 
 class Theme_Manager
@@ -61,6 +63,14 @@ class Theme_Manager
 class Theme_BaseTheme
 {
         /**
+         * The URL to use when linking to any files in the theme's
+         * directory
+         * 
+         * @var string
+         */
+        public $themeUrl = null;
+
+        /**
          * The directory where the theme is stored
          *
          * @var string
@@ -74,9 +84,21 @@ class Theme_BaseTheme
          */
         protected $layout   = null;
 
+        /**
+         * A list of the Javascript files we have already included
+         * 
+         * @var array
+         */
+        protected $javascript = array();
+
         public function __construct($themeDir)
         {
                 $this->themeDir = $themeDir;
+
+                // set the theme URL
+                $themeParent = basename(dirname($themeDir));
+
+                $this->themeUrl = $themeParent . '/' . basename($themeDir);
         }
         
         /**
@@ -180,6 +202,32 @@ class Theme_BaseTheme
                 }
 
                 return $filename;
+        }
+
+        // ================================================================
+        // Javascript support
+        // ----------------------------------------------------------------
+
+        public function includeJs($renderer, $name, $file)
+        {
+                constraint_mustBeString($renderer);
+                constraint_mustBeString($name);
+                constraint_mustBeString($file);
+
+                echo call_user_func_array(array($renderer, 'tag_includeJavascript'), array($file));
+                $this->javascript[$name] = true;
+        }
+
+        public function requireJs($renderer, $name)
+        {
+                constraint_mustBeString($renderer);
+                constraint_mustBeString($name);
+                
+                if (!isset($this->javascript[$name]) || !$this->javascript[$name])
+                {
+                        $func = 'includeJs_' . $name;
+                        $this->$func($renderer);
+                }
         }
 }
 

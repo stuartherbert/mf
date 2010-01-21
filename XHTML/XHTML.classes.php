@@ -28,6 +28,13 @@
 // 2009-07-26   SLH     XHTML::tag_*() now re-use underlying tag();
 //                      added $attr parameters for increased flexibility
 // 2009-08-19   SLH     Added XHTML::tag_routeLinkWithRawText()
+// 2009-08-21   SLH     Added XHTML::tag_flickrPhoto()
+// 2009-08-23   SLH     Added XHTML::tag_includeJavascript()
+// 2009-09-11   SLH     Added XHTML::tag_imageWithLink()
+// 2009-09-11   SLH     Added XHTML::tag_buttonWithLink()
+// 2009-09-15   SLH     Use 'size' not 'width' for input fields (doh!)
+// 2009-09-16   SLH     Added XHTML::form_verifyByRoute()
+// 2009-09-17   SLH     Added XHTML::errorMessagesList()
 // ========================================================================
 
 class XHTML
@@ -77,6 +84,44 @@ class XHTML
                 return $return;
         }
 
+        static public function errorMessagesList(Messages $messages, $fields)
+        {
+                constraint_mustBeArray($fields);
+
+                // just in case ... if there are no errors, we have nothing
+                // to do here
+                if ($messages->errorCount == 0)
+                {
+                        return '';
+                }
+
+                // okay, we know for sure that there are errors ... but
+                // the question is how many?
+
+                $return = '<ul class="mfErrors2">';
+
+                foreach ($fields as $field)
+                {
+                        $errors = $messages->getErrorsForField($field);
+                        if (count($errors) == 0)
+                        {
+                                // no errors for this field
+                                // move on to the next one
+                                continue;
+                        }
+
+                        foreach ($errors as $error)
+                        {
+                                $return .= '<li>' . XHTML::translation($error['module'], $error['message'], $error['params']) . '</li>';
+                        }
+                }
+
+                $return .= '</ul>';
+
+                return $return;
+        }
+
+
         /**
          * Convert a list of XHTML attributes into something that can be
          * easily published in an XHTML tag
@@ -96,6 +141,11 @@ class XHTML
                 return $attrs;
         }
 
+        static public function form_verifyByRoute($routeName)
+        {
+                // todo
+        }
+        
         /**
          * Get the URL for a named route
          *
@@ -128,7 +178,7 @@ class XHTML
                 $attrs = self::expandAttributes($attr);
 
                 $return = '<' . $tag . $attrs;
-                if ($content === null)
+                if ($content === null && $tag != 'script')
                 {
                         $return .= '/>';
                 }
@@ -138,6 +188,13 @@ class XHTML
                 }
 
                 return $return;
+        }
+
+        static public function tagWithText($tag, $module, $message, $messageParams = array(), $attr = array())
+        {
+                $text = XHTML::translation($module, $message, $messageParams);
+
+                return self::tag($tag, $attr, $text);
         }
 
         /**
@@ -154,6 +211,20 @@ class XHTML
                 return '<!DOCTYPE html PUBLIC ' . $doctype . '>';
         }
 
+        static public function tag_flickrPhoto($photo, $callToActionRoute = null)
+        {
+                return self::tag_open('a', array(
+                        'href'  => $photo['flickrUrl']
+                )) . self::tag('img', array(
+                        'src'   => $photo['imageUrl'],
+                        'alt'   => $photo['caption'],
+                )) . self::tag_close('a')
+                . self::tag('br')
+                . self::tag('a', array('href'  => $photo['flickrUrl']), $photo['caption'])
+                . ' by '
+                . self::tag('a', array('href' => $photo['authorUrl']), $photo['authorName']);
+        }
+
         /**
          * Returns the <html> tag, with the correct language specified
          *
@@ -165,6 +236,36 @@ class XHTML
                         'xmlns'    => 'http://www.w3.org/1999/xhtml',
                         'xml:lang' => App::$languages->currentLanguageName
                 ));
+        }
+
+        static public function tag_imageWithLink($imageFile, $routeName, $routeParams = array(), $attr = array())
+        {
+                $attr['src'] = App::$request->baseUrl . '/' . App::$theme->themeUrl . '/' . App::$browser->platform . '/images/' . $imageFile;
+
+                $route = App::$routes->findByName($routeName);
+                $text  = XHTML::escapeOutput($route->expandLinkText());
+
+                return self::tag_open('a', array('href' => $route->toUrl($routeParams)))
+                       . self::tag('img', $attr)
+                       . self::tag_close('a');
+        }
+
+        static function tag_includeCss($media, $cssFile, $attr = array())
+        {
+                $attr['rel']   = 'stylesheet';
+                $attr['type']  = 'text/css';
+                $attr['media'] = $media;
+                $attr['href']  = App::$request->baseUrl . '/' . App::$theme->themeUrl . '/' . App::$browser->platform . '/css/' . $cssFile;
+
+                return self::tag('link', $attr);
+        }
+
+        static function tag_includeJavascript($scriptFile, $attr = array())
+        {
+                $attr['type'] = 'text/javascript';
+                $attr['src']  = App::$request->baseUrl . '/' . App::$theme->themeUrl . '/js/' . $scriptFile;
+                
+                return self::tag('script', $attr);
         }
 
         /**
@@ -187,9 +288,9 @@ class XHTML
                 $inputAttr['value'] = $value;
 
                 // set a default width
-                if (!isset($inputAttr['width']))
+                if (!isset($inputAttr['size']))
                 {
-                        $inputAttr['width'] = 30;
+                        $inputAttr['size'] = 20;
                 }
 
                 return self::tag('label', $labelAttr, XHTML::translation($labelModule, $labelMessage))
@@ -230,9 +331,9 @@ class XHTML
                 $inputAttr['name'] = $name;
                 $inputAttr['value'] = $value;
 
-                if (!isset($inputAttr['width']))
+                if (!isset($inputAttr['size']))
                 {
-                        $inputAttr['width'] = 30;
+                        $inputAttr['size'] = 20;
                 }
 
                 return self::tag('label', $labelAttr, XHTML::translation($labelModule, $labelMessage))
@@ -261,6 +362,20 @@ class XHTML
         static public function tag_close($tag)
         {
                 return '</' . $tag . '>';
+        }
+
+        /**
+         *
+         * @param string $module the module where the translation is defined
+         * @param string $message the name of the message to translate
+         * @param array $attr any attributes to add to the tag
+         * @return <type> string the XHTML to output to the browser
+         */
+        static public function tag_pWithText($module, $message, $attr = array())
+        {
+                $text  = XHTML::escapeOutput(XHTML::translation($module, $message));
+
+                return self::tag('p', $attr, $text);
         }
         
         /**
@@ -312,7 +427,7 @@ class XHTML
          * @param array  $attr any additional attributes for the XHTML <a> tag
          * @return string the XHTML to send to the browser
          */
-        static public function tag_routeLinkWithText ($text, $routeName, $params = array(), $attr = array())
+        static public function tag_routeLinkWithText ($module, $message, $messageParams, $routeName, $params = array(), $attr = array())
         {
                 $route = App::$routes->findByName($routeName);
                 $text  = XHTML::escapeOutput(XHTML::translation($module, $message, $messageParams));
