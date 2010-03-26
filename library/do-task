@@ -1,0 +1,43 @@
+#!/usr/bin/php
+<?php
+
+// ========================================================================
+//
+// do-task.php
+//              Run a specified task
+//
+//              Part of the Methodosity Framework for PHP
+//
+// Author       Stuart Herbert
+//              (stuart@stuartherbert.com)
+//
+// Copyright    (c) 2009 Stuart Herbert
+//              Released under v3 of the GNU Affero Public License
+//
+// ========================================================================
+
+// ========================================================================
+// When         Who     What
+// ------------------------------------------------------------------------
+// 2009-03-12   SLH     Created
+// 2009-03-18   SLH     Added detection for when we're running unit tests
+// 2009-03-18   SLH     Removed detection for running unit tests
+//                      (now defined explicitly in the test files)
+// ========================================================================
+
+// work out where we are
+define('APP_TOPDIR', realpath(dirname(__FILE__) . '/../'));
+
+// include the Methodosity Framework
+require_once (APP_TOPDIR . '/mf/mf.inc.php');
+
+// these are our app's config files
+require_once (APP_TOPDIR . '/conf/conf.inc.php');
+
+// now transfer control to MF
+require_once (MF_TOPDIR . '/mf.task.php');
+
+// all done
+
+
+?>
