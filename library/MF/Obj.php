@@ -169,7 +169,6 @@ class MF_Obj
                 if ($mixins !== null)
                 {
                         $class = $mixins->getClassnameForProperty($propertyName);
-                        $class = null;
                         if ($class !== null)
                         {
                                 return $this->getMixinObject($class);
