@@ -39,32 +39,52 @@
  * @link       http://framework.methodosity.com
  */
 
-class MF_Language_Translations extends MF_Obj
+class MF_Language_Translations extends MF_Obj_Extensible
 {
 	/**
 	 * Which language are these translations for?
 	 * @var string
 	 */
-	public $lang = null;
+	protected $lang = null;
+
+        /**
+         * Which files hold the translations we need?
+         */
+        protected $translationFiles = array();
 
 	/**
 	 * What translations have the modules defined?
 	 * @var array
 	 */
-	public $translations = array();
+	protected $translations = array();
 
+        /**
+         *
+         * @param string $lang locale string for this translation set
+         */
 	public function __construct($lang)
 	{
 		$this->lang   = $lang;
 	}
 
-	public function setPathToTranslations($module, $filename)
+        /**
+         *
+         * @param string $module name of the module these translations are for
+         * @param string $filename path to the file containing the translations
+         */
+	public function setPathToTranslation($module, $filename)
 	{
-		$this->translations[$module] = $filename;
+		$this->translationFiles[$module] = $filename;
 	}
 
+        /**
+         *
+         * @param string $module name of the module these translations are for
+         * @param array $translations set of translations to load
+         */
 	public function addTranslations($module, $translations)
 	{
+                constraint_mustBeString($module);
                 constraint_mustBeArray($translations);
 
 		if (!is_array($this->translations[$module]))
@@ -74,7 +94,12 @@ class MF_Language_Translations extends MF_Obj
 		$this->translations[$module] = array_merge($translations, $this->translations[$module]);
 	}
 
-        public function hasTranslationsForModule($module)
+        /**
+         *
+         * @param string $module name of the module these translations are for
+         * @return boolean true if we have loaded translations for this module
+         */
+        protected function hasTranslationsForModule($module)
         {
                 if (!isset($this->translations[$module]))
                 {
@@ -84,27 +109,19 @@ class MF_Language_Translations extends MF_Obj
                 return true;
         }
 
+        /**
+         *
+         * @param string $module name of the module we want a translation for
+         * @param string $name text that we want to translate
+         * @return mixed a string if we have a translation; false otherwise
+         */
 	public function getTranslation($module, $name)
 	{
-                //MF_App::$debug->info("Looking for translation for $module::$name");
-
 		// do we know anything about this module?
 		if (!$this->hasTranslationsForModule($module))
 		{
-                        //MF_App::$debug->warn("Unknown translation $module");
-			// no we do not
-                        // bail out
-
-			return false;
-		}
-
-		// have we already loaded this module's translation for
-		// this language?
-		if (is_string($this->translations[$module]))
-		{
-                        //MF_App::$debug->info("Loading translations for $module");
-			// no we have not ... time to do so
-			@require_once($this->translations[$module]);
+                        // none loaded yet
+                        $this->loadTranslationsForModule($module);
 		}
 
 		// do we have a translation?
@@ -120,6 +137,64 @@ class MF_Language_Translations extends MF_Obj
 		// no, we have no translation
 		return false;
 	}
+
+        /**
+         * getter; can be used as a fake property e.g. $this->lang
+         *
+         * @return string locale string for this set of translations
+         */
+        public function getLang()
+        {
+                return $this->lang;
+        }
+
+        /**
+         * getter; can be used as a fake property e.g. $this->translationsCount
+         *
+         * @return int how many translations we have actually loaded
+         */
+        public function getTranslationsCount()
+        {
+                return count($this->translations);
+        }
+
+        /**
+         * getter; can be used as a fake property e.g. $this->translationPathsCount
+         *
+         * @return int how many translation files we know about
+         */
+        public function getTranslationPathsCount()
+        {
+                return count($this->translationFiles);
+        }
+
+        /**
+         *
+         * @param string $module name of the module we want to load translations for
+         */
+        protected function loadTranslationsForModule($module)
+        {
+                $this->requireValidPathForModule($module);
+                require($this->translationFiles[$module]);
+        }
+
+        /**
+         *
+         * @param string $module name of the module we wanat to load translations for
+         */
+        protected function requireValidPathForModule($module)
+        {
+                if (!isset($this->translationFiles[$module]))
+                {
+                        throw new MF_Language_E_UnknownModule($module);
+                }
+                
+                constraint_mustBeString($this->translationFiles[$module]);
+                if (!file_exists($this->translationFiles[$module]))
+                {
+                        throw new MF_Language_E_NoSuchTranslation($module, $this->translationFiles[$module]);
+                }
+        }
 }
 
 ?>

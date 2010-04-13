@@ -27,7 +27,7 @@
 // 2009-03-02   SLH     Added E_INTERNAL_SERVER_ERROR
 // ========================================================================
 
-MF_App::$languages->addTranslationsForModule('App', 'en-us', array
+$this->addTranslations('MF_App', array
 (
         // Exceptions
         'E_INTERNAL_SERVER_ERROR'                    => 'An unexpected error occurred',

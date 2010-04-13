@@ -48,7 +48,7 @@ class MF_PHP_E_ConstraintFailed extends MF_Exception_Technical
 	function __construct ($functionName, Exception $oCause = null)
         {
         	parent::__construct (
-                        mf_l('PHP', 'E_ConstraintFailed'),
+                        mf_l('MF_PHP', 'E_ConstraintFailed'),
                         array ($functionName),
                         $oCause
                 );

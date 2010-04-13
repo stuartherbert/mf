@@ -1,6 +1,6 @@
 <?php
 
-class Test_ObjBase extends MF_Obj
+class Test_ObjBase extends MF_Obj_Extensible
 {
 
 }
@@ -53,6 +53,16 @@ class Test_ObjExt extends Test_ObjBase
 
                 return $return;
         }
+
+        public function methodToCall()
+        {
+                return 'harry';
+        }
+
+        public function forceAnInvalidMixin()
+        {
+                return $this->requireValidMixin($this);
+        }
 }
 
 class Test_Obj2 extends Test_ObjBase
@@ -89,6 +99,16 @@ class Test_Obj_BaseMixin extends MF_Obj_Mixin
         {
                 return get_class($this);
         }
+
+        public function doSomethingInTheMixin()
+        {
+                return get_class($this);
+        }
+
+        public function doSomethingInTheBaseMixin()
+        {
+                return get_class($this);
+        }
 }
 
 class Test_Obj_ExtMixin extends MF_Obj_Mixin
@@ -120,17 +140,80 @@ class Test_Obj_ExtMixin extends MF_Obj_Mixin
         {
                 return get_class($this);
         }
+
+        public function doSomethingInTheMixin()
+        {
+                return get_class($this);
+        }
 }
 
+/**
+ * @extends Test_ObjBase
+ */
 class Test_Obj_ExtMixin2 extends MF_Obj_Mixin
 {
         public function validateCalled()
         {
                 return get_class($this);
         }
+
+        public function getExtMixin2ProtVar()
+        {
+                return $this->planet;
+        }
+
+        public function setExtMixin2ProtVar($value)
+        {
+                $this->planet = $value;
+        }
+
+        public function issetExtMixin2ProtVar()
+        {
+                return isset($this->planet);
+        }
+
+        public function unsetExtMixin2ProtVar()
+        {
+                unset($this->planet);
+        }
+
+        public function getExtMixin2NonVar()
+        {
+                return $this->planet2;
+        }
+
+        public function setExtMixin2NonVar($value)
+        {
+                $this->planet2 = $value;
+        }
+
+        public function issetExtMixin2NonVar()
+        {
+                return isset($this->planet2);
+        }
+
+        public function unsetExtMixin2NonVar()
+        {
+                unset($this->planet2);
+        }
+
+        public function callMethodOnOrigObject()
+        {
+                return $this->methodToCall();
+        }
 }
 
-class Test_Obj_Decorator extends MF_Obj
+class Test_Obj_ParentMixin extends MF_Obj_Mixin
+{
+
+}
+
+class Test_Obj_ChildMixin extends Test_Obj_ParentMixin
+{
+
+}
+
+class Test_Obj_Decorator
 {
         public    $decoratorProp = 'alice';
         protected $protVar       = 'lisa';
@@ -153,6 +236,35 @@ class Test_Obj_Decorator extends MF_Obj
         public function unsetFish()
         {
                 $this->protVar = null;
+        }
+
+        public function validateCalled()
+        {
+                return get_class($this);
+        }
+
+        public function doSomethingWithADecorator()
+        {
+                return get_class($this);
+        }
+
+        public function firstParamIsExtendedObject($origObj, $expectedClassname)
+        {
+                // we return true if we like what we see,
+                // otherwise we return false
+
+                if (!$origObj instanceof MF_Obj_Extensible)
+                {
+                        return false;
+                }
+
+                if (get_class($origObj) !== $expectedClassname)
+                {
+                        return false;
+                }
+
+                // if we get here, then all is good
+                return true;
         }
 }
 

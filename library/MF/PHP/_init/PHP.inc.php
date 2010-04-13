@@ -41,12 +41,11 @@
 
 // set who we are
 $componentDir  = dirname(__FILE__) . DIRECTORY_SEPARATOR;
-$componentName = 'PHP';
 
 // load our functions
 require($componentDir . '/PHP.funcs.php');
 
 // support for the user's chosen language
-MF_App::$languages->moduleSpeaks($componentName, $componentDir, 'en-us');
+MF_App::$languages->moduleSpeaks('MF_PHP', 'en-us', $componentDir . '/PHP.lang.en-us.php');
 
 ?>

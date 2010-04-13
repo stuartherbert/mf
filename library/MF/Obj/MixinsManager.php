@@ -49,9 +49,11 @@ class MF_Obj_MixinsManager
 
         static public $mixinAutoInc = 0;
 
-        protected function __construct()
+        static protected $baseClasses = array();
+        
+        public function __construct()
         {
-                // do nothing ... class cannot be instantiated
+                throw new MF_PHP_E_IsSingleton(__CLASS__);
         }
 
         static public function destroy()
@@ -91,7 +93,7 @@ class MF_Obj_MixinsManager
                         // update itself at this point
 
                         $mixins = self::$mixins[$classname];
-                        $mixins->updateBaseClassList();
+                        $mixins->updateMethodsAndProperties();
                         return $mixins;
                 }
 
@@ -100,20 +102,30 @@ class MF_Obj_MixinsManager
                 return null;
         }
 
-        static public function _getMixinsFor($classname)
+        static public function getRawMixins()
         {
-                if (isset(self::$mixins[$classname]))
-                {
-                        return self::$mixins[$classname];
-                }
-
-                return null;
+                return self::$mixins;
         }
 
-        static public function var_dump()
+        static public function getBaseclassesForClass($classname)
         {
-                var_dump(self::$mixins);
-                var_dump(self::$mixinAutoInc);
+                if (isset(self::$baseClasses[$classname]))
+                {
+                        return self::$baseClasses[$classname];
+                }
+
+                $refObj = new ReflectionClass($classname);
+                $refObj = $refObj->getParentClass();
+                $return = array();
+
+                while ($refObj !== false)
+                {
+                        $return[] = $refObj->getName();
+                        $refObj = $refObj->getParentClass();
+                }
+
+                self::$baseClasses[$classname] = $return;
+                return $return;
         }
 }
 

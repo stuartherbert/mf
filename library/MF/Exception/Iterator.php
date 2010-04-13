@@ -46,14 +46,27 @@
 
 class MF_Exception_Iterator implements Iterator
 {
-        protected $oStart = null;
+        /**
+         *
+         * @var MF_Exception_Enterprise
+         */
+        protected $start = null;
 
-        private $oCurrent = null;
+        /**
+         *
+         * @var MF_Exception_Enterprise
+         */
+        private $current  = null;
+
+        /**
+         *
+         * @var int
+         */
         private $level    = 0;
 
         public function __construct(MF_Exception_Enterprise $oException)
         {
-                $this->oStart = $oException;
+                $this->start = $oException;
                 $this->rewind();
         }
 
@@ -63,13 +76,13 @@ class MF_Exception_Iterator implements Iterator
 
         public function rewind()
         {
-                $this->oCurrent = $this->oStart;
-                $this->level    = 0;
+                $this->current = $this->start;
+                $this->level   = 0;
         }
 
         public function current()
         {
-                return $this->oCurrent;
+                return $this->current;
         }
 
         public function key()
@@ -82,7 +95,7 @@ class MF_Exception_Iterator implements Iterator
                 // we can go no further if we're already off the end
                 // of this list
 
-                if ($this->oCurrent === null)
+                if ($this->current === null)
                 {
                         return false;
                 }
@@ -94,12 +107,12 @@ class MF_Exception_Iterator implements Iterator
                 // of Exception:
                 //
                 // a) A generic PHP 5 Exception object, or
-                // b) An Arafel2 Exception that has no cause data
+                // b) A framework Exception that has no cause data
 
-                if ((!($this->oCurrent instanceof MF_Exception_Enterprise)) ||
-                    (!$this->oCurrent->hasCause()))
+                if ((!($this->current instanceof MF_Exception_Enterprise)) ||
+                    (!$this->current->hasCause()))
                 {
-                        $this->oCurrent = null;
+                        $this->current = null;
                         $this->level++;
                         return false;
                 }
@@ -107,7 +120,7 @@ class MF_Exception_Iterator implements Iterator
                 // if we get here, then we have not yet reached the end
                 // of the list
 
-                $this->oCurrent = $this->oCurrent->getCause();
+                $this->current = $this->current->getCause();
                 $this->level++;
 
                 return true;
@@ -115,7 +128,7 @@ class MF_Exception_Iterator implements Iterator
 
         public function valid()
         {
-                return ($this->oCurrent !== null);
+                return ($this->current !== null);
         }
 }
 

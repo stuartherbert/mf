@@ -32,7 +32,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * @category   MF
- * @package    MF_Obj
+ * @package    MF_PHP
  * @copyright  Copyright (c) 2008-2010 Stuart Herbert.
  * @license    http://www.opensource.org/licenses/bsd-license.php Simplified BSD License
  * @version    0.1
@@ -41,46 +41,23 @@
 
 /**
  * @category   MF
- * @package    MF_Obj
+ * @package    MF_PHP
  */
-class MF_Obj_Mixin
+
+class MF_PHP_E_IsSingleton extends MF_Exception_Technical
 {
-        protected $extending = null;
-
-        public function __construct($extending)
+        function __construct ($className, Exception $oCause = null)
         {
-                constraint_mustBeObject($extending);
-                $this->extending = $extending;
-        }
+                if (is_object($className))
+                {
+                	$className = get_class($className);
+                }
 
-        public function __get($property)
-        {
-                $obj = $this->extending;
-                return $obj->$property;
-        }
-
-        public function __set($property, $value)
-        {
-                $obj = $this->extending;
-                $obj->$property = $value;
-        }
-
-        public function __isset($property)
-        {
-                $obj = $this->extending;
-                return isset($obj->$property);
-        }
-
-        public function __unset($property)
-        {
-                $obj = $this->extending;
-                unset($obj->$property);
-        }
-
-        public function __call($method, $args)
-        {
-                $obj = $this->extending;
-                return call_user_func_array(array($obj, $method), $args);
+                parent::__construct (
+                        mf_l('MF_PHP', 'E_IsSingleton'),
+                        array ($className),
+                        $oCause
+                );
         }
 }
 

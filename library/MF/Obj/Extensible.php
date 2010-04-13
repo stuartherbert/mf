@@ -46,7 +46,7 @@ __mf_init_module('PHP');
  * @category   MF
  * @package    MF_Obj
  */
-class MF_Obj
+class MF_Obj_Extensible
 {
         /**
          * A list of the mixin objects that extend this object
@@ -129,23 +129,25 @@ class MF_Obj
 
         protected function requireValidMixin($obj)
         {
+                // we have worked very hard throughout the code to ensure
+                // that we never get an invalid mixin, but just in case ...
                 if (!$obj instanceof MF_Obj_Mixin)
                 {
                         throw new MF_PHP_E_ConstraintFailed(__METHOD__);
                 }
         }
 
-        public function getMixinCount()
+        public function getMixinsCount()
         {
                 $mixins = MF_Obj_MixinsManager::getMixinsFor($this->extensibleName);
-
+                
                 if ($mixins === null)
                 {
                         // we have no mixins at all yet
                         return 0;
                 }
 
-                return $mixins->getMixinCount();
+                return $mixins->getMixinsCount();
         }
 
         public function getExtendsObj()
@@ -155,13 +157,25 @@ class MF_Obj
 
         public function hasMixins()
         {
-                return ($this->getMixinCount() > 0);
+                return ($this->getMixinsCount() > 0);
         }
 
         // ================================================================
         // Member support
         // ----------------------------------------------------------------
 
+        /**
+         * Find a mixin or decorator that has the property we want to
+         * interact with
+         *
+         * IMPORTANT:
+         *
+         * This method cannot cache the list of mixin objects between
+         * calls, because we allow new mixins to be added at any time
+         *
+         * @param string $propertyName name of the property we seek
+         * @return Object the object that has the property we seek
+         */
         protected function findObjForProperty($propertyName)
         {
                 // we are not a mixin ... so look at our mixins instead
@@ -276,7 +290,11 @@ class MF_Obj
                 }
 
                 // if we get here, the property does not exist
-                throw new MF_Obj_E_NoSuchProperty($propertyName, $this);
+                // we used to throw an exception, but today we do our
+                // best to mimic PHP's normal behaviour when attempting
+                // to access a property that does not exist
+                return null;
+                // throw new MF_Obj_E_NoSuchProperty($propertyName, $this);
         }
 
         public function __set($propertyName, $value)
@@ -362,6 +380,8 @@ class MF_Obj
                         }
                         else
                         {
+                                // $obj must be a decorator
+                                //
                                 // put $this at the front of the args
                                 $args = array($this);
                                 foreach ($origArgs as $arg)
@@ -375,18 +395,6 @@ class MF_Obj
 
                 // if we get here, then the method does not exist
                 throw new MF_Obj_E_NoSuchMethod($method, $this);
-        }
-
-        // ================================================================
-        // Useful helpers for calling methods
-        // ----------------------------------------------------------------
-
-        public function requireValidMethod($method)
-        {
-                if (!method_exists($this, $method))
-                {
-                        throw new MF_Obj_E_NoSuchMethod($method, $this);
-                }
         }
 }
 

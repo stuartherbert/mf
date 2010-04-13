@@ -54,7 +54,7 @@ class MF_PHP_E_NoSuchMethod extends MF_Exception_Technical
                 }
 
                 parent::__construct (
-                        app_l('PHP', 'E_NoSuchMethod'),
+                        mf_l('MF_PHP', 'E_NoSuchMethod'),
                         array ($methodName, $className),
                         $oCause
                 );

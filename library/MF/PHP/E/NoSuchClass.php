@@ -49,7 +49,7 @@ class MF_PHP_E_NoSuchClass extends MF_Exception_Technical
         function __construct ($className, Exception $oCause = null)
         {
                 parent::__construct (
-                        app_l('PHP', 'E_NoSuchClass'),
+                        mf_l('MF_PHP', 'E_NoSuchClass'),
                         array ($className),
                         $oCause
                 );

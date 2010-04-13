@@ -23,11 +23,13 @@
 // 2008-01-06   SLH     Stopped using constants for language strings
 // 2008-02-11   SLH     Foreign languages now go in $APP_CONFIG
 // 2009-03-01   SLH     Foreign languages now loaded through App
+// 2010-04-07   SLH     Added IsSingleton
 // ========================================================================
 
-App::$languages->addTranslationsForModule('PHP', 'en-us', array
+$this->addTranslations('MF_PHP', array
 (
         'E_ConstraintFailed'   => "Constraint '%s' failed",
+        'E_IsSingleton'        => "Class '%s' is a singleton and cannot be instantiated",
         'E_NoSuchClass'        => "Class '%s' is not defined",
         'E_NoSuchMethod'       => "Class '%2\$s' does not have a method called '%1\$s'",
 ));

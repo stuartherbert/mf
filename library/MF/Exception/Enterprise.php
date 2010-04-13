@@ -48,28 +48,38 @@ class MF_Exception_Enterprise extends Exception
 {
         /**
          * holds the original exception if we are throwing a new one
+         *
+         * @var Exception
          */
-
-        protected $oCause = null;
+        protected $cause = null;
 
         /**
          * holds the list of parameters to explain this exception
+         *
+         * @var array
          */
+        protected $params = null;
 
-        protected $aParams = null;
+        /**
+         * the HTTP code to return to the browser or calling HTTP client
+         *
+         * @var int
+         */
+        public $httpCode = 500;
 
         /**
          * constructor
          */
 
-        public function __construct ($errorCode, $formatString, $aParams, Exception $oCause = null)
+        public function __construct ($httpCode, $errorCode, $formatString, $params, Exception $cause = null)
         {
-                $message = vsprintf($formatString, $aParams);
+                $message = vsprintf($formatString, $params);
 
                 parent::__construct($message, $errorCode);
 
-                $this->oCause    = $oCause;
-                $this->aParams   = $aParams;
+                $this->cause     = $cause;
+                $this->params    = $params;
+                $this->httpCode  = $httpCode;
         }
 
         /**
@@ -78,7 +88,7 @@ class MF_Exception_Enterprise extends Exception
 
         public function getCause()
         {
-                return $this->oCause;
+                return $this->cause;
         }
 
         /**
@@ -87,25 +97,39 @@ class MF_Exception_Enterprise extends Exception
 
         public function hasCause()
         {
-                if ($this->oCause != null)
+                if ($this->cause != null)
                         return true;
 
                 return false;
         }
 
+        /**
+         *
+         * @param string $cause name of the class to check for
+         * @return boolean
+         */
         public function wasCausedBy($cause)
         {
+                // if we have no cause, bail
         	if (!$this->hasCause())
                 {
                 	return false;
                 }
 
-                if ($this->oCause instanceof $cause)
+                // if the cause matches, let them know
+                if ($this->cause instanceof $cause)
                 {
                 	return true;
                 }
 
-                return $this->oCause->wasCausedBy($cause);
+                // what if the cause is also a symptom?
+                if (method_exists($this->cause, 'wasCausedBy'))
+                {
+                        return $this->cause->wasCausedBy($cause);
+                }
+
+                // if we get here, we have exhausted our possibilities
+                return false;
         }
 
         public function getIterator ()
@@ -115,7 +139,12 @@ class MF_Exception_Enterprise extends Exception
 
         public function getParams()
         {
-                return $this->aParams;
+                return $this->params;
+        }
+
+        public function getHttpReturnCode()
+        {
+                return $this->httpCode;
         }
 }
 

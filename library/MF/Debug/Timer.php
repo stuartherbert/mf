@@ -39,7 +39,7 @@
  * @link       http://framework.methodosity.com
  */
 
-class MF_Debug_Timer extends MF_Obj
+class MF_Debug_Timer extends MF_Obj_Extensible
 {
         /**
          * Is debugging enabled or not?

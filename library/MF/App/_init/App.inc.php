@@ -26,13 +26,12 @@
 
 // who we are
 $componentDir  = dirname(__FILE__) . DIRECTORY_SEPARATOR;
-$componentName = 'App';
 
 // special case:
 // App must initialise itself before we can go any further
 MF_App::init();
 
 // support for the user's chosen language
-MF_App::$languages->moduleSpeaks('App', $componentDir, 'en-us');
+MF_App::$languages->moduleSpeaks('MF_App', 'en-us', $componentDir . '/App.lang.en-us.php');
 
 ?>

@@ -45,7 +45,7 @@
  */
 
 
-interface Events_Listener
+interface MF_Events_Listener
 {
 
 }

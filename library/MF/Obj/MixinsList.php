@@ -45,19 +45,73 @@
  */
 class MF_Obj_MixinsList
 {
+        /**
+         * A list of all of the classes that *directly* are mixins
+         * for the class name stored in $this->name
+         *
+         * @var array
+         */
         protected $mixins          = array();
+
+        /**
+         * A list of which methods have been mixed in, and which classes
+         * the method is defined on
+         *
+         * NOTE: we deliberately keep a list of all of the classes which
+         * define a method, so that we can call all of them if requested
+         *
+         * @var array
+         */
         protected $mixinMethods    = array();
+
+        /**
+         * A list of the properties that have been mixed in, and which
+         * class the property is defined on
+         *
+         * NOTE: we only store the latest class for each property (ie,
+         * the class that has been mixed in last).
+         *
+         * @var array
+         */
         protected $mixinProperties = array();
 
-        protected $cachedMixinMethods    = array();
-        protected $cachedMixinProperties = array();
-
-        protected $lastSeenMixinAutoInc = 0;
+        /**
+         * A list of the base classes, to avoid having to recalculate
+         * the list every time we need to iterate over it
+         *
+         * @var array
+         */
         protected $baseClasses     = array();
+
+        /**
+         * The name of the PHP class that we are tracking mixin information
+         * about
+         * 
+         * @var string
+         */
+        public $name = null;
+
+        /**
+         * A counter of how many classes both directly and indirectly
+         * are mixed into the class listed in $this->name
+         * @var int
+         */
+        protected $mixinsCount = 0;
+
+        /**
+         * A cache of MF_Obj_MixinsManager::mixinAutoInc. We use this to
+         * work out whether or not we really do need to regenerate the
+         * information we've cached regarding the methods and properties
+         * of the mixins
+         * 
+         * @var int
+         */
+        protected $lastMixinAutoInc = 0;
 
         public function __construct($classname)
         {
-                $this->name = $classname;
+                $this->name        = $classname;
+                $this->baseClasses = MF_Obj_MixinsManager::getBaseclassesForClass($classname);
         }
 
         public function withClass($extensionClass)
@@ -66,121 +120,168 @@ class MF_Obj_MixinsList
                 // var_dump('We have ' . count($this->mixins) . ' mixins before this one');
 
                 constraint_mustBeString($extensionClass);
+                constraint_mustBeMixinClass($extensionClass);
 
                 $this->mixins[$extensionClass] = $extensionClass;
-
-                $methods    = $this->getMethodsFromClass($extensionClass);
-                $properties = $this->getPropertiesFromClass($extensionClass);
-
-                foreach ($methods as $method)
-                {
-                        $this->mixinMethods[$method][] = $extensionClass;
-                }
-
-                foreach ($properties as $property)
-                {
-                        $this->mixinProperties[$property] = $extensionClass;
-                }
-
+                $this->updateMethodsAndProperties();
                 MF_Events_Manager::triggerEvent('classExtended', null, array('class' => $this->name, 'extension' => $extensionClass));
 
                 // var_dump('We now have ' . count($this->mixins) . ' mixins after this one');
         }
 
-        public function getMixinCount()
+        public function getMixinsCount()
         {
-                $baseClasses = $this->getBaseClasses();
+                return $this->mixinsCount;
+        }
 
-                $count = 0;
-
-                foreach ($baseClasses as $baseClass)
+        public function updateMethodsAndProperties()
+        {
+                // if our cache is up to date, nothing to do
+                if ($this->lastMixinAutoInc === MF_Obj_MixinsManager::$mixinAutoInc)
                 {
-                        $mixins = MF_Obj_MixinsManager::getMixinsFor($baseClass);
-                        if ($mixins === null)
-                                continue;
-
-                        // var_dump('getMixinCount(): found ' . $mixins->_getMixinCount() . ' mixins for base class ' . $baseClass);
-                        // var_dump($mixins);
-                        $count += $mixins->_getMixinCount();
+                        return;
                 }
+                $this->lastMixinAutoInc = MF_Obj_MixinsManager::$mixinAutoInc;
 
-                return $count;
-        }
+                // var_dump('Updating methods and properties for ' . $this->name);
 
-        public function _getMixinCount()
-        {
-                return count($this->mixins);
-        }
-
-        public function updateBaseClassList()
-        {
                 // we need to look at all the base classes of the class
                 // we have extended, and make sure we know about their
                 // mixins too
-                //
-                // to boost performance, we look at the auto increment
-                // counter in Obj_MixinDefinitions to see whether our
-                // cache is still valid or not
 
-                //var_dump('Started updateBaseClassList');
-                if ($this->lastSeenMixinAutoInc !== MF_Obj_MixinsManager::$mixinAutoInc)
+                $this->mixinMethods    = array();
+                $this->mixinProperties = array();
+                $this->mixinsCount     = 0;
+
+                // step 1: pull in all the mixins for our baseclasses
+                $this->addMethodsFromMixins($this->name);
+                $this->addPropertiesFromMixins($this->name);
+                $this->updateMixinsCountFromMixins($this->name);
+
+                // step 2: pull in all the mixins that we need to add
+                foreach ($this->mixins as $extensionClass)
                 {
-                        // we need to rebuild our list
-                        $baseClasses = $this->getBaseClasses();
-                        foreach ($baseClasses as $baseClass)
+                        $this->addMethodsFromClass($extensionClass);
+                        $this->addPropertiesFromClass($extensionClass);
+                        $this->updateMixinsCountFromClass($extensionClass);
+                }
+        }
+
+        public function addMethodsFromClass($extensionClass)
+        {
+                // get the class's main methods
+                $definedMethods = $this->getMethodsFromClass($extensionClass);
+                foreach ($definedMethods as $method)
+                {
+                        $this->mixinMethods[$method][] = $extensionClass;
+                }
+
+                $this->addMethodsFromMixins($extensionClass);
+                // all done
+        }
+
+        public function addPropertiesFromClass($extensionClass)
+        {
+                // get the class's defined properties first
+                $definedProperties = $this->getPropertiesfromClass($extensionClass);
+                foreach ($definedProperties as $property)
+                {
+                        $this->mixinProperties[$property] = $extensionClass;
+                }
+
+                $this->addPropertiesFromMixins($extensionClass);
+        }
+
+        public function updateMixinsCountFromClass($extensionClass)
+        {
+                // var_dump($this->name . ": $extensionClass is a mixin; adding to the mixin count");
+                $this->mixinsCount++;
+                // var_dump($this->name . ": Mixins count now increased to " . $this->mixinsCount);
+                $this->updateMixinsCountFromMixins($extensionClass);
+        }
+
+        public function addMethodsFromMixins($extensionClass)
+        {
+                // var_dump($this->name . ': adding methods from mixin ' . $extensionClass);
+                
+                // get the class's class hierarchy
+                $classHierarchy = MF_Obj_MixinsManager::getBaseclassesForClass($extensionClass);
+
+                foreach ($classHierarchy as $extensionClass)
+                {
+                        // var_dump($this->name . ': looking for mixins for class ' . $extensionClass);
+                        // now pull in that class's mixins
+                        $mixinsList = MF_Obj_MixinsManager::getMixinsFor($extensionClass);
+                        if ($mixinsList == null)
                         {
-                                $mixins = MF_Obj_MixinsManager::_getMixinsFor($baseClass);
-
-                                // skip over any classes that have not been
-                                // extended at this time
-                                if ($mixins === null)
+                                continue;
+                        }
+                        // var_dump($this->name . ': found mixins for class ' . $extensionClass);
+                        
+                        $mixinMethods = $mixinsList->getMethods();
+                        foreach ($mixinMethods as $method => $classes)
+                        {
+                                foreach ($classes as $class)
                                 {
-                                        continue;
+                                        $this->mixinMethods[$method][] = $class;
                                 }
-
-                                $methods    = $mixins->getMethods();
-                                constraint_mustBeArray($methods);
-                                
-                                foreach ($methods as $method => $classnames)
-                                {
-                                        constraint_mustBeArray($classnames);
-                                        foreach ($classnames as $classname)
-                                        {
-                                                // var_dump('Adding ' . $classname . '::' . $method . ' to list of cached methods');
-                                                $this->cachedMixinMethods[$method][] = $classname;
-                                        }
-                                }
-
-                                $properties = $mixins->getProperties();
-                                $this->cachedMixinProperties += $properties;
                         }
 
-                        $this->lastSeenMixinAutoInc = MF_Obj_MixinsManager::$mixinAutoInc;
-
+                        // the mixin will include any mixins from its
+                        // base classes ... we need go no further
+                        break;
                 }
-
-                // at this point, the cachedMixin* properties have the
-                // right values (in the right order!!) to be used by the
-                // classes we have extended
-                // var_dump('Finished updateBaseClassList()');
+                // all done
         }
 
-        public function getBaseClasses()
+        public function addPropertiesFromMixins($extensionClass)
         {
-                $refObj      = new ReflectionClass($this->name);
-                $baseClasses = array();
+                // get the class's class hierarchy
+                $classHierarchy = MF_Obj_MixinsManager::getBaseclassesForClass($extensionClass);
 
-                while ($refObj !== false)
+                foreach ($classHierarchy as $extensionClass)
                 {
-                        $baseClasses[] = $refObj->getName();
-                        $refObj = $refObj->getParentClass();
-                }
+                        // now pull in that class's mixins
+                        $mixinsList = MF_Obj_MixinsManager::getMixinsFor($extensionClass);
+                        if ($mixinsList == null)
+                        {
+                                continue;
+                        }
+                        
+                        $mixinProperties = $mixinsList->getProperties();
+                        foreach ($mixinProperties as $property => $class)
+                        {
+                                $this->mixinProperties[$property] = $class;
+                        }
 
-                // var_dump($baseClasses);
-                return $baseClasses;
+                        // the mixin will include any mixins from its
+                        // base classes ... we need go no further
+                        break;
+                }
+                // all done
         }
 
-        public function getMethodsFromClass($classname)
+        public function updateMixinsCountFromMixins($extensionClass)
+        {
+                $classHierarchy = MF_Obj_MixinsManager::getBaseclassesForClass($extensionClass);
+                foreach ($classHierarchy as $classname)
+                {
+                        // var_dump($this->name . ": Looking at the mixins count for $classname; current mixins count is " . $this->mixinsCount);
+                        
+                        $mixins = MF_Obj_MixinsManager::getMixinsFor($classname);
+                        if ($mixins == null)
+                                continue;
+
+                        $this->mixinsCount += $mixins->getMixinsCount();
+                        // var_dump($this->name . ": Mixins count now increased to " . $this->mixinsCount);
+
+                        // the mixin will include how many mixins its
+                        // baseclasses have defined ... we need go no further
+                        break;
+                }
+        }
+
+        protected function getMethodsFromClass($classname)
         {
                 $reflection = new ReflectionClass($classname);
                 $methods    = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
@@ -194,7 +295,7 @@ class MF_Obj_MixinsList
                 return $return;
         }
 
-        public function getPropertiesfromClass($classname)
+        protected function getPropertiesfromClass($classname)
         {
                 $reflection = new ReflectionClass($classname);
                 $properties = $reflection->getProperties(ReflectionProperty::IS_PUBLIC);
@@ -220,43 +321,39 @@ class MF_Obj_MixinsList
 
         public function getClassnamesForMethod($method)
         {
-                if (!isset($this->cachedMixinMethods[$method]))
+                if (!isset($this->mixinMethods[$method]))
                 {
                         return null;
                 }
-                return $this->cachedMixinMethods[$method];
+                return array_reverse($this->mixinMethods[$method]);
         }
 
         public function getClassnameForMethod($method)
         {
                 // var_dump('looking in cached for ' . $method);
 
-                if (!isset($this->cachedMixinMethods[$method]))
+                if (!isset($this->mixinMethods[$method]))
                 {
                         return null;
                 }
 
-                $count = count($this->cachedMixinMethods[$method]);
-                if ($count == 0)
-                {
-                        // should never happen, but just in case
-                        return null;
-                }
+                $count = count($this->mixinMethods[$method]);
+                constraint_mustNotBeEmptyArray($this->mixinMethods[$method]);
 
                 // var_dump($this->cachedMixinMethods[$method]);
                 // var_dump($count);
                 // var_dump($this->cachedMixinMethods[$method][$count - 1]);
 
-                return $this->cachedMixinMethods[$method][$count - 1];
+                return $this->mixinMethods[$method][$count - 1];
         }
 
         public function getClassnameForProperty($property)
         {
-                if (!isset($this->cachedMixinProperties[$property]))
+                if (!isset($this->mixinProperties[$property]))
                 {
                         return null;
                 }
-                return $this->cachedMixinProperties[$property];
+                return $this->mixinProperties[$property];
         }
 }
 

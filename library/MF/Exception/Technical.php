@@ -48,7 +48,7 @@ class MF_Exception_Technical extends MF_Exception_Enterprise
 {
         public function __construct ($formatString, $aParams, Exception $oCause = null)
         {
-                parent::__construct(0, $formatString, $aParams, $oCause);
+                parent::__construct(500, 1, $formatString, $aParams, $oCause);
         }
 }
 

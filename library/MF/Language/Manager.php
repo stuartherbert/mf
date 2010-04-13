@@ -41,7 +41,7 @@
 
 __mf_init_module('Language');
 
-class MF_Language_Manager extends MF_Obj
+class MF_Language_Manager extends MF_Obj_Extensible
 {
         /**
 	 * The current language for this app ... this will be the same as
@@ -50,8 +50,7 @@ class MF_Language_Manager extends MF_Obj
 	 *
          * @var Language_Translations
          */
-
-        public $currentLanguage = null;
+        protected $currentLanguage = null;
 
         /**
          * The default language for this app ... the one we expect to have
@@ -59,7 +58,7 @@ class MF_Language_Manager extends MF_Obj
 	 *
          * @var Language_Translations
          */
-        public $defaultLanguage = null;
+        protected $defaultLanguage = null;
 
         /**
          * A list of all the languages we have translations for
@@ -84,6 +83,16 @@ class MF_Language_Manager extends MF_Obj
 		$this->defaultLanguage = $this->languages[$defaultLanguage];
 		$this->currentLanguage = $this->languages[$defaultLanguage];
 	}
+
+        public function getCurrentLanguage()
+        {
+                return $this->currentLanguage;
+        }
+
+        public function getDefaultLanguage()
+        {
+                return $this->defaultLanguage;
+        }
 
         /**
          * Switch the whole app to use a different language
@@ -118,7 +127,7 @@ class MF_Language_Manager extends MF_Obj
                 }
         }
 
-	public function moduleSpeaks ($module, $pathToDir, $language)
+	public function moduleSpeaks ($module, $language, $pathToFile)
 	{
 		if (!isset($this->languages[$language]))
 		{
@@ -126,32 +135,27 @@ class MF_Language_Manager extends MF_Obj
 		}
 
                 // work out the file we need to include when the time comes
-                $includeFile = $pathToDir . '/' . $module . '.lang.' . $language . '.php';
-		if (!file_exists($includeFile))
+		if (!file_exists($pathToFile))
 		{
 			trigger_error("File $includeFile not found; required for multi-lingual support");
 		}
 
 		// tell the language translations object where it can get
 		// the translations from when the time comes
-		$this->languages[$language]->setPathToTranslations($module, $includeFile);
+		$this->languages[$language]->setPathToTranslation($module, $pathToFile);
 	}
 
-        protected function autoloadTranslationsForModule($module)
+        public function autoloadTranslations($module)
         {
-                // we try to load translations from the app first
-                // and then look in mf/ if we've had no luck
-                if (!$this->findTranslationsForModule($module, APP_LIBDIR . '/' . $module))
-                {
-                        $this->findTranslationsForModule($module, MF_LIBDIR . '/' . $module);
-                }
+                $pathToDir = APP_LIBDIR . '/' . str_replace('_', '/', $module) . '/_init';
+                $this->findTranslationsForModule($module, $pathToDir);
         }
-
+        
         protected function findTranslationsForModule($module, $pathToDir)
         {
                 //MF_App::$debug->info(__METHOD__ . ':: looking in ' . $pathToDir . ' for translations');
 
-                // how many language files can we find?
+                // how many language files can we find?                
                 $dh = @dir($pathToDir);
                 if (!$dh)
                 {
@@ -166,11 +170,6 @@ class MF_Language_Manager extends MF_Obj
                         // App::$debug->info('Looking at file ' . $file);
 
                         $fileParts = explode('.', $file);
-                        if ($fileParts[0] != $module)
-                        {
-                                // App::$debug->info('Rejected file ' . $file . '; first part not module name');
-                                continue;
-                        }
                         if ($fileParts[1] != 'lang')
                         {
                                 // App::$debug->info('Reject file ' . $file . '; second part not "lang"');
@@ -196,7 +195,7 @@ class MF_Language_Manager extends MF_Obj
 
                         // we have found a language file ...
                         // make a note of it
-                        $this->moduleSpeaks($module, $pathToDir, $fileParts[2]);
+                        $this->moduleSpeaks($module, $fileParts[2], $pathToDir . '/' . $file);
 
                         $found = true;
                 }
@@ -204,17 +203,6 @@ class MF_Language_Manager extends MF_Obj
                 $dh->close();
 
                 return $found;
-        }
-
-        public function addTranslationsForModule($module, $language, $translations)
-        {
-                constraint_mustBeArray($translations);
-		if (!isset($this->languages[$language]))
-		{
-			$this->languages[$language] = new MF_Language_Translations($language);
-		}
-
-                $this->languages[$language]->addTranslations($module, $translations);
         }
 
         /**
@@ -229,14 +217,7 @@ class MF_Language_Manager extends MF_Obj
          */
         public function getTranslation($module, $stringName)
         {
-                // step 1 - do we have a translation for this string?
-                if (!$this->currentLanguage->hasTranslationsForModule($module))
-                {
-                        // we need to autoload the translations
-                        $this->autoloadTranslationsForModule($module);
-                }
-
-                // step 2 - get the translation from the app's current
+                // step 1 - get the translation from the app's current
                 //          language
                 $return = $this->currentLanguage->getTranslation($module, $stringName);
                 if ($return)
@@ -244,7 +225,7 @@ class MF_Language_Manager extends MF_Obj
                         return $return;
                 }
 
-                // step 3 - check the default language strings if the string
+                // step 2 - check the default language strings if the string
                 //          we seek hasn't been translated for the app's
                 //          current language
                 $return = $this->defaultLanguage->getTranslation($module, $stringName);
@@ -261,6 +242,11 @@ class MF_Language_Manager extends MF_Obj
         public function getCurrentLanguageName()
         {
                 return $this->currentLanguage->lang;
+        }
+
+        public function getDefaultLanguageName()
+        {
+                return $this->defaultLanguage->lang;
         }
 }
 

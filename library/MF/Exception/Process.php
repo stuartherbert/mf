@@ -46,17 +46,9 @@
 
 class MF_Exception_Process extends MF_Exception_Enterprise
 {
-        /**
-         *
-         * @var int the HTTP code to return to the browser or calling HTTP
-         *          client
-         */
-        public $httpCode = 500;
-
         public function __construct ($httpCode, $errorCode, $formatString, $aParams, Exception $oCause = null)
         {
-                parent::__construct($errorCode, $formatString, $aParams, $oCause);
-                $this->httpCode = $httpCode;
+                parent::__construct($httpCode, $errorCode, $formatString, $aParams, $oCause);
         }
 
 }

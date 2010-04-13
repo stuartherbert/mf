@@ -39,34 +39,88 @@
  * @link       http://framework.methodosity.com
  */
 
-function debug_vardump($file, $line, $function, $title, $var)
-{
-	echo "--- var_dump: $function: $title ---\n";
-	echo basename($file) . "@$line\n";
-	echo "--- data ---\n";
-	var_dump($var);
-	echo "--- end of var_dump ---\n";
-}
-
 /**
+ * Add a mixin to the class hierarchy, or extend one object with
+ * a decorator
  *
  * @param mixed $classOrObject class or object to extend
- * @param string $extensionClass class to mix into $classOrObject
+ * @param string $extensionClassOrObject class to mix into $classOrObject
  */
-function __mf_extend($classOrObject, $extensionClass)
+function __mf_extend($classOrObject, $extensionClassOrObject)
 {
         if (is_object($classOrObject))
         {
-                $classname = get_class($classOrObject);
+                // we are adding a decorator to an object
+                constraint_mustBeExtensible($classOrObject);
+                constraint_mustBeObject($extensionClassOrObject);
+
+                $classOrObject->addDecorator($extensionClassOrObject);
         }
         else
         {
-                $classname = $classOrObject;
+                // we are adding a mixin to the class hierarchy
+                MF_Obj_MixinsManager::extend($classOrObject)->withClass($extensionClassOrObject);
         }
-
-        MF_Obj_MixinsManager::extend($classname)->withClass($extensionClass);
 }
 
+function constraint_mustBeExtensible($object)
+{
+        if (!$object instanceof MF_Obj_Extensible)
+        {
+                throw new MF_PHP_E_ConstraintFailed(__FUNCTION__);
+        }
+}
+
+function constraint_mustBeMixinClass($classname)
+{
+        // a list of the classes we've seen before, to speed things up
+        // (hopefully)
+        static $cachedClasses = array();
+
+        $refObj = new ReflectionClass($classname);
+        $classesExamined = array();
+
+        while ($refObj !== false)
+        {
+                if (isset($cachedClasses[$refObj->name]))
+                {
+                        if ($cachedClasses[$refObj->name])
+                                return;
+
+                        throw new MF_PHP_E_ConstraintFailed(__FUNCTION__);
+                }
+
+                if ($refObj->name == 'MF_Obj_Mixin')
+                {
+                        // update the cache
+                        foreach ($classesExamined as $seenClass)
+                        {
+                                $cachedClasses[$seenClass] = true;
+                        }
+                        return;
+                }
+
+                // if we get here, we need to look at the parent class
+                // of the parent class
+                $classesExamined[] = $refObj->name;
+                $refObj = $refObj->getParentClass();
+        }
+
+        // if we get here, then this class is not a valid mixin
+
+        // update the cache
+        foreach ($classesExamined as $seenClass)
+        {
+                $cachedClasses[$seenClass] = false;
+        }
+
+        throw new MF_PHP_E_ConstraintFailed(__FUNCTION__);
+}
+
+/*
+ * currently not used
+ *
+ * will uncomment out when it is needed
 function constraint_mustBeValidMixin($obj)
 {
         if (!is_object($obj))
@@ -74,18 +128,10 @@ function constraint_mustBeValidMixin($obj)
                 throw new MF_PHP_E_ConstraintFailed(__FUNCTION__, null);
         }
 
-        if (!$obj instanceof Obj_Mixin)
+        if (!$obj instanceof MF_Obj_Mixin)
         {
                 throw new MF_PHP_E_ConstraintFailed(__FUNCTION__, null);
         }
 }
-
-function constraint_mustBeObject($obj)
-{
-        if (!is_object($obj))
-        {
-                throw new MF_PHP_E_ConstraintFailed(__FUNCTION__, null);
-        }
-}
-
+*/
 ?>
